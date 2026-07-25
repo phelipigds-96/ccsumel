@@ -91,6 +91,20 @@ function normalizeKey(k: unknown) {
     .replace(/\s+/g, " ");
 }
 
+function inferColumnTarget(header: string): keyof ParsedRow | null {
+  const exact = COL_MAP[header];
+  if (exact) return exact;
+
+  const compact = header.replace(/[^a-z0-9]/g, "");
+  if (header.includes("gtin") || header.includes("ean") || header.includes("barra")) return "gtin";
+  if (header.includes("preco") || header.includes("prc") || header.includes("valor") || compact.startsWith("vl")) {
+    return "preco_venda";
+  }
+  if (header.includes("descr") || header.includes("produto") || header.includes("nome")) return "descricao";
+  if (header.includes("codigo") || header.includes("cod") || compact === "sku") return "codigo";
+  return null;
+}
+
 function parseMoney(value: unknown) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   const raw = String(value ?? "").trim();
@@ -134,11 +148,11 @@ function parseWorkbook(file: File): Promise<ParsedRow[]> {
         const wb = XLSX.read(e.target?.result, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
         if (!ws) { reject(new Error("Planilha vazia.")); return; }
-        const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false, raw: false });
+        const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false, raw: true });
         if (matrix.length === 0) { reject(new Error("Planilha sem dados.")); return; }
         const headerIdx = findHeaderRow(matrix);
         const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
-        const mapped = headers.map((h) => COL_MAP[h] ?? null);
+        const mapped = headers.map(inferColumnTarget);
         console.log("[Importação] cabeçalhos detectados:", headers, "→", mapped);
         if (!mapped.some(Boolean)) {
           reject(new Error(`Não encontrei colunas conhecidas. Cabeçalhos lidos: ${headers.join(" | ")}`));
@@ -221,7 +235,7 @@ function ProdutosTab() {
       const rows = await parseWorkbook(file);
       if (rows.length === 0) { toast.error("Nenhuma linha válida encontrada na planilha."); return; }
       setPreview(rows);
-    } catch (err) { toast.error("Erro ao ler XLSX: " + (err as Error).message); }
+    } catch (err) { toast.error("Erro ao ler arquivo: " + (err as Error).message); }
     finally { if (fileRef.current) fileRef.current.value = ""; }
   };
 
@@ -372,9 +386,9 @@ function ProdutosTab() {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={uploading}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmImport} disabled={uploading} className="bg-primary hover:bg-primary/90">
+            <Button type="button" onClick={confirmImport} disabled={uploading} className="bg-primary hover:bg-primary/90">
               {uploading ? "Importando..." : "Importar"}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
