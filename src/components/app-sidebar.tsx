@@ -32,6 +32,8 @@ import { useAuth } from "@/lib/auth";
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Campanhas", url: "/campanhas", icon: Megaphone },
+  { title: "Campanhas Encerradas", url: "/campanhas-encerradas", icon: Archive },
+
   { title: "Verbas Cooperadas", url: "/verbas-cooperadas", icon: Wallet },
   { title: "Sell Out", url: "/sell-out", icon: ShoppingCart },
   { title: "Pontas de Gôndola", url: "/pontas-de-gondola", icon: PackageOpen },
