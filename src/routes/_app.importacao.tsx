@@ -140,7 +140,70 @@ function findHeaderRow(matrix: unknown[][]): number {
   return 0;
 }
 
-function parseWorkbook(file: File): Promise<ParsedRow[]> {
+function readFile(file: File): Promise<string | ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (result === undefined || result === null) reject(new Error("Arquivo sem conteúdo."));
+      else resolve(result);
+    };
+    reader.onerror = () => reject(reader.error);
+    if (/\.csv$/i.test(file.name) || file.type.includes("csv")) reader.readAsText(file, "utf-8");
+    else reader.readAsArrayBuffer(file);
+  });
+}
+
+async function parseWorkbook(file: File): Promise<ParsedRow[]> {
+  const contents = await readFile(file);
+  try {
+    const wb = typeof contents === "string"
+      ? XLSX.read(contents, { type: "string", raw: true })
+      : XLSX.read(contents, { type: "array", raw: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if (!ws) throw new Error("Planilha vazia.");
+    const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false, raw: true });
+    if (matrix.length === 0) throw new Error("Planilha sem dados.");
+    const headerIdx = findHeaderRow(matrix);
+    const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
+    const mapped = headers.map(inferColumnTarget);
+    console.log("[Importação] cabeçalhos detectados:", headers, "→", mapped);
+    if (!mapped.some(Boolean)) {
+      throw new Error(`Não encontrei colunas conhecidas. Cabeçalhos lidos: ${headers.join(" | ")}`);
+    }
+
+    const rows: ParsedRow[] = [];
+    for (let i = headerIdx + 1; i < matrix.length; i++) {
+      const raw = matrix[i] ?? [];
+      const out: ParsedRow = { descricao: "", codigo: "", gtin: "", preco_venda: 0 };
+      for (let c = 0; c < headers.length; c++) {
+        const target = mapped[c];
+        if (!target) continue;
+        const val = raw[c];
+        if (target === "preco_venda") out.preco_venda = parseMoney(val);
+        else out[target] = parseText(val);
+      }
+      if (out.descricao || out.gtin || out.codigo) rows.push(out);
+    }
+    console.log(`[Importação] ${rows.length} linha(s) prontas.`, rows.slice(0, 3));
+
+    const withDescription = rows.filter((row) => row.descricao.trim());
+    if (withDescription.length === 0) {
+      throw new Error(`Reconheci o arquivo, mas não encontrei descrições de produtos. Cabeçalhos lidos: ${headers.join(" | ")}`);
+    }
+    if (withDescription.every((row) => !row.codigo.trim() && !row.gtin.trim())) {
+      toast.warning("Importei a prévia, mas não identifiquei código/GTIN. Confira o nome da coluna de código.");
+    }
+    if (withDescription.every((row) => row.preco_venda === 0)) {
+      toast.warning("Importei a prévia, mas os preços vieram zerados. Confira o nome/formato da coluna de preço.");
+    }
+    return withDescription;
+  } catch (err) {
+    throw err instanceof Error ? err : new Error("Não foi possível ler o arquivo.");
+  }
+}
+
+function parseWorkbookOld(file: File): Promise<ParsedRow[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
