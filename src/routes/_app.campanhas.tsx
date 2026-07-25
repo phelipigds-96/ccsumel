@@ -421,7 +421,26 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         }
       />
 
-      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_180px_180px_160px]">
+      {/* Resumo Sell Out da campanha */}
+      <div className="grid gap-3 md:grid-cols-3 mb-4">
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign className="h-4 w-4 text-primary" /> Verba Sell Out — Total</div>
+          <div className="text-2xl font-bold text-navy mt-1">{brl(selloutStats.total)}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">A cobrar dos fornecedores</div>
+        </div>
+        <div className="rounded-xl border bg-card p-4">
+          <div className="text-xs text-muted-foreground">Ofertas com verba</div>
+          <div className="text-2xl font-bold text-navy mt-1">{selloutStats.qtd}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">de {ofertas.length} oferta(s)</div>
+        </div>
+        <div className="rounded-xl border bg-card p-4">
+          <div className="text-xs text-muted-foreground">Anexos da campanha</div>
+          <div className="text-2xl font-bold text-navy mt-1 flex items-center gap-2"><Paperclip className="h-5 w-5 text-primary" />{campanha.materiais.length}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">Materiais de apoio para as lojas</div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_170px_170px_150px_170px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -448,6 +467,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             <SelectItem value="nao">Sem Clube</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={fSellout} onValueChange={setFSellout}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Sell Out: Todos</SelectItem>
+            <SelectItem value="com">Com verba</SelectItem>
+            <SelectItem value="sem">Sem verba</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-xl border bg-card overflow-hidden">
@@ -462,6 +489,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                 <TableHead className="text-right">Normal</TableHead>
                 <TableHead className="text-right">Promo</TableHead>
                 <TableHead className="text-center">Clube</TableHead>
+                <TableHead className="text-right">Sell Out</TableHead>
                 <TableHead>Início</TableHead>
                 <TableHead>Fim</TableHead>
                 <TableHead>Filial</TableHead>
@@ -475,7 +503,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={15} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={16} className="text-center py-10 text-muted-foreground">
                     Nenhuma oferta cadastrada nesta campanha ainda.
                   </TableCell>
                 </TableRow>
@@ -489,6 +517,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>
                   <TableCell className="text-center">
                     {o.clubeSumel ? <Badge className="bg-primary/10 text-primary border-primary/20"><Tag className="h-3 w-3 mr-1" />Sim</Badge> : <span className="text-muted-foreground text-xs">Não</span>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {o.selloutTemVerba ? (
+                      <div className="flex flex-col items-end leading-tight">
+                        <span className="font-semibold text-navy">{brl(o.selloutValor)}</span>
+                        {o.selloutFornecedor && <span className="text-[10px] text-muted-foreground">{o.selloutFornecedor}</span>}
+                      </div>
+                    ) : <span className="text-muted-foreground text-xs">—</span>}
                   </TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>
@@ -507,6 +543,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           </Table>
         </div>
       </div>
+
 
       <OfertaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} oferta={editing} setOferta={setEditing} onSave={save} />
 
