@@ -249,8 +249,9 @@ function CatalogoProdutos() {
             className="max-w-md flex-1 min-w-[220px]"
           />
           <div className="ml-auto text-xs text-muted-foreground">
-            {loading ? "Buscando..." : `${produtos.length.toLocaleString("pt-BR")} exibidos${counts.total > produtos.length ? ` de ${counts.total.toLocaleString("pt-BR")}` : ""}`}
+            {loading ? "Buscando..." : `${totalResultados.toLocaleString("pt-BR")} resultado(s)`}
           </div>
+
         </div>
         <div className="overflow-x-auto">
           <Table>
