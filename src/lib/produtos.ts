@@ -27,22 +27,55 @@ export async function findByGtin(gtin: string): Promise<Produto | null> {
   return (data as Produto | null) ?? null;
 }
 
-export async function upsertProdutos(rows: Array<Omit<Produto, "id" | "created_at" | "updated_at">>) {
+export async function upsertProdutos(
+  rows: Array<Omit<Produto, "id" | "created_at" | "updated_at">>,
+  opts: { chunkSize?: number; onProgress?: (done: number, total: number) => void } = {},
+) {
   if (rows.length === 0) return { inserted: 0 };
-  // Upsert by gtin
-  const withGtin = rows.filter(r => r.gtin);
-  const withoutGtin = rows.filter(r => !r.gtin);
+  const chunkSize = opts.chunkSize ?? 1000;
+
+  // Dedup GTINs within payload (keep last) to avoid
+  // "ON CONFLICT DO UPDATE affects row a second time" errors.
+  const seen = new Map<string, typeof rows[number]>();
+  const withoutGtin: typeof rows = [];
+  for (const r of rows) {
+    if (r.gtin) seen.set(r.gtin, r);
+    else withoutGtin.push(r);
+  }
+  const withGtin = Array.from(seen.values());
+
+  const total = withGtin.length + withoutGtin.length;
+  let done = 0;
   let count = 0;
-  if (withGtin.length) {
-    const { error, count: c } = await supabase.from("produtos").upsert(withGtin, { onConflict: "gtin", count: "exact" });
+
+  const runChunks = async (
+    list: typeof rows,
+    fn: (chunk: typeof rows) => Promise<number>,
+  ) => {
+    for (let i = 0; i < list.length; i += chunkSize) {
+      const chunk = list.slice(i, i + chunkSize);
+      count += await fn(chunk);
+      done += chunk.length;
+      opts.onProgress?.(done, total);
+    }
+  };
+
+  await runChunks(withGtin, async (chunk) => {
+    const { error, count: c } = await supabase
+      .from("produtos")
+      .upsert(chunk, { onConflict: "gtin", count: "exact", ignoreDuplicates: false });
     if (error) throw error;
-    count += c ?? withGtin.length;
-  }
-  if (withoutGtin.length) {
-    const { error, count: c } = await supabase.from("produtos").insert(withoutGtin, { count: "exact" });
+    return c ?? chunk.length;
+  });
+
+  await runChunks(withoutGtin, async (chunk) => {
+    const { error, count: c } = await supabase
+      .from("produtos")
+      .insert(chunk, { count: "exact" });
     if (error) throw error;
-    count += c ?? withoutGtin.length;
-  }
+    return c ?? chunk.length;
+  });
+
   return { inserted: count };
 }
 
