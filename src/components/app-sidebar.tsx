@@ -11,6 +11,8 @@ import {
   Settings,
   LogOut,
   Package,
+  Archive,
+
 } from "lucide-react";
 import {
   Sidebar,
