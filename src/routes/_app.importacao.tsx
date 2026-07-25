@@ -34,21 +34,43 @@ const COL_MAP: Record<string, keyof ParsedRow> = {
   "desc": "descricao",
   "descricao": "descricao",
   "descrição": "descricao",
+  "produto": "descricao",
+  "nome produto": "descricao",
+  "descricao produto": "descricao",
+  "descrição produto": "descricao",
   "cod.": "codigo",
+  "cód.": "codigo",
   "cod": "codigo",
   "codigo": "codigo",
   "código": "codigo",
+  "cod produto": "codigo",
+  "cód produto": "codigo",
+  "codigo produto": "codigo",
+  "código produto": "codigo",
   "gtin": "gtin",
   "ean": "gtin",
+  "ean13": "gtin",
+  "cod barras": "gtin",
+  "cód barras": "gtin",
+  "cod barra": "gtin",
+  "cód barra": "gtin",
   "codigo de barras": "gtin",
   "código de barras": "gtin",
   "prc. venda": "preco_venda",
+  "prç. venda": "preco_venda",
   "prc venda": "preco_venda",
+  "prç venda": "preco_venda",
+  "pr venda": "preco_venda",
+  "vl venda": "preco_venda",
+  "valor venda": "preco_venda",
   "preco venda": "preco_venda",
   "preço venda": "preco_venda",
   "preco de venda": "preco_venda",
   "preço de venda": "preco_venda",
+  "preco atual": "preco_venda",
+  "preço atual": "preco_venda",
   "preco": "preco_venda",
+  "preço": "preco_venda",
 };
 
 interface ParsedRow {
@@ -59,7 +81,38 @@ interface ParsedRow {
 }
 
 function normalizeKey(k: unknown) {
-  return String(k ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  return String(k ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[ºª]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function parseMoney(value: unknown) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const raw = String(value ?? "").trim();
+  if (!raw) return 0;
+  const cleaned = raw.replace(/[^\d,.-]/g, "");
+  if (!cleaned) return 0;
+
+  const hasComma = cleaned.includes(",");
+  const hasDot = cleaned.includes(".");
+  const normalized = hasComma && hasDot
+    ? cleaned.replace(/\./g, "").replace(",", ".")
+    : hasComma
+      ? cleaned.replace(",", ".")
+      : cleaned;
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseText(value: unknown) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number" && Number.isFinite(value)) return value.toLocaleString("fullwide", { useGrouping: false });
+  return String(value).trim();
 }
 
 // Encontra a linha de cabeçalho procurando por células que batam com COL_MAP.
@@ -81,7 +134,7 @@ function parseWorkbook(file: File): Promise<ParsedRow[]> {
         const wb = XLSX.read(e.target?.result, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
         if (!ws) { reject(new Error("Planilha vazia.")); return; }
-        const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false });
+        const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false, raw: false });
         if (matrix.length === 0) { reject(new Error("Planilha sem dados.")); return; }
         const headerIdx = findHeaderRow(matrix);
         const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
@@ -100,11 +153,9 @@ function parseWorkbook(file: File): Promise<ParsedRow[]> {
             if (!target) continue;
             const val = raw[c];
             if (target === "preco_venda") {
-              const s = String(val ?? "").replace(/[R$\s.]/g, "").replace(",", ".");
-              const n = typeof val === "number" ? val : parseFloat(s);
-              out.preco_venda = isNaN(n) ? 0 : n;
+              out.preco_venda = parseMoney(val);
             } else {
-              out[target] = String(val ?? "").trim();
+              out[target] = parseText(val);
             }
           }
           if (out.descricao || out.gtin || out.codigo) rows.push(out);
