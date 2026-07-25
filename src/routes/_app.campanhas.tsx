@@ -43,6 +43,13 @@ export const Route = createFileRoute("/_app/campanhas")({
 
 type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";
 
+interface MaterialApoio {
+  path: string;   // storage path within the bucket
+  nome: string;   // display name (original file name)
+  tipo: string;   // mime type
+  tamanho: number;
+}
+
 interface Campanha {
   id: string;
   nome: string;
@@ -50,6 +57,7 @@ interface Campanha {
   dataInicial: string;
   dataFinal: string;
   status: Status;
+  materiais: MaterialApoio[];
 }
 
 interface Oferta {
@@ -71,6 +79,11 @@ interface Oferta {
   estoque: number;
   margem: number;
   status: Status;
+  // Sell Out — verba negociada com o fornecedor para esta oferta
+  selloutTemVerba: boolean;
+  selloutFornecedor: string;
+  selloutValor: number;
+  selloutObs: string;
 }
 
 const CATEGORIAS = ["Bebidas", "Mercearia", "Higiene", "Limpeza", "Frios", "Padaria", "Hortifruti"];
