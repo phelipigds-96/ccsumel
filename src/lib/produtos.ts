@@ -100,9 +100,13 @@ export async function importProdutosByCodigo(
   const started = Date.now();
   const chunkSize = opts.chunkSize ?? 500;
 
-  // Dedup por código (mantém último)
+  // Dedup por código (mantém último) — descarta linhas sem código numérico válido.
   const seen = new Map<string, ImportRow>();
-  for (const r of rows) if (r.codigo) seen.set(r.codigo, r);
+  for (const r of rows) {
+    const c = (r.codigo ?? "").trim();
+    if (!c || !/^\d+$/.test(c) || !r.descricao?.trim() || r.preco_venda <= 0) continue;
+    seen.set(c, { ...r, codigo: c });
+  }
   const list = Array.from(seen.values());
 
   const codigos = list.map((r) => r.codigo);
