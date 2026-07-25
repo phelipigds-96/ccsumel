@@ -50,6 +50,23 @@ export async function findByGtin(gtin: string): Promise<Produto | null> {
   return (data as Produto | null) ?? null;
 }
 
+/**
+ * Busca produto pelo código de barras (GTIN) OU pelo código interno.
+ * Prioriza GTIN; se não achar, tenta código interno.
+ */
+export async function findByCodigoOrGtin(term: string): Promise<Produto | null> {
+  const t = term.trim();
+  if (!t) return null;
+  const digits = t.replace(/\D/g, "");
+  if (digits && digits.length >= 8) {
+    const byGtin = await findByGtin(digits);
+    if (byGtin) return byGtin;
+  }
+  const { data, error } = await supabase.from("produtos").select("*").eq("codigo", t).maybeSingle();
+  if (error) throw error;
+  return (data as Produto | null) ?? null;
+}
+
 export async function deleteProduto(id: string) {
   const { error } = await supabase.from("produtos").delete().eq("id", id);
   if (error) throw error;
