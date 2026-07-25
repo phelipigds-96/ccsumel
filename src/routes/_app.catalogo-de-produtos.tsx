@@ -52,106 +52,72 @@ function normalize(s: string): string {
 }
 
 /**
- * Encontra a linha de cabeçalho ("descrição … barras … venda … custo … código")
- * e devolve índice + posições de coluna.
+ * Encontra a linha de cabeçalho do relatório Sysmo S1.
  */
-function findHeader(lines: string[]): { index: number; positions: number[]; keys: string[] } | null {
+function findHeaderIndex(lines: string[]): number {
   const scan = Math.min(lines.length, 500);
   for (let i = 0; i < scan; i++) {
-    const raw = lines[i];
-    const low = normalize(raw);
-    const hasDesc = low.includes("descr");
-    const hasBarras = low.includes("barra") || low.includes("gtin") || low.includes("ean");
-    const hasVenda = low.includes("venda") || low.includes("preco");
-    const hasCusto = low.includes("custo");
-    const hasCodigo = low.includes("codigo") || /\bcod\b/.test(low) || low.includes("cod.");
-    if (hasDesc && hasBarras && hasVenda && hasCusto && hasCodigo) {
-      const findPos = (needles: string[]) => {
-        for (const n of needles) {
-          const idx = low.indexOf(n);
-          if (idx >= 0) return idx;
-        }
-        return -1;
-      };
-      const search: [string, string[]][] = [
-        ["descricao", ["descr"]],
-        ["gtin", ["barra", "gtin", "ean"]],
-        ["venda", ["venda", "preco"]],
-        ["custo", ["custo"]],
-        ["codigo", ["codigo", "cod."]],
-      ];
-      const found: { k: string; p: number }[] = [];
-      for (const [key, needles] of search) {
-        const idx = findPos(needles);
-        if (idx < 0) return null;
-        found.push({ k: key, p: idx });
-      }
-      const order = found.sort((a, b) => a.p - b.p);
-      return {
-        index: i,
-        positions: order.map((o) => o.p),
-        keys: order.map((o) => o.k),
-      };
+    const low = normalize(lines[i]);
+    if (
+      low.includes("descr") &&
+      (low.includes("barra") || low.includes("gtin") || low.includes("ean")) &&
+      (low.includes("venda") || low.includes("preco")) &&
+      low.includes("custo") &&
+      (low.includes("codigo") || /\bcod\b/.test(low))
+    ) {
+      return i;
     }
   }
-  return null;
+  return -1;
 }
 
 interface ParsedRow extends ImportRow {}
 
+/**
+ * Faz o parse linha a linha lendo os campos da DIREITA para a ESQUERDA:
+ *   descrição … [barras opcional] venda custo codigo
+ * As colunas numéricas do Sysmo S1 são alinhadas à direita, então
+ * as posições do cabeçalho não batem com os valores — usamos regex.
+ */
 function parseTxt(content: string): { rows: ParsedRow[]; totalLidos: number } {
-  // Normaliza quebras de linha
   const lines = content.replace(/\r\n?/g, "\n").split("\n");
-  const header = findHeader(lines);
-  if (!header) throw new Error("Cabeçalho não encontrado. Certifique-se de que o arquivo é o relatório do Sysmo S1.");
+  const headerIdx = findHeaderIndex(lines);
+  if (headerIdx < 0)
+    throw new Error("Cabeçalho não encontrado. Certifique-se de que o arquivo é o relatório do Sysmo S1.");
+
+  const NUM = String.raw`\d{1,3}(?:\.\d{3})*(?:,\d+)?|\d+(?:[.,]\d+)?`;
+  const rowRe = new RegExp(
+    String.raw`^\s*(.+?)\s+(?:(\d{8,14})\s+)?(` + NUM + String.raw`)\s+(` + NUM + String.raw`)\s+(\d+)\s*$`,
+  );
 
   const rows: ParsedRow[] = [];
-  const { positions, keys } = header;
-
-  // Constrói ranges [start, end] por coluna
-  const ranges = positions.map((p, i) => {
-    const end = i < positions.length - 1 ? positions[i + 1] : Number.MAX_SAFE_INTEGER;
-    return [p, end] as const;
-  });
-
   let totalLidos = 0;
-  for (let i = header.index + 1; i < lines.length; i++) {
+
+  for (let i = headerIdx + 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line || !line.trim()) continue;
     const low = normalize(line);
-    // Ignorar rodapés / repetições de cabeçalho / paginação
     if (low.includes("quantidade de produtos")) continue;
-    if (low.includes("relatorio de sistema")) continue;
+    if (low.includes("relatorio de sistema") || low.includes("relatm")) continue;
     if (low.includes("sumel alimentos")) continue;
     if (low.startsWith("pagina") || low.includes("página")) continue;
     if (low.includes("descric") && low.includes("barras") && low.includes("venda")) continue;
     if (/^[-_=\s]+$/.test(line)) continue;
 
-    // Extrai por posições
-    const cols: Record<string, string> = {};
-    for (let c = 0; c < keys.length; c++) {
-      const [s, e] = ranges[c];
-      cols[keys[c]] = (line.slice(s, e) ?? "").trim();
-    }
+    const m = rowRe.exec(line);
+    if (!m) continue;
 
-    const descricao = (cols.descricao || "").trim();
-    const codigo = (cols.codigo || "").trim();
-    const gtinRaw = (cols.gtin || "").trim();
-    const gtin = gtinRaw && /\d/.test(gtinRaw) ? gtinRaw.replace(/\D/g, "") || null : null;
-    const preco_venda = parseBRNumber(cols.venda || "");
-    const custo = parseBRNumber(cols.custo || "");
+    const descricao = m[1].trim();
+    const gtinRaw = m[2] ?? "";
+    const preco_venda = parseBRNumber(m[3]);
+    const custo = parseBRNumber(m[4]);
+    const codigo = m[5];
 
-    // Precisamos ao menos de código + descrição
     if (!codigo || !descricao) continue;
+    const gtin = gtinRaw ? gtinRaw.replace(/\D/g, "") || null : null;
     totalLidos++;
 
-    rows.push({
-      codigo,
-      gtin: gtin || null,
-      descricao,
-      preco_venda,
-      custo,
-    });
+    rows.push({ codigo, gtin: gtin || null, descricao, preco_venda, custo });
   }
 
   return { rows, totalLidos };
