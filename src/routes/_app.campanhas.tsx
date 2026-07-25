@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +43,13 @@ export const Route = createFileRoute("/_app/campanhas")({
 
 type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";
 
+interface MaterialApoio {
+  path: string;   // storage path within the bucket
+  nome: string;   // display name (original file name)
+  tipo: string;   // mime type
+  tamanho: number;
+}
+
 interface Campanha {
   id: string;
   nome: string;
@@ -48,6 +57,7 @@ interface Campanha {
   dataInicial: string;
   dataFinal: string;
   status: Status;
+  materiais: MaterialApoio[];
 }
 
 interface Oferta {
@@ -69,6 +79,11 @@ interface Oferta {
   estoque: number;
   margem: number;
   status: Status;
+  // Sell Out — verba negociada com o fornecedor para esta oferta
+  selloutTemVerba: boolean;
+  selloutFornecedor: string;
+  selloutValor: number;
+  selloutObs: string;
 }
 
 const CATEGORIAS = ["Bebidas", "Mercearia", "Higiene", "Limpeza", "Frios", "Padaria", "Hortifruti"];
@@ -77,24 +92,24 @@ const FILIAIS = ["Matriz", "Filial 01", "Filial 02", "Filial 03"];
 const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
 const seedCampanhas: Campanha[] = [
-  { id: "c1", nome: "Ofertas da Semana", descricao: "Ofertas semanais rotativas em todas as filiais.", dataInicial: "2026-07-22", dataFinal: "2026-07-28", status: "Ativa" },
-  { id: "c2", nome: "Verão Gelado", descricao: "Campanha sazonal de bebidas e sorvetes.", dataInicial: "2026-07-20", dataFinal: "2026-08-15", status: "Ativa" },
-  { id: "c3", nome: "Casa Limpa", descricao: "Promoções em produtos de limpeza doméstica.", dataInicial: "2026-08-01", dataFinal: "2026-08-20", status: "Programada" },
-  { id: "c4", nome: "Café da Manhã", descricao: "Pães, cafés, laticínios e cereais.", dataInicial: "2026-07-15", dataFinal: "2026-07-30", status: "Ativa" },
-  { id: "c5", nome: "Mês do Bebê", descricao: "Higiene infantil e cuidados com o bebê.", dataInicial: "2026-06-10", dataFinal: "2026-07-05", status: "Encerrada" },
+  { id: "c1", nome: "Ofertas da Semana", descricao: "Ofertas semanais rotativas em todas as filiais.", dataInicial: "2026-07-22", dataFinal: "2026-07-28", status: "Ativa", materiais: [] },
+  { id: "c2", nome: "Verão Gelado", descricao: "Campanha sazonal de bebidas e sorvetes.", dataInicial: "2026-07-20", dataFinal: "2026-08-15", status: "Ativa", materiais: [] },
+  { id: "c3", nome: "Casa Limpa", descricao: "Promoções em produtos de limpeza doméstica.", dataInicial: "2026-08-01", dataFinal: "2026-08-20", status: "Programada", materiais: [] },
+  { id: "c4", nome: "Café da Manhã", descricao: "Pães, cafés, laticínios e cereais.", dataInicial: "2026-07-15", dataFinal: "2026-07-30", status: "Ativa", materiais: [] },
+  { id: "c5", nome: "Mês do Bebê", descricao: "Higiene infantil e cuidados com o bebê.", dataInicial: "2026-06-10", dataFinal: "2026-07-05", status: "Encerrada", materiais: [] },
 ];
 
 const seedOfertas: Oferta[] = [
-  { id: "1", campanhaId: "c2", codigo: "OF-0001", gtin: "", descricao: "Cerveja Brahma 350ml Pack 12", fornecedor: "Ambev", categoria: "Bebidas", precoNormal: 59.9, custo: 0, precoPromocional: 44.9, clubeSumel: true, dataInicial: "2026-07-20", dataFinal: "2026-08-10", filial: "Matriz", corredor: "A3", estoque: 320, margem: 18.5, status: "Ativa" },
-  { id: "2", campanhaId: "c4", codigo: "OF-0002", gtin: "", descricao: "Café Nescafé Tradicional 500g", fornecedor: "Nestlé", categoria: "Mercearia", precoNormal: 29.9, custo: 0, precoPromocional: 23.9, clubeSumel: false, dataInicial: "2026-07-15", dataFinal: "2026-07-30", filial: "Filial 01", corredor: "B7", estoque: 180, margem: 22.0, status: "Ativa" },
-  { id: "3", campanhaId: "c3", codigo: "OF-0003", gtin: "", descricao: "Sabão em Pó OMO 1,6kg", fornecedor: "Unilever", categoria: "Limpeza", precoNormal: 39.9, custo: 0, precoPromocional: 31.9, clubeSumel: true, dataInicial: "2026-08-01", dataFinal: "2026-08-20", filial: "Matriz", corredor: "C2", estoque: 240, margem: 15.0, status: "Programada" },
-  { id: "4", campanhaId: "c5", codigo: "OF-0004", gtin: "", descricao: "Fralda Pampers G 40un", fornecedor: "P&G", categoria: "Higiene", precoNormal: 89.9, custo: 0, precoPromocional: 69.9, clubeSumel: true, dataInicial: "2026-06-10", dataFinal: "2026-07-05", filial: "Filial 02", corredor: "D4", estoque: 60, margem: 25.5, status: "Encerrada" },
-  { id: "5", campanhaId: "c2", codigo: "OF-0005", gtin: "", descricao: "Refrigerante Coca-Cola 2L", fornecedor: "Coca-Cola", categoria: "Bebidas", precoNormal: 12.9, custo: 0, precoPromocional: 8.99, clubeSumel: false, dataInicial: "2026-07-25", dataFinal: "2026-08-15", filial: "Filial 03", corredor: "A1", estoque: 500, margem: 12.0, status: "Ativa" },
-  { id: "6", campanhaId: "c1", codigo: "OF-0006", gtin: "", descricao: "Arroz Camil 5kg", fornecedor: "BRF", categoria: "Mercearia", precoNormal: 34.9, custo: 0, precoPromocional: 27.9, clubeSumel: true, dataInicial: "2026-07-22", dataFinal: "2026-07-28", filial: "Matriz", corredor: "B1", estoque: 400, margem: 14.0, status: "Ativa" },
+  { id: "1", campanhaId: "c2", codigo: "OF-0001", gtin: "", descricao: "Cerveja Brahma 350ml Pack 12", fornecedor: "Ambev", categoria: "Bebidas", precoNormal: 59.9, custo: 0, precoPromocional: 44.9, clubeSumel: true, dataInicial: "2026-07-20", dataFinal: "2026-08-10", filial: "Matriz", corredor: "A3", estoque: 320, margem: 18.5, status: "Ativa", selloutTemVerba: true, selloutFornecedor: "Ambev", selloutValor: 1500, selloutObs: "Verba de exposição — pack promocional." },
+  { id: "2", campanhaId: "c4", codigo: "OF-0002", gtin: "", descricao: "Café Nescafé Tradicional 500g", fornecedor: "Nestlé", categoria: "Mercearia", precoNormal: 29.9, custo: 0, precoPromocional: 23.9, clubeSumel: false, dataInicial: "2026-07-15", dataFinal: "2026-07-30", filial: "Filial 01", corredor: "B7", estoque: 180, margem: 22.0, status: "Ativa", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
+  { id: "3", campanhaId: "c3", codigo: "OF-0003", gtin: "", descricao: "Sabão em Pó OMO 1,6kg", fornecedor: "Unilever", categoria: "Limpeza", precoNormal: 39.9, custo: 0, precoPromocional: 31.9, clubeSumel: true, dataInicial: "2026-08-01", dataFinal: "2026-08-20", filial: "Matriz", corredor: "C2", estoque: 240, margem: 15.0, status: "Programada", selloutTemVerba: true, selloutFornecedor: "Unilever", selloutValor: 800, selloutObs: "" },
+  { id: "4", campanhaId: "c5", codigo: "OF-0004", gtin: "", descricao: "Fralda Pampers G 40un", fornecedor: "P&G", categoria: "Higiene", precoNormal: 89.9, custo: 0, precoPromocional: 69.9, clubeSumel: true, dataInicial: "2026-06-10", dataFinal: "2026-07-05", filial: "Filial 02", corredor: "D4", estoque: 60, margem: 25.5, status: "Encerrada", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
+  { id: "5", campanhaId: "c2", codigo: "OF-0005", gtin: "", descricao: "Refrigerante Coca-Cola 2L", fornecedor: "Coca-Cola", categoria: "Bebidas", precoNormal: 12.9, custo: 0, precoPromocional: 8.99, clubeSumel: false, dataInicial: "2026-07-25", dataFinal: "2026-08-15", filial: "Filial 03", corredor: "A1", estoque: 500, margem: 12.0, status: "Ativa", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
+  { id: "6", campanhaId: "c1", codigo: "OF-0006", gtin: "", descricao: "Arroz Camil 5kg", fornecedor: "BRF", categoria: "Mercearia", precoNormal: 34.9, custo: 0, precoPromocional: 27.9, clubeSumel: true, dataInicial: "2026-07-22", dataFinal: "2026-07-28", filial: "Matriz", corredor: "B1", estoque: 400, margem: 14.0, status: "Ativa", selloutTemVerba: true, selloutFornecedor: "BRF", selloutValor: 500, selloutObs: "Encarte semanal." },
 ];
 
 const emptyCampanha = (): Campanha => ({
-  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho",
+  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", materiais: [],
 });
 
 const emptyOferta = (campanha: Campanha): Oferta => ({
@@ -103,6 +118,7 @@ const emptyOferta = (campanha: Campanha): Oferta => ({
   precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
   filial: FILIAIS[0], corredor: "", estoque: 0, margem: 0, status: "Rascunho",
+  selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
 });
 
 const statusVariant: Record<Status, string> = {
@@ -284,10 +300,18 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                   <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t pt-3">
-                  <span className="flex items-center gap-1.5 text-sm">
-                    <Package className="h-4 w-4 text-primary" />
-                    <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
-                  </span>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="flex items-center gap-1.5">
+                      <Package className="h-4 w-4 text-primary" />
+                      <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
+                    </span>
+                    {c.materiais.length > 0 && (
+                      <span className="flex items-center gap-1.5 text-navy" title="Materiais de apoio">
+                        <Paperclip className="h-4 w-4" />
+                        <strong>{c.materiais.length}</strong>
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1">
                     <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
@@ -337,6 +361,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [fCategoria, setFCategoria] = useState("todas");
   const [fStatus, setFStatus] = useState("todos");
   const [fClube, setFClube] = useState("todos");
+  const [fSellout, setFSellout] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Oferta | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -349,9 +374,17 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
       if (fStatus !== "todos" && o.status !== fStatus) return false;
       if (fClube === "sim" && !o.clubeSumel) return false;
       if (fClube === "nao" && o.clubeSumel) return false;
+      if (fSellout === "com" && !o.selloutTemVerba) return false;
+      if (fSellout === "sem" && o.selloutTemVerba) return false;
       return true;
     });
-  }, [ofertas, search, fCategoria, fStatus, fClube]);
+  }, [ofertas, search, fCategoria, fStatus, fClube, fSellout]);
+
+  const selloutStats = useMemo(() => {
+    const comVerba = ofertas.filter(o => o.selloutTemVerba);
+    const total = comVerba.reduce((s, o) => s + (Number(o.selloutValor) || 0), 0);
+    return { qtd: comVerba.length, total };
+  }, [ofertas]);
 
   const openNew = () => { setEditing(emptyOferta(campanha)); setDialogOpen(true); };
   const openEdit = (o: Oferta) => { setEditing({ ...o }); setDialogOpen(true); };
@@ -388,7 +421,26 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         }
       />
 
-      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_180px_180px_160px]">
+      {/* Resumo Sell Out da campanha */}
+      <div className="grid gap-3 md:grid-cols-3 mb-4">
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign className="h-4 w-4 text-primary" /> Verba Sell Out — Total</div>
+          <div className="text-2xl font-bold text-navy mt-1">{brl(selloutStats.total)}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">A cobrar dos fornecedores</div>
+        </div>
+        <div className="rounded-xl border bg-card p-4">
+          <div className="text-xs text-muted-foreground">Ofertas com verba</div>
+          <div className="text-2xl font-bold text-navy mt-1">{selloutStats.qtd}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">de {ofertas.length} oferta(s)</div>
+        </div>
+        <div className="rounded-xl border bg-card p-4">
+          <div className="text-xs text-muted-foreground">Anexos da campanha</div>
+          <div className="text-2xl font-bold text-navy mt-1 flex items-center gap-2"><Paperclip className="h-5 w-5 text-primary" />{campanha.materiais.length}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">Materiais de apoio para as lojas</div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_170px_170px_150px_170px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -415,6 +467,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             <SelectItem value="nao">Sem Clube</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={fSellout} onValueChange={setFSellout}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Sell Out: Todos</SelectItem>
+            <SelectItem value="com">Com verba</SelectItem>
+            <SelectItem value="sem">Sem verba</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-xl border bg-card overflow-hidden">
@@ -429,6 +489,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                 <TableHead className="text-right">Normal</TableHead>
                 <TableHead className="text-right">Promo</TableHead>
                 <TableHead className="text-center">Clube</TableHead>
+                <TableHead className="text-right">Sell Out</TableHead>
                 <TableHead>Início</TableHead>
                 <TableHead>Fim</TableHead>
                 <TableHead>Filial</TableHead>
@@ -442,7 +503,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={15} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={16} className="text-center py-10 text-muted-foreground">
                     Nenhuma oferta cadastrada nesta campanha ainda.
                   </TableCell>
                 </TableRow>
@@ -456,6 +517,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>
                   <TableCell className="text-center">
                     {o.clubeSumel ? <Badge className="bg-primary/10 text-primary border-primary/20"><Tag className="h-3 w-3 mr-1" />Sim</Badge> : <span className="text-muted-foreground text-xs">Não</span>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {o.selloutTemVerba ? (
+                      <div className="flex flex-col items-end leading-tight">
+                        <span className="font-semibold text-navy">{brl(o.selloutValor)}</span>
+                        {o.selloutFornecedor && <span className="text-[10px] text-muted-foreground">{o.selloutFornecedor}</span>}
+                      </div>
+                    ) : <span className="text-muted-foreground text-xs">—</span>}
                   </TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>
@@ -474,6 +543,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           </Table>
         </div>
       </div>
+
 
       <OfertaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} oferta={editing} setOferta={setEditing} onSave={save} />
 
@@ -504,10 +574,10 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{campanha.nome ? "Editar Campanha" : "Nova Campanha"}</DialogTitle>
-          <DialogDescription>Defina o período e o status da campanha comercial.</DialogDescription>
+          <DialogDescription>Defina o período, o status e os materiais de apoio da campanha.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <Field label="Nome"><Input value={campanha.nome} onChange={(e) => upd("nome", e.target.value)} placeholder="Ex: Ofertas da Semana" /></Field>
@@ -522,6 +592,12 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
               <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
+
+          <MateriaisUploader
+            campanhaId={campanha.id}
+            materiais={campanha.materiais}
+            onChange={(m) => upd("materiais", m)}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
@@ -529,6 +605,88 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ============ MATERIAIS DE APOIO ============
+
+const BUCKET = "campanha-materiais";
+const ACCEPT = "image/jpeg,image/jpg,image/png,application/pdf";
+
+function isImage(tipo: string) { return tipo.startsWith("image/"); }
+
+function MateriaisUploader({
+  campanhaId, materiais, onChange,
+}: { campanhaId: string; materiais: MaterialApoio[]; onChange: (m: MaterialApoio[]) => void }) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    const added: MaterialApoio[] = [];
+    for (const file of Array.from(files)) {
+      if (!["image/jpeg", "image/png", "application/pdf"].includes(file.type)) {
+        toast.error(`Formato não suportado: ${file.name}`);
+        continue;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`${file.name} excede 20 MB.`);
+        continue;
+      }
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${campanhaId}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+        cacheControl: "3600", upsert: false, contentType: file.type,
+      });
+      if (error) { toast.error(`Falha ao enviar ${file.name}: ${error.message}`); continue; }
+      added.push({ path, nome: file.name, tipo: file.type, tamanho: file.size });
+    }
+    if (added.length) {
+      onChange([...materiais, ...added]);
+      toast.success(`${added.length} arquivo(s) anexado(s).`);
+    }
+    setUploading(false);
+  };
+
+  const remove = async (m: MaterialApoio) => {
+    await supabase.storage.from(BUCKET).remove([m.path]);
+    onChange(materiais.filter(x => x.path !== m.path));
+    toast.success("Arquivo removido.");
+  };
+
+  const openMaterial = async (m: MaterialApoio) => {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(m.path, 60 * 10);
+    if (error || !data) { toast.error("Não foi possível abrir o arquivo."); return; }
+    window.open(data.signedUrl, "_blank", "noopener");
+  };
+
+  return (
+    <div className="grid gap-2">
+      <Label className="text-xs text-muted-foreground">Materiais de apoio para as lojas (JPG, PNG, PDF — até 20 MB)</Label>
+      <label className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-6 cursor-pointer transition ${uploading ? "opacity-60 pointer-events-none" : "hover:border-primary hover:bg-primary/5"}`}>
+        <Upload className="h-6 w-6 text-primary" />
+        <span className="text-sm font-medium text-navy">{uploading ? "Enviando..." : "Clique para anexar ou arraste arquivos"}</span>
+        <span className="text-xs text-muted-foreground">Cartazes, encartes, imagens de gôndola, PDF de campanha</span>
+        <input type="file" accept={ACCEPT} multiple className="hidden" onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
+      </label>
+
+      {materiais.length > 0 && (
+        <ul className="grid gap-1.5">
+          {materiais.map((m) => (
+            <li key={m.path} className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm">
+              {isImage(m.tipo) ? <ImageIcon className="h-4 w-4 text-navy shrink-0" /> : <FileText className="h-4 w-4 text-primary shrink-0" />}
+              <button type="button" onClick={() => openMaterial(m)} className="flex-1 text-left truncate hover:underline text-navy">
+                {m.nome}
+              </button>
+              <span className="text-xs text-muted-foreground">{(m.tamanho / 1024).toFixed(0)} KB</span>
+              <button type="button" onClick={() => remove(m)} className="text-muted-foreground hover:text-destructive" title="Remover">
+                <X className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -691,6 +849,45 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
           <div className="flex items-center gap-3 rounded-md border p-3 md:col-span-2">
             <Switch checked={oferta.clubeSumel} onCheckedChange={(v) => upd("clubeSumel", v)} id="clube" />
             <Label htmlFor="clube" className="cursor-pointer">Oferta Clube Sumel</Label>
+          </div>
+
+          {/* Sell Out — verba do fornecedor */}
+          <div className="md:col-span-2 rounded-lg border p-4 bg-navy/5">
+            <div className="flex items-center gap-3 mb-3">
+              <Switch checked={oferta.selloutTemVerba} onCheckedChange={(v) => upd("selloutTemVerba", v)} id="sellout" />
+              <Label htmlFor="sellout" className="cursor-pointer flex items-center gap-1.5 font-semibold text-navy">
+                <DollarSign className="h-4 w-4 text-primary" /> Possui verba de Sell Out do fornecedor
+              </Label>
+            </div>
+            {oferta.selloutTemVerba && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label="Fornecedor da verba">
+                  <Input
+                    value={oferta.selloutFornecedor}
+                    onChange={(e) => upd("selloutFornecedor", e.target.value)}
+                    placeholder="Ex: Ambev"
+                  />
+                </Field>
+                <Field label="Valor da verba (R$)">
+                  <Input
+                    type="number" step="0.01"
+                    value={oferta.selloutValor}
+                    onChange={(e) => upd("selloutValor", parseFloat(e.target.value) || 0)}
+                  />
+                </Field>
+                <Field label="Observações / condições de cobrança" className="md:col-span-2">
+                  <Textarea
+                    rows={2}
+                    value={oferta.selloutObs}
+                    onChange={(e) => upd("selloutObs", e.target.value)}
+                    placeholder="Ex: NF emitida ao final da campanha, referência do contrato, contato do comprador..."
+                  />
+                </Field>
+              </div>
+            )}
+            {!oferta.selloutTemVerba && (
+              <p className="text-xs text-muted-foreground">Ative quando o fornecedor pagar uma verba específica por esta oferta (para lembrar de cobrar depois).</p>
+            )}
           </div>
         </div>
         <DialogFooter>
