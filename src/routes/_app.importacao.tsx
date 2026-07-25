@@ -21,6 +21,8 @@ export const Route = createFileRoute("/_app/importacao")({
       { name: "description", content: "Importe cadastros de produtos e vendas a partir de planilhas do ERP." },
       { property: "og:title", content: "Importação — SGMC" },
       { property: "og:description", content: "Importação de produtos e vendas via XLSX no SGMC." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Importacao,
