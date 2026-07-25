@@ -353,7 +353,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     });
   }, [ofertas, search, fCategoria, fStatus, fClube]);
 
-  const openNew = () => { setEditing(emptyOferta(campanha.id)); setDialogOpen(true); };
+  const openNew = () => { setEditing(emptyOferta(campanha)); setDialogOpen(true); };
   const openEdit = (o: Oferta) => { setEditing({ ...o }); setDialogOpen(true); };
 
   const save = () => {
