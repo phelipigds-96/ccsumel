@@ -18,6 +18,7 @@ import {
   saveImportHistorico, getLastImport,
   type Produto, type ImportRow, type ImportResult, type ImportacaoHistorico,
 } from "@/lib/produtos";
+import { parseSysmoTxt } from "@/lib/sysmo-txt-parser";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/catalogo-de-produtos")({
@@ -35,93 +36,6 @@ export const Route = createFileRoute("/_app/catalogo-de-produtos")({
 });
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-function parseBRNumber(raw: string): number {
-  if (!raw) return 0;
-  const s = raw.trim().replace(/\s/g, "").replace(/R\$/gi, "");
-  if (!s) return 0;
-  // "1.234,56" → "1234.56" ; "1234.56" fica; "1234,56" → "1234.56"
-  const hasComma = s.includes(",");
-  const cleaned = hasComma ? s.replace(/\./g, "").replace(",", ".") : s;
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function normalize(s: string): string {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-/**
- * Encontra a linha de cabeçalho do relatório Sysmo S1.
- */
-function findHeaderIndex(lines: string[]): number {
-  const scan = Math.min(lines.length, 500);
-  for (let i = 0; i < scan; i++) {
-    const low = normalize(lines[i]);
-    if (
-      low.includes("descr") &&
-      (low.includes("barra") || low.includes("gtin") || low.includes("ean")) &&
-      (low.includes("venda") || low.includes("preco")) &&
-      low.includes("custo") &&
-      (low.includes("codigo") || /\bcod\b/.test(low))
-    ) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-interface ParsedRow extends ImportRow {}
-
-/**
- * Faz o parse linha a linha lendo os campos da DIREITA para a ESQUERDA:
- *   descrição … [barras opcional] venda custo codigo
- * As colunas numéricas do Sysmo S1 são alinhadas à direita, então
- * as posições do cabeçalho não batem com os valores — usamos regex.
- */
-function parseTxt(content: string): { rows: ParsedRow[]; totalLidos: number } {
-  const lines = content.replace(/\r\n?/g, "\n").split("\n");
-  const headerIdx = findHeaderIndex(lines);
-  if (headerIdx < 0)
-    throw new Error("Cabeçalho não encontrado. Certifique-se de que o arquivo é o relatório do Sysmo S1.");
-
-  const NUM = String.raw`\d{1,3}(?:\.\d{3})*(?:,\d+)?|\d+(?:[.,]\d+)?`;
-  const rowRe = new RegExp(
-    String.raw`^\s*(.+?)\s+(?:(\d{8,14})\s+)?(` + NUM + String.raw`)\s+(` + NUM + String.raw`)\s+(\d+)\s*$`,
-  );
-
-  const rows: ParsedRow[] = [];
-  let totalLidos = 0;
-
-  for (let i = headerIdx + 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line || !line.trim()) continue;
-    const low = normalize(line);
-    if (low.includes("quantidade de produtos")) continue;
-    if (low.includes("relatorio de sistema") || low.includes("relatm")) continue;
-    if (low.includes("sumel alimentos")) continue;
-    if (low.startsWith("pagina") || low.includes("página")) continue;
-    if (low.includes("descric") && low.includes("barras") && low.includes("venda")) continue;
-    if (/^[-_=\s]+$/.test(line)) continue;
-
-    const m = rowRe.exec(line);
-    if (!m) continue;
-
-    const descricao = m[1].trim();
-    const gtinRaw = m[2] ?? "";
-    const preco_venda = parseBRNumber(m[3]);
-    const custo = parseBRNumber(m[4]);
-    const codigo = m[5];
-
-    if (!codigo || !descricao) continue;
-    const gtin = gtinRaw ? gtinRaw.replace(/\D/g, "") || null : null;
-    totalLidos++;
-
-    rows.push({ codigo, gtin: gtin || null, descricao, preco_venda, custo });
-  }
-
-  return { rows, totalLidos };
-}
 
 function CatalogoProdutos() {
   const { user } = useAuth();
@@ -175,7 +89,7 @@ function CatalogoProdutos() {
       }
       let rows: ImportRow[] = [];
       try {
-        rows = parseTxt(text).rows;
+        rows = parseSysmoTxt(text).rows;
       } catch (err) {
         const preview = text.split(/\r?\n/).filter((l) => l.trim()).slice(0, 5).join(" | ");
         throw new Error(`${(err as Error).message} Primeiras linhas: ${preview.slice(0, 300)}`);
