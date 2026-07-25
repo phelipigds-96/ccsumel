@@ -49,13 +49,17 @@ function CatalogoProdutos() {
   const [result, setResult] = useState<(ImportResult & { arquivo?: string }) | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Produto | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalResultados, setTotalResultados] = useState(0);
+  const pageSize = 10;
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const load = async () => {
+  const load = async (p = page) => {
     setLoading(true);
     try {
-      const [rows, c, li] = await Promise.all([listProdutos(busca), countProdutos(), getLastImport()]);
-      setProdutos(rows);
+      const [res, c, li] = await Promise.all([listProdutos(busca, p, pageSize), countProdutos(), getLastImport()]);
+      setProdutos(res.rows);
+      setTotalResultados(res.total);
       setCounts(c);
       setLastImport(li);
     } catch (e) {
@@ -66,15 +70,25 @@ function CatalogoProdutos() {
   };
 
   useEffect(() => {
-    load();
+    load(1);
+    setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => load(), 250);
+    const t = setTimeout(() => {
+      setPage(1);
+      load(1);
+    }, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busca]);
+
+  useEffect(() => {
+    load(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
 
   const handleFile = async (file: File) => {
     setImporting(true);
