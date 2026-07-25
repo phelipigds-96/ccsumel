@@ -536,30 +536,32 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
   open: boolean; onOpenChange: (v: boolean) => void; oferta: Oferta | null;
   setOferta: (o: Oferta) => void; onSave: () => void;
 }) {
-  const [gtin, setGtin] = useState("");
+  const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
 
   if (!oferta) return null;
   const upd = <K extends keyof Oferta>(k: K, v: Oferta[K]) => setOferta({ ...oferta, [k]: v });
 
   const lookupProduto = async (code?: string) => {
-    const g = (code ?? gtin).trim();
-    if (!g) { toast.error("Informe um código de barras."); return; }
+    const term = (code ?? busca).trim();
+    if (!term) { toast.error("Informe o código interno ou de barras."); return; }
     setLookingUp(true);
     try {
-      const { findByGtin } = await import("@/lib/produtos");
-      const p = await findByGtin(g);
-      if (!p) { toast.error("Produto não encontrado. Importe o cadastro em Importação."); return; }
+      const { findByCodigoOrGtin } = await import("@/lib/produtos");
+      const p = await findByCodigoOrGtin(term);
+      if (!p) { toast.error("Produto não encontrado no catálogo."); return; }
       const preco = Number(p.preco_venda) || 0;
-      const promo = +(preco * 0.9).toFixed(2); // sugestão -10%
+      const custo = Number(p.custo) || 0;
       setOferta({
         ...oferta,
-        codigo: p.codigo || g,
+        codigo: p.codigo || "",
+        gtin: p.gtin || "",
         descricao: p.descricao,
         precoNormal: preco,
-        precoPromocional: promo,
+        custo,
+        precoPromocional: preco,
       });
-      toast.success(`Produto carregado. Sugestão promocional: ${brl(promo)} (−10%).`);
+      toast.success("Produto carregado. Escolha uma sugestão de desconto.");
     } catch (e) { toast.error("Erro na consulta: " + (e as Error).message); }
     finally { setLookingUp(false); }
   };
@@ -568,14 +570,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
     ? ((oferta.precoNormal - oferta.precoPromocional) / oferta.precoNormal) * 100
     : 0;
   const economia = Math.max(oferta.precoNormal - oferta.precoPromocional, 0);
-  const setPromoByPct = (pct: number) => {
-    const p = +(oferta.precoNormal * (1 - pct / 100)).toFixed(2);
-    upd("precoPromocional", Math.max(p, 0));
-  };
-  const nudge = (delta: number) => {
-    const p = +Math.max(oferta.precoPromocional + delta, 0).toFixed(2);
-    upd("precoPromocional", p);
-  };
+  const priceAt = (pct: number) => +(oferta.precoNormal * (1 - pct / 100)).toFixed(2);
+  const setPromoByPct = (pct: number) => upd("precoPromocional", Math.max(priceAt(pct), 0));
 
   const descontoTone =
     descontoPct <= 0 ? "text-muted-foreground"
@@ -588,19 +584,19 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{oferta.codigo ? "Editar Oferta" : "Nova Oferta"}</DialogTitle>
-          <DialogDescription>Informe o código de barras para preencher automaticamente ou edite manualmente.</DialogDescription>
+          <DialogDescription>Informe o código interno ou de barras para preencher automaticamente.</DialogDescription>
         </DialogHeader>
 
-        {/* Busca por GTIN */}
+        {/* Busca por Código interno OU GTIN */}
         <div className="rounded-lg border bg-navy/5 p-3 mb-1">
-          <Label className="text-xs text-muted-foreground">Código de barras (GTIN)</Label>
+          <Label className="text-xs text-muted-foreground">Código interno ou código de barras</Label>
           <div className="flex gap-2 mt-1.5">
             <Input
               autoFocus
-              value={gtin}
-              onChange={(e) => setGtin(e.target.value)}
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookupProduto(); } }}
-              placeholder="Bipe ou digite o código de barras e pressione Enter"
+              placeholder="Bipe o código de barras ou digite o código interno e pressione Enter"
               inputMode="numeric"
             />
             <Button type="button" onClick={() => lookupProduto()} disabled={lookingUp} className="bg-primary hover:bg-primary/90">
@@ -610,13 +606,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
         </div>
 
         <div className="grid gap-4 py-2 md:grid-cols-2">
-          <Field label="Código"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} placeholder="OF-0000" /></Field>
-          <Field label="Status">
-            <Select value={oferta.status} onValueChange={(v) => upd("status", v as Status)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
+          <Field label="Código interno"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} /></Field>
+          <Field label="Código de barras (GTIN)"><Input value={oferta.gtin} onChange={(e) => upd("gtin", e.target.value)} /></Field>
           <Field label="Descrição" className="md:col-span-2"><Input value={oferta.descricao} onChange={(e) => upd("descricao", e.target.value)} /></Field>
           <Field label="Fornecedor">
             <Select value={oferta.fornecedor} onValueChange={(v) => upd("fornecedor", v)}>
@@ -630,37 +621,54 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
               <SelectContent>{CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
-          <Field label="Preço Normal (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
-          <Field label="Preço Promocional (R$)"><Input type="number" step="0.01" value={oferta.precoPromocional} onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)} /></Field>
+          <Field label="Preço Atual (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
+          <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} onChange={(e) => upd("custo", parseFloat(e.target.value) || 0)} /></Field>
 
-          {/* Calculadora de desconto */}
+          {/* Sugestões de desconto */}
           <div className="md:col-span-2 rounded-lg border p-4 bg-card">
             <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
               <div>
+                <div className="text-xs text-muted-foreground">Preço atual</div>
+                <div className="text-xl font-semibold text-navy">{brl(oferta.precoNormal)}</div>
+              </div>
+              <div className="text-center">
                 <div className="text-xs text-muted-foreground">Desconto aplicado</div>
-                <div className={`text-2xl font-bold ${descontoTone}`}>
-                  {descontoPct.toFixed(1)}%
-                </div>
+                <div className={`text-2xl font-bold ${descontoTone}`}>{descontoPct.toFixed(1)}%</div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-muted-foreground">Economia por unidade</div>
+                <div className="text-xs text-muted-foreground">Economia</div>
                 <div className="text-lg font-semibold text-navy">{brl(economia)}</div>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground mr-1">Sugestões:</span>
-              {[5, 10, 15, 20, 25, 30].map(p => (
-                <Button key={p} type="button" size="sm" variant="outline" onClick={() => setPromoByPct(p)}>
-                  −{p}%
-                </Button>
-              ))}
-              <div className="mx-2 h-6 w-px bg-border" />
-              <span className="text-xs text-muted-foreground mr-1">Ajuste fino:</span>
-              <Button type="button" size="sm" variant="outline" onClick={() => nudge(-1)}>−R$1</Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => nudge(-0.1)}>−R$0,10</Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => nudge(0.1)}>+R$0,10</Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => nudge(1)}>+R$1</Button>
+
+            <div className="text-xs text-muted-foreground mb-2">Sugestões automáticas — clique para aplicar</div>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {[5, 10, 15].map(pct => {
+                const preco = priceAt(pct);
+                const ativo = Math.abs(preco - oferta.precoPromocional) < 0.005;
+                return (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => setPromoByPct(pct)}
+                    disabled={oferta.precoNormal <= 0}
+                    className={`rounded-lg border p-3 text-left transition hover:border-primary hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${ativo ? "border-primary bg-primary/5" : "bg-card"}`}
+                  >
+                    <div className="text-xs font-semibold text-primary">−{pct}%</div>
+                    <div className="text-lg font-bold text-navy leading-tight">{brl(preco)}</div>
+                    <div className="text-[11px] text-muted-foreground">Economia {brl(oferta.precoNormal - preco)}</div>
+                  </button>
+                );
+              })}
             </div>
+
+            <Field label="Preço Promocional (R$) — ou informe manualmente">
+              <Input
+                type="number" step="0.01"
+                value={oferta.precoPromocional}
+                onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)}
+              />
+            </Field>
           </div>
 
           <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
@@ -674,6 +682,12 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
           <Field label="Corredor"><Input value={oferta.corredor} onChange={(e) => upd("corredor", e.target.value)} placeholder="A1" /></Field>
           <Field label="Estoque"><Input type="number" value={oferta.estoque} onChange={(e) => upd("estoque", parseInt(e.target.value) || 0)} /></Field>
           <Field label="Margem (%)"><Input type="number" step="0.1" value={oferta.margem} onChange={(e) => upd("margem", parseFloat(e.target.value) || 0)} /></Field>
+          <Field label="Status">
+            <Select value={oferta.status} onValueChange={(v) => upd("status", v as Status)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
           <div className="flex items-center gap-3 rounded-md border p-3 md:col-span-2">
             <Switch checked={oferta.clubeSumel} onCheckedChange={(v) => upd("clubeSumel", v)} id="clube" />
             <Label htmlFor="clube" className="cursor-pointer">Oferta Clube Sumel</Label>
