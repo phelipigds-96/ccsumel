@@ -134,7 +134,7 @@ function findHeaderRow(matrix: unknown[][]): number {
   for (let i = 0; i < Math.min(matrix.length, 30); i++) {
     const row = matrix[i] ?? [];
     let hits = 0;
-    for (const cell of row) if (COL_MAP[normalizeKey(cell)]) hits++;
+    for (const cell of row) if (inferColumnTarget(normalizeKey(cell))) hits++;
     if (hits >= 2) return i;
   }
   return 0;
@@ -201,49 +201,6 @@ async function parseWorkbook(file: File): Promise<ParsedRow[]> {
   } catch (err) {
     throw err instanceof Error ? err : new Error("Não foi possível ler o arquivo.");
   }
-}
-
-function parseWorkbookOld(file: File): Promise<ParsedRow[]> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const wb = XLSX.read(e.target?.result, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        if (!ws) { reject(new Error("Planilha vazia.")); return; }
-        const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false, raw: true });
-        if (matrix.length === 0) { reject(new Error("Planilha sem dados.")); return; }
-        const headerIdx = findHeaderRow(matrix);
-        const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
-        const mapped = headers.map(inferColumnTarget);
-        console.log("[Importação] cabeçalhos detectados:", headers, "→", mapped);
-        if (!mapped.some(Boolean)) {
-          reject(new Error(`Não encontrei colunas conhecidas. Cabeçalhos lidos: ${headers.join(" | ")}`));
-          return;
-        }
-        const rows: ParsedRow[] = [];
-        for (let i = headerIdx + 1; i < matrix.length; i++) {
-          const raw = matrix[i] ?? [];
-          const out: ParsedRow = { descricao: "", codigo: "", gtin: "", preco_venda: 0 };
-          for (let c = 0; c < headers.length; c++) {
-            const target = mapped[c];
-            if (!target) continue;
-            const val = raw[c];
-            if (target === "preco_venda") {
-              out.preco_venda = parseMoney(val);
-            } else {
-              out[target] = parseText(val);
-            }
-          }
-          if (out.descricao || out.gtin || out.codigo) rows.push(out);
-        }
-        console.log(`[Importação] ${rows.length} linha(s) prontas.`);
-        resolve(rows);
-      } catch (err) { reject(err); }
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsArrayBuffer(file);
-  });
 }
 
 function Importacao() {
