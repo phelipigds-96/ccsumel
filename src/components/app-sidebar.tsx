@@ -10,7 +10,7 @@ import {
   Users,
   Settings,
   LogOut,
-  Upload,
+  Package,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,7 +34,7 @@ const items = [
   { title: "Sell Out", url: "/sell-out", icon: ShoppingCart },
   { title: "Pontas de Gôndola", url: "/pontas-de-gondola", icon: PackageOpen },
   { title: "Fornecedores", url: "/fornecedores", icon: Truck },
-  { title: "Importação", url: "/importacao", icon: Upload },
+  { title: "Catálogo de Produtos", url: "/catalogo-de-produtos", icon: Package },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Usuários", url: "/usuarios", icon: Users },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
