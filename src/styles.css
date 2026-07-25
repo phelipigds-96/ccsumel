@@ -50,13 +50,13 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.05 260);
 
-  /* Red primary */
-  --primary: oklch(0.55 0.22 27);
-  --primary-foreground: oklch(0.99 0 0);
+  /* Red primary #C8102E */
+  --primary: oklch(0.535 0.211 27.5);
+  --primary-foreground: oklch(1 0 0);
 
-  /* Navy accents */
-  --navy: oklch(0.28 0.08 260);
-  --navy-foreground: oklch(0.99 0 0);
+  /* Navy accents #0B1F3A */
+  --navy: oklch(0.234 0.048 258);
+  --navy-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.96 0.01 260);
   --secondary-foreground: oklch(0.28 0.08 260);
