@@ -262,6 +262,7 @@ function ProdutosTab() {
   const confirmImport = async () => {
     if (!preview) return;
     setUploading(true);
+    const toastId = toast.loading(`Importando 0 / ${preview.length}...`);
     try {
       const payload = preview.map(r => ({
         gtin: r.gtin || null,
@@ -269,11 +270,16 @@ function ProdutosTab() {
         descricao: r.descricao || "(sem descrição)",
         preco_venda: r.preco_venda || 0,
       }));
-      const { inserted } = await upsertProdutos(payload);
-      toast.success(`${inserted} produto(s) importado(s) / atualizado(s).`);
+      const { inserted } = await upsertProdutos(payload, {
+        chunkSize: 1000,
+        onProgress: (done, total) => {
+          toast.loading(`Importando ${done.toLocaleString("pt-BR")} / ${total.toLocaleString("pt-BR")}...`, { id: toastId });
+        },
+      });
+      toast.success(`${inserted.toLocaleString("pt-BR")} produto(s) importado(s) / atualizado(s).`, { id: toastId });
       setPreview(null);
       await load(search);
-    } catch (err) { toast.error("Erro ao importar: " + (err as Error).message); }
+    } catch (err) { toast.error("Erro ao importar: " + (err as Error).message, { id: toastId }); }
     finally { setUploading(false); }
   };
 
