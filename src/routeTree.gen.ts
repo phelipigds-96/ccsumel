@@ -21,6 +21,7 @@ import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalogo-de-produtos'
+import { Route as AppCampanhasEncerradasRouteImport } from './routes/_app.campanhas-encerradas'
 import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
 
 const LoginRoute = LoginRouteImport.update({
@@ -82,6 +83,11 @@ const AppCatalogoDeProdutosRoute = AppCatalogoDeProdutosRouteImport.update({
   path: '/catalogo-de-produtos',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCampanhasEncerradasRoute = AppCampanhasEncerradasRouteImport.update({
+  id: '/campanhas-encerradas',
+  path: '/campanhas-encerradas',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCampanhasRoute = AppCampanhasRouteImport.update({
   id: '/campanhas',
   path: '/campanhas',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/campanhas': typeof AppCampanhasRoute
+  '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/campanhas': typeof AppCampanhasRoute
+  '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/campanhas': typeof AppCampanhasRoute
+  '/_app/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/_app/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/campanhas'
+    | '/campanhas-encerradas'
     | '/catalogo-de-produtos'
     | '/configuracoes'
     | '/dashboard'
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/campanhas'
+    | '/campanhas-encerradas'
     | '/catalogo-de-produtos'
     | '/configuracoes'
     | '/dashboard'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/campanhas'
+    | '/_app/campanhas-encerradas'
     | '/_app/catalogo-de-produtos'
     | '/_app/configuracoes'
     | '/_app/dashboard'
@@ -270,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCatalogoDeProdutosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/campanhas-encerradas': {
+      id: '/_app/campanhas-encerradas'
+      path: '/campanhas-encerradas'
+      fullPath: '/campanhas-encerradas'
+      preLoaderRoute: typeof AppCampanhasEncerradasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/campanhas': {
       id: '/_app/campanhas'
       path: '/campanhas'
@@ -282,6 +301,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppCampanhasRoute: typeof AppCampanhasRoute
+  AppCampanhasEncerradasRoute: typeof AppCampanhasEncerradasRoute
   AppCatalogoDeProdutosRoute: typeof AppCatalogoDeProdutosRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -295,6 +315,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppCampanhasRoute: AppCampanhasRoute,
+  AppCampanhasEncerradasRoute: AppCampanhasEncerradasRoute,
   AppCatalogoDeProdutosRoute: AppCatalogoDeProdutosRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,

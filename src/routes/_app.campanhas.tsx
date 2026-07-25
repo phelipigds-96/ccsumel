@@ -41,72 +41,20 @@ export const Route = createFileRoute("/_app/campanhas")({
   component: CentralDeOfertas,
 });
 
-type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";
-
-interface MaterialApoio {
-  path: string;   // storage path within the bucket
-  nome: string;   // display name (original file name)
-  tipo: string;   // mime type
-  tamanho: number;
-}
-
-interface Campanha {
-  id: string;
-  nome: string;
-  descricao: string;
-  dataInicial: string;
-  dataFinal: string;
-  status: Status;
-  materiais: MaterialApoio[];
-}
-
-interface Oferta {
-  id: string;
-  campanhaId: string;
-  codigo: string;
-  gtin: string;
-  descricao: string;
-  fornecedor: string;
-  categoria: string;
-  precoNormal: number;
-  custo: number;
-  precoPromocional: number;
-  clubeSumel: boolean;
-  dataInicial: string;
-  dataFinal: string;
-  filial: string;
-  corredor: string;
-  estoque: number;
-  margem: number;
-  status: Status;
-  // Sell Out — verba negociada com o fornecedor para esta oferta
-  selloutTemVerba: boolean;
-  selloutFornecedor: string;
-  selloutValor: number;
-  selloutObs: string;
-}
+import {
+  type Status,
+  type MaterialApoio,
+  type Campanha,
+  type Oferta,
+  useCampanhasStore,
+  campanhasStore,
+  categoriaCampanha,
+} from "@/lib/campanhas-store";
 
 const CATEGORIAS = ["Bebidas", "Mercearia", "Higiene", "Limpeza", "Frios", "Padaria", "Hortifruti"];
 const FORNECEDORES = ["Ambev", "Nestlé", "Unilever", "P&G", "Coca-Cola", "BRF", "JBS"];
 const FILIAIS = ["Matriz", "Filial 01", "Filial 02", "Filial 03"];
 const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
-
-const seedCampanhas: Campanha[] = [
-  { id: "c1", nome: "Ofertas da Semana", descricao: "Ofertas semanais rotativas em todas as filiais.", dataInicial: "2026-07-22", dataFinal: "2026-07-28", status: "Ativa", materiais: [] },
-  { id: "c2", nome: "Verão Gelado", descricao: "Campanha sazonal de bebidas e sorvetes.", dataInicial: "2026-07-20", dataFinal: "2026-08-15", status: "Ativa", materiais: [] },
-  { id: "c3", nome: "Casa Limpa", descricao: "Promoções em produtos de limpeza doméstica.", dataInicial: "2026-08-01", dataFinal: "2026-08-20", status: "Programada", materiais: [] },
-  { id: "c4", nome: "Café da Manhã", descricao: "Pães, cafés, laticínios e cereais.", dataInicial: "2026-07-15", dataFinal: "2026-07-30", status: "Ativa", materiais: [] },
-  { id: "c5", nome: "Mês do Bebê", descricao: "Higiene infantil e cuidados com o bebê.", dataInicial: "2026-06-10", dataFinal: "2026-07-05", status: "Encerrada", materiais: [] },
-];
-
-const seedOfertas: Oferta[] = [
-  { id: "1", campanhaId: "c2", codigo: "OF-0001", gtin: "", descricao: "Cerveja Brahma 350ml Pack 12", fornecedor: "Ambev", categoria: "Bebidas", precoNormal: 59.9, custo: 0, precoPromocional: 44.9, clubeSumel: true, dataInicial: "2026-07-20", dataFinal: "2026-08-10", filial: "Matriz", corredor: "A3", estoque: 320, margem: 18.5, status: "Ativa", selloutTemVerba: true, selloutFornecedor: "Ambev", selloutValor: 1500, selloutObs: "Verba de exposição — pack promocional." },
-  { id: "2", campanhaId: "c4", codigo: "OF-0002", gtin: "", descricao: "Café Nescafé Tradicional 500g", fornecedor: "Nestlé", categoria: "Mercearia", precoNormal: 29.9, custo: 0, precoPromocional: 23.9, clubeSumel: false, dataInicial: "2026-07-15", dataFinal: "2026-07-30", filial: "Filial 01", corredor: "B7", estoque: 180, margem: 22.0, status: "Ativa", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
-  { id: "3", campanhaId: "c3", codigo: "OF-0003", gtin: "", descricao: "Sabão em Pó OMO 1,6kg", fornecedor: "Unilever", categoria: "Limpeza", precoNormal: 39.9, custo: 0, precoPromocional: 31.9, clubeSumel: true, dataInicial: "2026-08-01", dataFinal: "2026-08-20", filial: "Matriz", corredor: "C2", estoque: 240, margem: 15.0, status: "Programada", selloutTemVerba: true, selloutFornecedor: "Unilever", selloutValor: 800, selloutObs: "" },
-  { id: "4", campanhaId: "c5", codigo: "OF-0004", gtin: "", descricao: "Fralda Pampers G 40un", fornecedor: "P&G", categoria: "Higiene", precoNormal: 89.9, custo: 0, precoPromocional: 69.9, clubeSumel: true, dataInicial: "2026-06-10", dataFinal: "2026-07-05", filial: "Filial 02", corredor: "D4", estoque: 60, margem: 25.5, status: "Encerrada", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
-  { id: "5", campanhaId: "c2", codigo: "OF-0005", gtin: "", descricao: "Refrigerante Coca-Cola 2L", fornecedor: "Coca-Cola", categoria: "Bebidas", precoNormal: 12.9, custo: 0, precoPromocional: 8.99, clubeSumel: false, dataInicial: "2026-07-25", dataFinal: "2026-08-15", filial: "Filial 03", corredor: "A1", estoque: 500, margem: 12.0, status: "Ativa", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
-  { id: "6", campanhaId: "c1", codigo: "OF-0006", gtin: "", descricao: "Arroz Camil 5kg", fornecedor: "BRF", categoria: "Mercearia", precoNormal: 34.9, custo: 0, precoPromocional: 27.9, clubeSumel: true, dataInicial: "2026-07-22", dataFinal: "2026-07-28", filial: "Matriz", corredor: "B1", estoque: 400, margem: 14.0, status: "Ativa", selloutTemVerba: true, selloutFornecedor: "BRF", selloutValor: 500, selloutObs: "Encarte semanal." },
-];
 
 const emptyCampanha = (): Campanha => ({
   id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", materiais: [],
@@ -120,6 +68,7 @@ const emptyOferta = (campanha: Campanha): Oferta => ({
   filial: FILIAIS[0], corredor: "", estoque: 0, margem: 0, status: "Rascunho",
   selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
 });
+
 
 const statusVariant: Record<Status, string> = {
   Ativa: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -175,39 +124,56 @@ function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
 
 
 function CentralDeOfertas() {
-  const [campanhas, setCampanhas] = useState<Campanha[]>(seedCampanhas);
-  const [ofertas, setOfertas] = useState<Oferta[]>(seedOfertas);
+  const { campanhas, ofertas } = useCampanhasStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const selected = campanhas.find(c => c.id === selectedId) ?? null;
+  // Somente ativas + futuras nesta tela; encerradas ficam no módulo dedicado.
+  const visiveis = useMemo(
+    () => campanhas.filter((c) => categoriaCampanha(c) !== "encerrada"),
+    [campanhas],
+  );
+
+  const selected = campanhas.find((c) => c.id === selectedId) ?? null;
+
+  const saveOferta = (o: Oferta) =>
+    campanhasStore.setOfertas((prev) => {
+      const exists = prev.some((p) => p.id === o.id);
+      return exists ? prev.map((p) => (p.id === o.id ? o : p)) : [o, ...prev];
+    });
+
+  const deleteOferta = (id: string) =>
+    campanhasStore.setOfertas((prev) => prev.filter((p) => p.id !== id));
+
+  const saveCampanha = (c: Campanha) =>
+    campanhasStore.setCampanhas((prev) => {
+      const exists = prev.some((p) => p.id === c.id);
+      return exists ? prev.map((p) => (p.id === c.id ? c : p)) : [c, ...prev];
+    });
+
+  const deleteCampanha = (id: string) => {
+    campanhasStore.setCampanhas((prev) => prev.filter((p) => p.id !== id));
+    campanhasStore.setOfertas((prev) => prev.filter((o) => o.campanhaId !== id));
+  };
 
   return selected ? (
     <CampanhaDetalhe
       campanha={selected}
-      ofertas={ofertas.filter(o => o.campanhaId === selected.id)}
+      ofertas={ofertas.filter((o) => o.campanhaId === selected.id)}
       onBack={() => setSelectedId(null)}
-      onSaveOferta={(o) => setOfertas(prev => {
-        const exists = prev.some(p => p.id === o.id);
-        return exists ? prev.map(p => p.id === o.id ? o : p) : [o, ...prev];
-      })}
-      onDeleteOferta={(id) => setOfertas(prev => prev.filter(p => p.id !== id))}
+      onSaveOferta={saveOferta}
+      onDeleteOferta={deleteOferta}
     />
   ) : (
     <CampanhasList
-      campanhas={campanhas}
+      campanhas={visiveis}
       ofertas={ofertas}
       onOpen={setSelectedId}
-      onSave={(c) => setCampanhas(prev => {
-        const exists = prev.some(p => p.id === c.id);
-        return exists ? prev.map(p => p.id === c.id ? c : p) : [c, ...prev];
-      })}
-      onDelete={(id) => {
-        setCampanhas(prev => prev.filter(p => p.id !== id));
-        setOfertas(prev => prev.filter(o => o.campanhaId !== id));
-      }}
+      onSave={saveCampanha}
+      onDelete={deleteCampanha}
     />
   );
 }
+
 
 // ============ CAMPANHAS LIST ============
 
@@ -244,6 +210,9 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
       .sort((a, b) => (b.dataInicial || "").localeCompare(a.dataInicial || ""));
   }, [campanhas, search, fStatus]);
 
+  const futuras = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "futura"), [filtered]);
+  const ativas = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "ativa"), [filtered]);
+
   const openNew = () => { setEditing(emptyCampanha()); setDialogOpen(true); };
   const openEdit = (c: Campanha) => { setEditing({ ...c }); setDialogOpen(true); };
 
@@ -255,11 +224,61 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
     setDialogOpen(false); setEditing(null);
   };
 
+  const renderCard = (c: Campanha, opts: { destaque?: boolean } = {}) => {
+    const count = countByCampanha.get(c.id) ?? 0;
+    return (
+      <div
+        key={c.id}
+        className={
+          opts.destaque
+            ? "group rounded-xl border-2 border-navy/40 bg-gradient-to-br from-navy/5 to-transparent p-5 hover:border-navy hover:shadow-md transition relative"
+            : "group rounded-xl border bg-card p-5 hover:border-primary/40 hover:shadow-md transition"
+        }
+      >
+        {opts.destaque && (
+          <span className="absolute -top-2 left-4 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-navy text-white rounded">
+            Programada
+          </span>
+        )}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-semibold text-navy leading-tight">{c.nome}</h3>
+          <Badge variant="outline" className={statusVariant[c.status]}>{c.status}</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5rem]">{c.descricao || "Sem descrição."}</p>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+          <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}</span>
+        </div>
+        <div className="flex items-center justify-between border-t pt-3">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="flex items-center gap-1.5">
+              <Package className="h-4 w-4 text-primary" />
+              <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
+            </span>
+            {c.materiais.length > 0 && (
+              <span className="flex items-center gap-1.5 text-navy" title="Materiais de apoio">
+                <Paperclip className="h-4 w-4" />
+                <strong>{c.materiais.length}</strong>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
+              Abrir <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       <PageHeader
-        title="Central de Ofertas"
-        description="Campanhas comerciais e suas ofertas."
+        title="Campanhas"
+        description="Campanhas ativas e programadas. As encerradas ficam em Campanhas Encerradas."
         actions={
           <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" />Nova Campanha
@@ -276,57 +295,51 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos status</SelectItem>
-            {STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            <SelectItem value="Ativa">Ativa</SelectItem>
+            <SelectItem value="Programada">Programada</SelectItem>
+            <SelectItem value="Rascunho">Rascunho</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
-          Nenhuma campanha encontrada.
+          Nenhuma campanha ativa ou programada.
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((c) => {
-            const count = countByCampanha.get(c.id) ?? 0;
-            return (
-              <div key={c.id} className="group rounded-xl border bg-card p-5 hover:border-primary/40 hover:shadow-md transition">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-semibold text-navy leading-tight">{c.nome}</h3>
-                  <Badge variant="outline" className={statusVariant[c.status]}>{c.status}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5rem]">{c.descricao || "Sem descrição."}</p>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                  <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}</span>
-                </div>
-                <div className="flex items-center justify-between border-t pt-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="flex items-center gap-1.5">
-                      <Package className="h-4 w-4 text-primary" />
-                      <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
-                    </span>
-                    {c.materiais.length > 0 && (
-                      <span className="flex items-center gap-1.5 text-navy" title="Materiais de apoio">
-                        <Paperclip className="h-4 w-4" />
-                        <strong>{c.materiais.length}</strong>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                    <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
-                      Abrir <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-
-                </div>
+        <div className="space-y-6">
+          {futuras.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-1.5 w-1.5 rounded-full bg-navy" />
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-navy">
+                  Próximas campanhas
+                </h2>
+                <span className="text-xs text-muted-foreground">({futuras.length})</span>
               </div>
-            );
-          })}
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {futuras.map((c) => renderCard(c, { destaque: true }))}
+              </div>
+            </section>
+          )}
+
+          {ativas.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-navy">
+                  Campanhas ativas
+                </h2>
+                <span className="text-xs text-muted-foreground">({ativas.length})</span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {ativas.map((c) => renderCard(c))}
+              </div>
+            </section>
+          )}
         </div>
       )}
+
 
       <CampanhaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} campanha={editing} setCampanha={setEditing} onSave={save} />
 
