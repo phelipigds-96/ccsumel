@@ -210,6 +210,9 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
       .sort((a, b) => (b.dataInicial || "").localeCompare(a.dataInicial || ""));
   }, [campanhas, search, fStatus]);
 
+  const futuras = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "futura"), [filtered]);
+  const ativas = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "ativa"), [filtered]);
+
   const openNew = () => { setEditing(emptyCampanha()); setDialogOpen(true); };
   const openEdit = (c: Campanha) => { setEditing({ ...c }); setDialogOpen(true); };
 
@@ -221,11 +224,61 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
     setDialogOpen(false); setEditing(null);
   };
 
+  const renderCard = (c: Campanha, opts: { destaque?: boolean } = {}) => {
+    const count = countByCampanha.get(c.id) ?? 0;
+    return (
+      <div
+        key={c.id}
+        className={
+          opts.destaque
+            ? "group rounded-xl border-2 border-navy/40 bg-gradient-to-br from-navy/5 to-transparent p-5 hover:border-navy hover:shadow-md transition relative"
+            : "group rounded-xl border bg-card p-5 hover:border-primary/40 hover:shadow-md transition"
+        }
+      >
+        {opts.destaque && (
+          <span className="absolute -top-2 left-4 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-navy text-white rounded">
+            Programada
+          </span>
+        )}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-semibold text-navy leading-tight">{c.nome}</h3>
+          <Badge variant="outline" className={statusVariant[c.status]}>{c.status}</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5rem]">{c.descricao || "Sem descrição."}</p>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+          <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}</span>
+        </div>
+        <div className="flex items-center justify-between border-t pt-3">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="flex items-center gap-1.5">
+              <Package className="h-4 w-4 text-primary" />
+              <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
+            </span>
+            {c.materiais.length > 0 && (
+              <span className="flex items-center gap-1.5 text-navy" title="Materiais de apoio">
+                <Paperclip className="h-4 w-4" />
+                <strong>{c.materiais.length}</strong>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
+              Abrir <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       <PageHeader
-        title="Central de Ofertas"
-        description="Campanhas comerciais e suas ofertas."
+        title="Campanhas"
+        description="Campanhas ativas e programadas. As encerradas ficam em Campanhas Encerradas."
         actions={
           <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" />Nova Campanha
@@ -242,57 +295,51 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos status</SelectItem>
-            {STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            <SelectItem value="Ativa">Ativa</SelectItem>
+            <SelectItem value="Programada">Programada</SelectItem>
+            <SelectItem value="Rascunho">Rascunho</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
-          Nenhuma campanha encontrada.
+          Nenhuma campanha ativa ou programada.
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((c) => {
-            const count = countByCampanha.get(c.id) ?? 0;
-            return (
-              <div key={c.id} className="group rounded-xl border bg-card p-5 hover:border-primary/40 hover:shadow-md transition">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-semibold text-navy leading-tight">{c.nome}</h3>
-                  <Badge variant="outline" className={statusVariant[c.status]}>{c.status}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5rem]">{c.descricao || "Sem descrição."}</p>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                  <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}</span>
-                </div>
-                <div className="flex items-center justify-between border-t pt-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="flex items-center gap-1.5">
-                      <Package className="h-4 w-4 text-primary" />
-                      <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
-                    </span>
-                    {c.materiais.length > 0 && (
-                      <span className="flex items-center gap-1.5 text-navy" title="Materiais de apoio">
-                        <Paperclip className="h-4 w-4" />
-                        <strong>{c.materiais.length}</strong>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                    <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
-                      Abrir <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-
-                </div>
+        <div className="space-y-6">
+          {futuras.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-1.5 w-1.5 rounded-full bg-navy" />
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-navy">
+                  Próximas campanhas
+                </h2>
+                <span className="text-xs text-muted-foreground">({futuras.length})</span>
               </div>
-            );
-          })}
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {futuras.map((c) => renderCard(c, { destaque: true }))}
+              </div>
+            </section>
+          )}
+
+          {ativas.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-navy">
+                  Campanhas ativas
+                </h2>
+                <span className="text-xs text-muted-foreground">({ativas.length})</span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {ativas.map((c) => renderCard(c))}
+              </div>
+            </section>
+          )}
         </div>
       )}
+
 
       <CampanhaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} campanha={editing} setCampanha={setEditing} onSave={save} />
 
