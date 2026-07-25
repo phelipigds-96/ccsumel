@@ -407,7 +407,7 @@ function ProdutosTab() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={uploading}>Cancelar</AlertDialogCancel>
             <Button type="button" onClick={confirmImport} disabled={uploading} className="bg-primary hover:bg-primary/90">
-              {uploading ? "Importando..." : "Importar"}
+              {uploading ? "Importando..." : "Confirmar importação"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
