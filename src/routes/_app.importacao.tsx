@@ -21,6 +21,8 @@ export const Route = createFileRoute("/_app/importacao")({
       { name: "description", content: "Importe cadastros de produtos e vendas a partir de planilhas do ERP." },
       { property: "og:title", content: "Importação — SGMC" },
       { property: "og:description", content: "Importação de produtos e vendas via XLSX no SGMC." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Importacao,
@@ -34,21 +36,43 @@ const COL_MAP: Record<string, keyof ParsedRow> = {
   "desc": "descricao",
   "descricao": "descricao",
   "descrição": "descricao",
+  "produto": "descricao",
+  "nome produto": "descricao",
+  "descricao produto": "descricao",
+  "descrição produto": "descricao",
   "cod.": "codigo",
+  "cód.": "codigo",
   "cod": "codigo",
   "codigo": "codigo",
   "código": "codigo",
+  "cod produto": "codigo",
+  "cód produto": "codigo",
+  "codigo produto": "codigo",
+  "código produto": "codigo",
   "gtin": "gtin",
   "ean": "gtin",
+  "ean13": "gtin",
+  "cod barras": "gtin",
+  "cód barras": "gtin",
+  "cod barra": "gtin",
+  "cód barra": "gtin",
   "codigo de barras": "gtin",
   "código de barras": "gtin",
   "prc. venda": "preco_venda",
+  "prç. venda": "preco_venda",
   "prc venda": "preco_venda",
+  "prç venda": "preco_venda",
+  "pr venda": "preco_venda",
+  "vl venda": "preco_venda",
+  "valor venda": "preco_venda",
   "preco venda": "preco_venda",
   "preço venda": "preco_venda",
   "preco de venda": "preco_venda",
   "preço de venda": "preco_venda",
+  "preco atual": "preco_venda",
+  "preço atual": "preco_venda",
   "preco": "preco_venda",
+  "preço": "preco_venda",
 };
 
 interface ParsedRow {
@@ -59,7 +83,52 @@ interface ParsedRow {
 }
 
 function normalizeKey(k: unknown) {
-  return String(k ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  return String(k ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[ºª]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function inferColumnTarget(header: string): keyof ParsedRow | null {
+  const exact = COL_MAP[header];
+  if (exact) return exact;
+
+  const compact = header.replace(/[^a-z0-9]/g, "");
+  if (header.includes("gtin") || header.includes("ean") || header.includes("barra")) return "gtin";
+  if (header.includes("preco") || header.includes("prc") || header.includes("valor") || compact.startsWith("vl")) {
+    return "preco_venda";
+  }
+  if (header.includes("descr") || header.includes("produto") || header.includes("nome")) return "descricao";
+  if (header.includes("codigo") || header.includes("cod") || compact === "sku") return "codigo";
+  return null;
+}
+
+function parseMoney(value: unknown) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const raw = String(value ?? "").trim();
+  if (!raw) return 0;
+  const cleaned = raw.replace(/[^\d,.-]/g, "");
+  if (!cleaned) return 0;
+
+  const hasComma = cleaned.includes(",");
+  const hasDot = cleaned.includes(".");
+  const normalized = hasComma && hasDot
+    ? cleaned.replace(/\./g, "").replace(",", ".")
+    : hasComma
+      ? cleaned.replace(",", ".")
+      : cleaned;
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseText(value: unknown) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number" && Number.isFinite(value)) return value.toLocaleString("fullwide", { useGrouping: false });
+  return String(value).trim();
 }
 
 // Encontra a linha de cabeçalho procurando por células que batam com COL_MAP.
@@ -67,55 +136,71 @@ function findHeaderRow(matrix: unknown[][]): number {
   for (let i = 0; i < Math.min(matrix.length, 30); i++) {
     const row = matrix[i] ?? [];
     let hits = 0;
-    for (const cell of row) if (COL_MAP[normalizeKey(cell)]) hits++;
+    for (const cell of row) if (inferColumnTarget(normalizeKey(cell))) hits++;
     if (hits >= 2) return i;
   }
   return 0;
 }
 
-function parseWorkbook(file: File): Promise<ParsedRow[]> {
+function readFile(file: File): Promise<string | ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      try {
-        const wb = XLSX.read(e.target?.result, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        if (!ws) { reject(new Error("Planilha vazia.")); return; }
-        const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false });
-        if (matrix.length === 0) { reject(new Error("Planilha sem dados.")); return; }
-        const headerIdx = findHeaderRow(matrix);
-        const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
-        const mapped = headers.map((h) => COL_MAP[h] ?? null);
-        console.log("[Importação] cabeçalhos detectados:", headers, "→", mapped);
-        if (!mapped.some(Boolean)) {
-          reject(new Error(`Não encontrei colunas conhecidas. Cabeçalhos lidos: ${headers.join(" | ")}`));
-          return;
-        }
-        const rows: ParsedRow[] = [];
-        for (let i = headerIdx + 1; i < matrix.length; i++) {
-          const raw = matrix[i] ?? [];
-          const out: ParsedRow = { descricao: "", codigo: "", gtin: "", preco_venda: 0 };
-          for (let c = 0; c < headers.length; c++) {
-            const target = mapped[c];
-            if (!target) continue;
-            const val = raw[c];
-            if (target === "preco_venda") {
-              const s = String(val ?? "").replace(/[R$\s.]/g, "").replace(",", ".");
-              const n = typeof val === "number" ? val : parseFloat(s);
-              out.preco_venda = isNaN(n) ? 0 : n;
-            } else {
-              out[target] = String(val ?? "").trim();
-            }
-          }
-          if (out.descricao || out.gtin || out.codigo) rows.push(out);
-        }
-        console.log(`[Importação] ${rows.length} linha(s) prontas.`);
-        resolve(rows);
-      } catch (err) { reject(err); }
+      const result = e.target?.result;
+      if (result === undefined || result === null) reject(new Error("Arquivo sem conteúdo."));
+      else resolve(result);
     };
     reader.onerror = () => reject(reader.error);
-    reader.readAsArrayBuffer(file);
+    if (/\.csv$/i.test(file.name) || file.type.includes("csv")) reader.readAsText(file, "utf-8");
+    else reader.readAsArrayBuffer(file);
   });
+}
+
+async function parseWorkbook(file: File): Promise<ParsedRow[]> {
+  const contents = await readFile(file);
+  try {
+    const wb = typeof contents === "string"
+      ? XLSX.read(contents, { type: "string", raw: true })
+      : XLSX.read(contents, { type: "array", raw: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if (!ws) throw new Error("Planilha vazia.");
+    const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false, raw: true });
+    if (matrix.length === 0) throw new Error("Planilha sem dados.");
+    const headerIdx = findHeaderRow(matrix);
+    const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
+    const mapped = headers.map(inferColumnTarget);
+    if (!mapped.some(Boolean)) {
+      throw new Error(`Não encontrei colunas conhecidas. Cabeçalhos lidos: ${headers.join(" | ")}`);
+    }
+
+    const rows: ParsedRow[] = [];
+    for (let i = headerIdx + 1; i < matrix.length; i++) {
+      const raw = matrix[i] ?? [];
+      const out: ParsedRow = { descricao: "", codigo: "", gtin: "", preco_venda: 0 };
+      for (let c = 0; c < headers.length; c++) {
+        const target = mapped[c];
+        if (!target) continue;
+        const val = raw[c];
+        if (target === "preco_venda") out.preco_venda = parseMoney(val);
+        else out[target] = parseText(val);
+      }
+      if (out.descricao || out.gtin || out.codigo) rows.push(out);
+    }
+
+    const withDescription = rows.filter((row) => row.descricao.trim());
+    if (withDescription.length === 0) {
+      throw new Error(`Reconheci o arquivo, mas não encontrei descrições de produtos. Cabeçalhos lidos: ${headers.join(" | ")}`);
+    }
+    if (withDescription.every((row) => !row.codigo.trim() && !row.gtin.trim())) {
+      toast.warning("Importei a prévia, mas não identifiquei código/GTIN. Confira o nome da coluna de código.");
+    }
+    if (withDescription.every((row) => row.preco_venda === 0)) {
+      toast.warning("Importei a prévia, mas os preços vieram zerados. Confira o nome/formato da coluna de preço.");
+    }
+    return withDescription;
+  } catch (err) {
+    throw err instanceof Error ? err : new Error("Não foi possível ler o arquivo.");
+  }
 }
 
 function Importacao() {
@@ -170,7 +255,7 @@ function ProdutosTab() {
       const rows = await parseWorkbook(file);
       if (rows.length === 0) { toast.error("Nenhuma linha válida encontrada na planilha."); return; }
       setPreview(rows);
-    } catch (err) { toast.error("Erro ao ler XLSX: " + (err as Error).message); }
+    } catch (err) { toast.error("Erro ao ler arquivo: " + (err as Error).message); }
     finally { if (fileRef.current) fileRef.current.value = ""; }
   };
 
@@ -321,9 +406,9 @@ function ProdutosTab() {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={uploading}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmImport} disabled={uploading} className="bg-primary hover:bg-primary/90">
-              {uploading ? "Importando..." : "Importar"}
-            </AlertDialogAction>
+            <Button type="button" onClick={confirmImport} disabled={uploading} className="bg-primary hover:bg-primary/90">
+              {uploading ? "Importando..." : "Confirmar importação"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
