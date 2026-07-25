@@ -305,7 +305,36 @@ function CatalogoProdutos() {
             </TableBody>
           </Table>
         </div>
+        <div className="flex items-center justify-between gap-2 p-3 border-t text-sm">
+          <div className="text-xs text-muted-foreground">
+            {totalResultados === 0
+              ? "0 de 0"
+              : `${((page - 1) * pageSize + 1).toLocaleString("pt-BR")}–${Math.min(page * pageSize, totalResultados).toLocaleString("pt-BR")} de ${totalResultados.toLocaleString("pt-BR")}`}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            <div className="text-xs text-muted-foreground">
+              Página {page} de {Math.max(1, Math.ceil(totalResultados / pageSize))}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= Math.ceil(totalResultados / pageSize) || loading}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
       </div>
+
 
       <Dialog open={showResult} onOpenChange={setShowResult}>
         <DialogContent>
