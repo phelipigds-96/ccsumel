@@ -35,21 +35,25 @@ function isSysmoHeader(line: string): boolean {
 }
 
 function isSysmoFooterOrInstitutionalLine(line: string): boolean {
-  const normalized = normalizeText(line.trim());
+  const trimmed = line.trim();
+  const normalized = normalizeText(trimmed);
 
   return (
     !normalized ||
     normalized.includes("sumel alimentos") ||
     normalized.includes("relatorio de sistema") ||
     normalized.includes("quantidade de produtos") ||
-    normalized.includes("processado por:") ||
+    normalized.includes("processado por") ||
     normalized.startsWith("pagina") ||
-    /^[-_=\s]+$/.test(line)
+    normalized.startsWith("p_gina") ||
+    normalized.startsWith("data:") ||
+    normalized.startsWith("hora:") ||
+    /^[-_=\s.]+$/.test(trimmed)
   );
 }
 
 const MONEY_PATTERN = /\d{1,3}(?:\.\d{3})*,\d{2,4}|\d+,\d{2,4}/g;
-const INTERNAL_CODE_PATTERN = /(\d+)\s*$/;
+const INTERNAL_CODE_PATTERN = /(\d{2,})\s*$/;
 const BARCODE_PATTERN = /^(.+?)\s+(\d{8,14})\s*$/;
 
 function parseSysmoProductLine(line: string): ImportRow | null {
@@ -60,26 +64,26 @@ function parseSysmoProductLine(line: string): ImportRow | null {
   const beforeCodigo = line.slice(0, codigoMatch.index).trimEnd();
   const moneyMatches = Array.from(beforeCodigo.matchAll(MONEY_PATTERN));
 
-  if (moneyMatches.length === 0) return null;
+  // Linha válida do Sysmo sempre tem preço de venda E custo (2 valores monetários).
+  if (moneyMatches.length < 2) return null;
 
-  const lastMoney = moneyMatches[moneyMatches.length - 1];
-  const gapBetweenLastMoneyAndCode = beforeCodigo.length - (lastMoney.index ?? 0) - lastMoney[0].length;
-  const hasCost = moneyMatches.length >= 2 && gapBetweenLastMoneyAndCode <= 6;
-
-  const custoMatch = hasCost ? lastMoney : null;
-  const precoVendaMatch = hasCost ? moneyMatches[moneyMatches.length - 2] : lastMoney;
+  const custoMatch = moneyMatches[moneyMatches.length - 1];
+  const precoVendaMatch = moneyMatches[moneyMatches.length - 2];
   const descricaoAndBarcode = beforeCodigo.slice(0, precoVendaMatch.index).trimEnd();
   const barcodeMatch = BARCODE_PATTERN.exec(descricaoAndBarcode);
 
   const descricao = (barcodeMatch ? barcodeMatch[1] : descricaoAndBarcode).trim();
-  if (!descricao) return null;
+  if (descricao.length < 3) return null;
+
+  const preco_venda = parseBRNumber(precoVendaMatch[0]);
+  if (preco_venda <= 0) return null;
 
   return {
     codigo,
     gtin: barcodeMatch ? barcodeMatch[2] : null,
     descricao,
-    preco_venda: parseBRNumber(precoVendaMatch[0]),
-    custo: custoMatch ? parseBRNumber(custoMatch[0]) : 0,
+    preco_venda,
+    custo: parseBRNumber(custoMatch[0]),
   };
 }
 
