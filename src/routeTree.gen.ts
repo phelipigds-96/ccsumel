@@ -20,6 +20,7 @@ import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-
 import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalogo-de-produtos'
 import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
 
 const LoginRoute = LoginRouteImport.update({
@@ -76,6 +77,11 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCatalogoDeProdutosRoute = AppCatalogoDeProdutosRouteImport.update({
+  id: '/catalogo-de-produtos',
+  path: '/catalogo-de-produtos',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCampanhasRoute = AppCampanhasRouteImport.update({
   id: '/campanhas',
   path: '/campanhas',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/campanhas': typeof AppCampanhasRoute
+  '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/campanhas': typeof AppCampanhasRoute
+  '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/campanhas': typeof AppCampanhasRoute
+  '/_app/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/fornecedores': typeof AppFornecedoresRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/campanhas'
+    | '/catalogo-de-produtos'
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/campanhas'
+    | '/catalogo-de-produtos'
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/campanhas'
+    | '/_app/catalogo-de-produtos'
     | '/_app/configuracoes'
     | '/_app/dashboard'
     | '/_app/fornecedores'
@@ -251,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/catalogo-de-produtos': {
+      id: '/_app/catalogo-de-produtos'
+      path: '/catalogo-de-produtos'
+      fullPath: '/catalogo-de-produtos'
+      preLoaderRoute: typeof AppCatalogoDeProdutosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/campanhas': {
       id: '/_app/campanhas'
       path: '/campanhas'
@@ -263,6 +282,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppCampanhasRoute: typeof AppCampanhasRoute
+  AppCatalogoDeProdutosRoute: typeof AppCatalogoDeProdutosRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppFornecedoresRoute: typeof AppFornecedoresRoute
@@ -275,6 +295,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppCampanhasRoute: AppCampanhasRoute,
+  AppCatalogoDeProdutosRoute: AppCatalogoDeProdutosRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppFornecedoresRoute: AppFornecedoresRoute,
