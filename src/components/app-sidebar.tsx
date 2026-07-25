@@ -42,10 +42,16 @@ const items = [
 
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpen, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, logout } = useAuth();
+
+  const handleNavigate = () => {
+    if (isMobile) setOpenMobile(false);
+    else setOpen(false);
+  };
+
 
   return (
     <Sidebar collapsible="icon">
