@@ -10,7 +10,7 @@ import {
   Users,
   Settings,
   LogOut,
-  Upload,
+  Package,
 } from "lucide-react";
 import {
   Sidebar,
