@@ -167,7 +167,6 @@ async function parseWorkbook(file: File): Promise<ParsedRow[]> {
     const headerIdx = findHeaderRow(matrix);
     const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
     const mapped = headers.map(inferColumnTarget);
-    console.log("[Importação] cabeçalhos detectados:", headers, "→", mapped);
     if (!mapped.some(Boolean)) {
       throw new Error(`Não encontrei colunas conhecidas. Cabeçalhos lidos: ${headers.join(" | ")}`);
     }
@@ -185,7 +184,6 @@ async function parseWorkbook(file: File): Promise<ParsedRow[]> {
       }
       if (out.descricao || out.gtin || out.codigo) rows.push(out);
     }
-    console.log(`[Importação] ${rows.length} linha(s) prontas.`, rows.slice(0, 3));
 
     const withDescription = rows.filter((row) => row.descricao.trim());
     if (withDescription.length === 0) {
