@@ -532,16 +532,79 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
   open: boolean; onOpenChange: (v: boolean) => void; oferta: Oferta | null;
   setOferta: (o: Oferta) => void; onSave: () => void;
 }) {
+  const [gtin, setGtin] = useState("");
+  const [lookingUp, setLookingUp] = useState(false);
+
   if (!oferta) return null;
   const upd = <K extends keyof Oferta>(k: K, v: Oferta[K]) => setOferta({ ...oferta, [k]: v });
+
+  const lookupProduto = async (code?: string) => {
+    const g = (code ?? gtin).trim();
+    if (!g) { toast.error("Informe um código de barras."); return; }
+    setLookingUp(true);
+    try {
+      const { findByGtin } = await import("@/lib/produtos");
+      const p = await findByGtin(g);
+      if (!p) { toast.error("Produto não encontrado. Importe o cadastro em Importação."); return; }
+      const preco = Number(p.preco_venda) || 0;
+      const promo = +(preco * 0.9).toFixed(2); // sugestão -10%
+      setOferta({
+        ...oferta,
+        codigo: p.codigo || g,
+        descricao: p.descricao,
+        precoNormal: preco,
+        precoPromocional: promo,
+      });
+      toast.success(`Produto carregado. Sugestão promocional: ${brl(promo)} (−10%).`);
+    } catch (e) { toast.error("Erro na consulta: " + (e as Error).message); }
+    finally { setLookingUp(false); }
+  };
+
+  const descontoPct = oferta.precoNormal > 0
+    ? ((oferta.precoNormal - oferta.precoPromocional) / oferta.precoNormal) * 100
+    : 0;
+  const economia = Math.max(oferta.precoNormal - oferta.precoPromocional, 0);
+  const setPromoByPct = (pct: number) => {
+    const p = +(oferta.precoNormal * (1 - pct / 100)).toFixed(2);
+    upd("precoPromocional", Math.max(p, 0));
+  };
+  const nudge = (delta: number) => {
+    const p = +Math.max(oferta.precoPromocional + delta, 0).toFixed(2);
+    upd("precoPromocional", p);
+  };
+
+  const descontoTone =
+    descontoPct <= 0 ? "text-muted-foreground"
+    : descontoPct < 5 ? "text-amber-600"
+    : descontoPct < 20 ? "text-emerald-600"
+    : "text-primary";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{oferta.codigo ? "Editar Oferta" : "Nova Oferta"}</DialogTitle>
-          <DialogDescription>Preencha os dados do produto em oferta.</DialogDescription>
+          <DialogDescription>Informe o código de barras para preencher automaticamente ou edite manualmente.</DialogDescription>
         </DialogHeader>
+
+        {/* Busca por GTIN */}
+        <div className="rounded-lg border bg-navy/5 p-3 mb-1">
+          <Label className="text-xs text-muted-foreground">Código de barras (GTIN)</Label>
+          <div className="flex gap-2 mt-1.5">
+            <Input
+              autoFocus
+              value={gtin}
+              onChange={(e) => setGtin(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookupProduto(); } }}
+              placeholder="Bipe ou digite o código de barras e pressione Enter"
+              inputMode="numeric"
+            />
+            <Button type="button" onClick={() => lookupProduto()} disabled={lookingUp} className="bg-primary hover:bg-primary/90">
+              {lookingUp ? "Buscando..." : "Buscar"}
+            </Button>
+          </div>
+        </div>
+
         <div className="grid gap-4 py-2 md:grid-cols-2">
           <Field label="Código"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} placeholder="OF-0000" /></Field>
           <Field label="Status">
@@ -565,6 +628,37 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
           </Field>
           <Field label="Preço Normal (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
           <Field label="Preço Promocional (R$)"><Input type="number" step="0.01" value={oferta.precoPromocional} onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)} /></Field>
+
+          {/* Calculadora de desconto */}
+          <div className="md:col-span-2 rounded-lg border p-4 bg-card">
+            <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+              <div>
+                <div className="text-xs text-muted-foreground">Desconto aplicado</div>
+                <div className={`text-2xl font-bold ${descontoTone}`}>
+                  {descontoPct.toFixed(1)}%
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground">Economia por unidade</div>
+                <div className="text-lg font-semibold text-navy">{brl(economia)}</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground mr-1">Sugestões:</span>
+              {[5, 10, 15, 20, 25, 30].map(p => (
+                <Button key={p} type="button" size="sm" variant="outline" onClick={() => setPromoByPct(p)}>
+                  −{p}%
+                </Button>
+              ))}
+              <div className="mx-2 h-6 w-px bg-border" />
+              <span className="text-xs text-muted-foreground mr-1">Ajuste fino:</span>
+              <Button type="button" size="sm" variant="outline" onClick={() => nudge(-1)}>−R$1</Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => nudge(-0.1)}>−R$0,10</Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => nudge(0.1)}>+R$0,10</Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => nudge(1)}>+R$1</Button>
+            </div>
+          </div>
+
           <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
           <Field label="Data Final"><Input type="date" value={oferta.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
           <Field label="Filial">
@@ -589,6 +683,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
     </Dialog>
   );
 }
+
 
 function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return (
