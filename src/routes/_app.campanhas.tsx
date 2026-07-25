@@ -850,6 +850,45 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
             <Switch checked={oferta.clubeSumel} onCheckedChange={(v) => upd("clubeSumel", v)} id="clube" />
             <Label htmlFor="clube" className="cursor-pointer">Oferta Clube Sumel</Label>
           </div>
+
+          {/* Sell Out — verba do fornecedor */}
+          <div className="md:col-span-2 rounded-lg border p-4 bg-navy/5">
+            <div className="flex items-center gap-3 mb-3">
+              <Switch checked={oferta.selloutTemVerba} onCheckedChange={(v) => upd("selloutTemVerba", v)} id="sellout" />
+              <Label htmlFor="sellout" className="cursor-pointer flex items-center gap-1.5 font-semibold text-navy">
+                <DollarSign className="h-4 w-4 text-primary" /> Possui verba de Sell Out do fornecedor
+              </Label>
+            </div>
+            {oferta.selloutTemVerba && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label="Fornecedor da verba">
+                  <Input
+                    value={oferta.selloutFornecedor}
+                    onChange={(e) => upd("selloutFornecedor", e.target.value)}
+                    placeholder="Ex: Ambev"
+                  />
+                </Field>
+                <Field label="Valor da verba (R$)">
+                  <Input
+                    type="number" step="0.01"
+                    value={oferta.selloutValor}
+                    onChange={(e) => upd("selloutValor", parseFloat(e.target.value) || 0)}
+                  />
+                </Field>
+                <Field label="Observações / condições de cobrança" className="md:col-span-2">
+                  <Textarea
+                    rows={2}
+                    value={oferta.selloutObs}
+                    onChange={(e) => upd("selloutObs", e.target.value)}
+                    placeholder="Ex: NF emitida ao final da campanha, referência do contrato, contato do comprador..."
+                  />
+                </Field>
+              </div>
+            )}
+            {!oferta.selloutTemVerba && (
+              <p className="text-xs text-muted-foreground">Ative quando o fornecedor pagar uma verba específica por esta oferta (para lembrar de cobrar depois).</p>
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
