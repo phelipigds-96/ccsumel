@@ -56,33 +56,42 @@ function normalize(s: string): string {
  * e devolve índice + posições de coluna.
  */
 function findHeader(lines: string[]): { index: number; positions: number[]; keys: string[] } | null {
-  for (let i = 0; i < Math.min(lines.length, 200); i++) {
+  const scan = Math.min(lines.length, 500);
+  for (let i = 0; i < scan; i++) {
     const raw = lines[i];
     const low = normalize(raw);
-    if (
-      low.includes("descric") &&
-      low.includes("barras") &&
-      low.includes("venda") &&
-      low.includes("custo") &&
-      low.includes("codigo")
-    ) {
-      // Descobrir posições no texto original
-      const positions: number[] = [];
-      const keys: string[] = [];
-      const search: [string, string][] = [
-        ["descricao", "descric"],
-        ["gtin", "barras"],
-        ["venda", "venda"],
-        ["custo", "custo"],
-        ["codigo", "codigo"],
+    const hasDesc = low.includes("descr");
+    const hasBarras = low.includes("barra") || low.includes("gtin") || low.includes("ean");
+    const hasVenda = low.includes("venda") || low.includes("preco");
+    const hasCusto = low.includes("custo");
+    const hasCodigo = low.includes("codigo") || /\bcod\b/.test(low) || low.includes("cod.");
+    if (hasDesc && hasBarras && hasVenda && hasCusto && hasCodigo) {
+      const findPos = (needles: string[]) => {
+        for (const n of needles) {
+          const idx = low.indexOf(n);
+          if (idx >= 0) return idx;
+        }
+        return -1;
+      };
+      const search: [string, string[]][] = [
+        ["descricao", ["descr"]],
+        ["gtin", ["barra", "gtin", "ean"]],
+        ["venda", ["venda", "preco"]],
+        ["custo", ["custo"]],
+        ["codigo", ["codigo", "cod."]],
       ];
-      for (const [key, needle] of search) {
-        const idx = low.indexOf(needle);
+      const found: { k: string; p: number }[] = [];
+      for (const [key, needles] of search) {
+        const idx = findPos(needles);
         if (idx < 0) return null;
-        positions.push(idx);
-        keys.push(key);
+        found.push({ k: key, p: idx });
       }
-      return { index: i, positions, keys };
+      const order = found.sort((a, b) => a.p - b.p);
+      return {
+        index: i,
+        positions: order.map((o) => o.p),
+        keys: order.map((o) => o.k),
+      };
     }
   }
   return null;
@@ -192,8 +201,19 @@ function CatalogoProdutos() {
     setProgress({ done: 0, total: 0 });
     const toastId = toast.loading("Lendo arquivo...");
     try {
-      const text = await file.text();
-      const { rows } = parseTxt(text);
+      const buf = await file.arrayBuffer();
+      // Tenta UTF-8; se der replacement chars, tenta windows-1252
+      let text = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+      if (text.includes("\uFFFD")) {
+        text = new TextDecoder("windows-1252").decode(buf);
+      }
+      let rows: ImportRow[] = [];
+      try {
+        rows = parseTxt(text).rows;
+      } catch (err) {
+        const preview = text.split(/\r?\n/).filter((l) => l.trim()).slice(0, 5).join(" | ");
+        throw new Error(`${(err as Error).message} Primeiras linhas: ${preview.slice(0, 300)}`);
+      }
       if (rows.length === 0) {
         toast.error("Nenhum produto encontrado no arquivo.", { id: toastId });
         return;
