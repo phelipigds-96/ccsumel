@@ -274,12 +274,14 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                     <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
                   </span>
                   <div className="flex items-center gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
                       Abrir <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
+
                 </div>
               </div>
             );
