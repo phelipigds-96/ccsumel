@@ -348,28 +348,10 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   };
 
   const printPDF = () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-    doc.setFontSize(14); doc.setTextColor(30, 41, 82);
-    doc.text(`SGMC — Campanha: ${campanha.nome}`, 40, 40);
-    doc.setFontSize(9); doc.setTextColor(90);
-    doc.text(`Vigência ${fmtDate(campanha.dataInicial)} a ${fmtDate(campanha.dataFinal)}  •  ${filtered.length} oferta(s)  •  Gerado em ${new Date().toLocaleString("pt-BR")}`, 40, 56);
-
-    autoTable(doc, {
-      startY: 70,
-      head: [["Código", "Descrição", "Fornecedor", "Categoria", "Normal", "Promo", "Clube", "Início", "Fim", "Filial", "Corredor", "Estoque", "Margem", "Status"]],
-      body: filtered.map(o => [
-        o.codigo, o.descricao, o.fornecedor, o.categoria,
-        brl(o.precoNormal), brl(o.precoPromocional), o.clubeSumel ? "Sim" : "Não",
-        fmtDate(o.dataInicial), fmtDate(o.dataFinal), o.filial, o.corredor,
-        String(o.estoque), `${o.margem.toFixed(1)}%`, o.status,
-      ]),
-      styles: { fontSize: 7.5, cellPadding: 3 },
-      headStyles: { fillColor: [200, 30, 40], textColor: 255 },
-      alternateRowStyles: { fillColor: [248, 248, 250] },
-    });
-    doc.save(`campanha-${campanha.nome.toLowerCase().replace(/\s+/g, "-")}.pdf`);
-    toast.success("PDF gerado.");
+    printCampanhaPDF(campanha, filtered);
+    toast.success("PDF aberto em nova aba.");
   };
+
 
   return (
     <div>
