@@ -17,6 +17,7 @@ import { Route as AppUsuariosRouteImport } from './routes/_app.usuarios'
 import { Route as AppSellOutRouteImport } from './routes/_app.sell-out'
 import { Route as AppRelatoriosRouteImport } from './routes/_app.relatorios'
 import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-gondola'
+import { Route as AppImportacaoRouteImport } from './routes/_app.importacao'
 import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
@@ -61,6 +62,11 @@ const AppPontasDeGondolaRoute = AppPontasDeGondolaRouteImport.update({
   path: '/pontas-de-gondola',
   getParentRoute: () => AppRoute,
 } as any)
+const AppImportacaoRoute = AppImportacaoRouteImport.update({
+  id: '/importacao',
+  path: '/importacao',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFornecedoresRoute = AppFornecedoresRouteImport.update({
   id: '/fornecedores',
   path: '/fornecedores',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
+  '/importacao': typeof AppImportacaoRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/relatorios': typeof AppRelatoriosRoute
   '/sell-out': typeof AppSellOutRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
+  '/importacao': typeof AppImportacaoRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/relatorios': typeof AppRelatoriosRoute
   '/sell-out': typeof AppSellOutRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/fornecedores': typeof AppFornecedoresRoute
+  '/_app/importacao': typeof AppImportacaoRoute
   '/_app/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/_app/relatorios': typeof AppRelatoriosRoute
   '/_app/sell-out': typeof AppSellOutRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
+    | '/importacao'
     | '/pontas-de-gondola'
     | '/relatorios'
     | '/sell-out'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
+    | '/importacao'
     | '/pontas-de-gondola'
     | '/relatorios'
     | '/sell-out'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/_app/configuracoes'
     | '/_app/dashboard'
     | '/_app/fornecedores'
+    | '/_app/importacao'
     | '/_app/pontas-de-gondola'
     | '/_app/relatorios'
     | '/_app/sell-out'
@@ -230,6 +242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPontasDeGondolaRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/importacao': {
+      id: '/_app/importacao'
+      path: '/importacao'
+      fullPath: '/importacao'
+      preLoaderRoute: typeof AppImportacaoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/fornecedores': {
       id: '/_app/fornecedores'
       path: '/fornecedores'
@@ -266,6 +285,7 @@ interface AppRouteChildren {
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppFornecedoresRoute: typeof AppFornecedoresRoute
+  AppImportacaoRoute: typeof AppImportacaoRoute
   AppPontasDeGondolaRoute: typeof AppPontasDeGondolaRoute
   AppRelatoriosRoute: typeof AppRelatoriosRoute
   AppSellOutRoute: typeof AppSellOutRoute
@@ -278,6 +298,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppFornecedoresRoute: AppFornecedoresRoute,
+  AppImportacaoRoute: AppImportacaoRoute,
   AppPontasDeGondolaRoute: AppPontasDeGondolaRoute,
   AppRelatoriosRoute: AppRelatoriosRoute,
   AppSellOutRoute: AppSellOutRoute,
