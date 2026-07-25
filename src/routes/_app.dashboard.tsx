@@ -25,10 +25,10 @@ import { ptBR } from "date-fns/locale";
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard Executivo — SGMC" },
-      { name: "description", content: "Visão executiva do SGMC — campanhas, ofertas, verbas e calendário promocional." },
-      { property: "og:title", content: "Dashboard Executivo — SGMC" },
-      { property: "og:description", content: "Painel executivo do Sistema de Gestão de Marketing Comercial." },
+      { title: "Dashboard — Central de campanhas Sumel" },
+      { name: "description", content: "Visão consolidada da Central de campanhas Sumel — campanhas, ofertas, verbas e calendário promocional." },
+      { property: "og:title", content: "Dashboard — Central de campanhas Sumel" },
+      { property: "og:description", content: "Painel do Sistema de Gestão de Marketing Comercial." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -128,7 +128,7 @@ function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard Executivo"
+        title="Dashboard"
         description="Panorama consolidado do marketing comercial em tempo real."
         actions={
           <>
