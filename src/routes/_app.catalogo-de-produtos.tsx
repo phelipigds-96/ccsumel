@@ -201,8 +201,19 @@ function CatalogoProdutos() {
     setProgress({ done: 0, total: 0 });
     const toastId = toast.loading("Lendo arquivo...");
     try {
-      const text = await file.text();
-      const { rows } = parseTxt(text);
+      const buf = await file.arrayBuffer();
+      // Tenta UTF-8; se der replacement chars, tenta windows-1252
+      let text = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+      if (text.includes("\uFFFD")) {
+        text = new TextDecoder("windows-1252").decode(buf);
+      }
+      let rows: ImportRow[] = [];
+      try {
+        rows = parseTxt(text).rows;
+      } catch (err) {
+        const preview = text.split(/\r?\n/).filter((l) => l.trim()).slice(0, 5).join(" | ");
+        throw new Error(`${(err as Error).message} Primeiras linhas: ${preview.slice(0, 300)}`);
+      }
       if (rows.length === 0) {
         toast.error("Nenhum produto encontrado no arquivo.", { id: toastId });
         return;
