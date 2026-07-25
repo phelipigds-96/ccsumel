@@ -58,8 +58,19 @@ interface ParsedRow {
   preco_venda: number;
 }
 
-function normalizeKey(k: string) {
-  return k.toString().trim().toLowerCase();
+function normalizeKey(k: unknown) {
+  return String(k ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+// Encontra a linha de cabeçalho procurando por células que batam com COL_MAP.
+function findHeaderRow(matrix: unknown[][]): number {
+  for (let i = 0; i < Math.min(matrix.length, 30); i++) {
+    const row = matrix[i] ?? [];
+    let hits = 0;
+    for (const cell of row) if (COL_MAP[normalizeKey(cell)]) hits++;
+    if (hits >= 2) return i;
+  }
+  return 0;
 }
 
 function parseWorkbook(file: File): Promise<ParsedRow[]> {
@@ -69,23 +80,36 @@ function parseWorkbook(file: File): Promise<ParsedRow[]> {
       try {
         const wb = XLSX.read(e.target?.result, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: Record<string, unknown>[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-        const rows: ParsedRow[] = raw.map((r) => {
+        if (!ws) { reject(new Error("Planilha vazia.")); return; }
+        const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false });
+        if (matrix.length === 0) { reject(new Error("Planilha sem dados.")); return; }
+        const headerIdx = findHeaderRow(matrix);
+        const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
+        const mapped = headers.map((h) => COL_MAP[h] ?? null);
+        console.log("[Importação] cabeçalhos detectados:", headers, "→", mapped);
+        if (!mapped.some(Boolean)) {
+          reject(new Error(`Não encontrei colunas conhecidas. Cabeçalhos lidos: ${headers.join(" | ")}`));
+          return;
+        }
+        const rows: ParsedRow[] = [];
+        for (let i = headerIdx + 1; i < matrix.length; i++) {
+          const raw = matrix[i] ?? [];
           const out: ParsedRow = { descricao: "", codigo: "", gtin: "", preco_venda: 0 };
-          for (const key of Object.keys(r)) {
-            const norm = normalizeKey(key);
-            const target = COL_MAP[norm];
+          for (let c = 0; c < headers.length; c++) {
+            const target = mapped[c];
             if (!target) continue;
-            const val = r[key];
+            const val = raw[c];
             if (target === "preco_venda") {
-              const n = typeof val === "number" ? val : parseFloat(String(val).replace(",", "."));
+              const s = String(val ?? "").replace(/[R$\s.]/g, "").replace(",", ".");
+              const n = typeof val === "number" ? val : parseFloat(s);
               out.preco_venda = isNaN(n) ? 0 : n;
             } else {
               out[target] = String(val ?? "").trim();
             }
           }
-          return out;
-        }).filter(r => r.descricao || r.gtin || r.codigo);
+          if (out.descricao || out.gtin || out.codigo) rows.push(out);
+        }
+        console.log(`[Importação] ${rows.length} linha(s) prontas.`);
         resolve(rows);
       } catch (err) { reject(err); }
     };
