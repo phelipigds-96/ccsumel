@@ -111,6 +111,38 @@ const statusVariant: Record<Status, string> = {
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
 
+function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  doc.setFontSize(14); doc.setTextColor(30, 41, 82);
+  doc.text(`SGMC — Campanha: ${campanha.nome}`, 40, 40);
+  doc.setFontSize(9); doc.setTextColor(90);
+  doc.text(
+    `Vigência ${fmtDate(campanha.dataInicial)} a ${fmtDate(campanha.dataFinal)}  •  ${ofertas.length} oferta(s)  •  Gerado em ${new Date().toLocaleString("pt-BR")}`,
+    40, 56,
+  );
+
+  autoTable(doc, {
+    startY: 70,
+    head: [["Código", "Descrição", "Clube", "Preço Normal", "Preço Promocional", "Período", "Campanha"]],
+    body: ofertas.map(o => [
+      o.codigo,
+      o.descricao,
+      o.clubeSumel ? "Sim" : "Não",
+      brl(o.precoNormal),
+      brl(o.precoPromocional),
+      `${fmtDate(o.dataInicial)} a ${fmtDate(o.dataFinal)}`,
+      campanha.nome,
+    ]),
+    styles: { fontSize: 9, cellPadding: 5 },
+    headStyles: { fillColor: [200, 30, 40], textColor: 255 },
+    alternateRowStyles: { fillColor: [248, 248, 250] },
+  });
+
+  const url = doc.output("bloburl");
+  window.open(url, "_blank");
+}
+
+
 function CentralDeOfertas() {
   const [campanhas, setCampanhas] = useState<Campanha[]>(seedCampanhas);
   const [ofertas, setOfertas] = useState<Oferta[]>(seedOfertas);
