@@ -14,10 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      produto_importacoes: {
+        Row: {
+          arquivo: string | null
+          atualizados: number
+          created_at: string
+          duracao_ms: number
+          erros: number
+          id: string
+          novos: number
+          processados: number
+          sem_barras: number
+          usuario: string | null
+        }
+        Insert: {
+          arquivo?: string | null
+          atualizados?: number
+          created_at?: string
+          duracao_ms?: number
+          erros?: number
+          id?: string
+          novos?: number
+          processados?: number
+          sem_barras?: number
+          usuario?: string | null
+        }
+        Update: {
+          arquivo?: string | null
+          atualizados?: number
+          created_at?: string
+          duracao_ms?: number
+          erros?: number
+          id?: string
+          novos?: number
+          processados?: number
+          sem_barras?: number
+          usuario?: string | null
+        }
+        Relationships: []
+      }
       produtos: {
         Row: {
+          ativo: boolean
           codigo: string | null
           created_at: string
+          custo: number
           descricao: string
           gtin: string | null
           id: string
@@ -25,8 +66,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ativo?: boolean
           codigo?: string | null
           created_at?: string
+          custo?: number
           descricao: string
           gtin?: string | null
           id?: string
@@ -34,8 +77,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ativo?: boolean
           codigo?: string | null
           created_at?: string
+          custo?: number
           descricao?: string
           gtin?: string | null
           id?: string
