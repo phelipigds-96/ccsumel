@@ -300,10 +300,18 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                   <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t pt-3">
-                  <span className="flex items-center gap-1.5 text-sm">
-                    <Package className="h-4 w-4 text-primary" />
-                    <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
-                  </span>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="flex items-center gap-1.5">
+                      <Package className="h-4 w-4 text-primary" />
+                      <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
+                    </span>
+                    {c.materiais.length > 0 && (
+                      <span className="flex items-center gap-1.5 text-navy" title="Materiais de apoio">
+                        <Paperclip className="h-4 w-4" />
+                        <strong>{c.materiais.length}</strong>
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1">
                     <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
