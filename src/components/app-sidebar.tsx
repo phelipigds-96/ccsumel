@@ -58,13 +58,13 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-3">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground font-black">
-            S
+            C
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <div className="text-sm font-bold text-sidebar-foreground leading-tight">SGMC</div>
+              <div className="text-sm font-bold text-sidebar-foreground leading-tight truncate">Central de Campanhas</div>
               <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60 truncate">
-                Gestão de Marketing
+                MARKETING E COMPRAS
               </div>
             </div>
           )}
