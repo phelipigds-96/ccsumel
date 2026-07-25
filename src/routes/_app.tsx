@@ -36,7 +36,7 @@ function Gate() {
           <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
             <SidebarTrigger />
             <div className="h-6 w-px bg-border" />
-            <div className="text-sm font-semibold text-navy">SGMC</div>
+            <div className="text-sm font-semibold text-navy">Central de campanhas Sumel</div>
             <div className="ml-auto text-xs text-muted-foreground">
               {user?.email}
             </div>
