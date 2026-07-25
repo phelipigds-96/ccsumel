@@ -361,6 +361,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [fCategoria, setFCategoria] = useState("todas");
   const [fStatus, setFStatus] = useState("todos");
   const [fClube, setFClube] = useState("todos");
+  const [fSellout, setFSellout] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Oferta | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -373,9 +374,17 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
       if (fStatus !== "todos" && o.status !== fStatus) return false;
       if (fClube === "sim" && !o.clubeSumel) return false;
       if (fClube === "nao" && o.clubeSumel) return false;
+      if (fSellout === "com" && !o.selloutTemVerba) return false;
+      if (fSellout === "sem" && o.selloutTemVerba) return false;
       return true;
     });
-  }, [ofertas, search, fCategoria, fStatus, fClube]);
+  }, [ofertas, search, fCategoria, fStatus, fClube, fSellout]);
+
+  const selloutStats = useMemo(() => {
+    const comVerba = ofertas.filter(o => o.selloutTemVerba);
+    const total = comVerba.reduce((s, o) => s + (Number(o.selloutValor) || 0), 0);
+    return { qtd: comVerba.length, total };
+  }, [ofertas]);
 
   const openNew = () => { setEditing(emptyOferta(campanha)); setDialogOpen(true); };
   const openEdit = (o: Oferta) => { setEditing({ ...o }); setDialogOpen(true); };
