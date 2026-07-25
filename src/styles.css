@@ -70,15 +70,15 @@
   --input: oklch(0.92 0.01 260);
   --ring: oklch(0.55 0.22 27);
 
-  /* Sidebar - navy */
-  --sidebar: oklch(0.24 0.07 260);
-  --sidebar-foreground: oklch(0.95 0.01 260);
-  --sidebar-primary: oklch(0.55 0.22 27);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.32 0.08 260);
-  --sidebar-accent-foreground: oklch(0.99 0 0);
-  --sidebar-border: oklch(0.32 0.06 260);
-  --sidebar-ring: oklch(0.55 0.22 27);
+  /* Sidebar - navy #0B1F3A */
+  --sidebar: oklch(0.234 0.048 258);
+  --sidebar-foreground: oklch(0.96 0.01 258);
+  --sidebar-primary: oklch(0.535 0.211 27.5);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.31 0.06 258);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.31 0.05 258);
+  --sidebar-ring: oklch(0.535 0.211 27.5);
 }
 
 .dark {
