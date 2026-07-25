@@ -124,39 +124,56 @@ function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
 
 
 function CentralDeOfertas() {
-  const [campanhas, setCampanhas] = useState<Campanha[]>(seedCampanhas);
-  const [ofertas, setOfertas] = useState<Oferta[]>(seedOfertas);
+  const { campanhas, ofertas } = useCampanhasStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const selected = campanhas.find(c => c.id === selectedId) ?? null;
+  // Somente ativas + futuras nesta tela; encerradas ficam no módulo dedicado.
+  const visiveis = useMemo(
+    () => campanhas.filter((c) => categoriaCampanha(c) !== "encerrada"),
+    [campanhas],
+  );
+
+  const selected = campanhas.find((c) => c.id === selectedId) ?? null;
+
+  const saveOferta = (o: Oferta) =>
+    campanhasStore.setOfertas((prev) => {
+      const exists = prev.some((p) => p.id === o.id);
+      return exists ? prev.map((p) => (p.id === o.id ? o : p)) : [o, ...prev];
+    });
+
+  const deleteOferta = (id: string) =>
+    campanhasStore.setOfertas((prev) => prev.filter((p) => p.id !== id));
+
+  const saveCampanha = (c: Campanha) =>
+    campanhasStore.setCampanhas((prev) => {
+      const exists = prev.some((p) => p.id === c.id);
+      return exists ? prev.map((p) => (p.id === c.id ? c : p)) : [c, ...prev];
+    });
+
+  const deleteCampanha = (id: string) => {
+    campanhasStore.setCampanhas((prev) => prev.filter((p) => p.id !== id));
+    campanhasStore.setOfertas((prev) => prev.filter((o) => o.campanhaId !== id));
+  };
 
   return selected ? (
     <CampanhaDetalhe
       campanha={selected}
-      ofertas={ofertas.filter(o => o.campanhaId === selected.id)}
+      ofertas={ofertas.filter((o) => o.campanhaId === selected.id)}
       onBack={() => setSelectedId(null)}
-      onSaveOferta={(o) => setOfertas(prev => {
-        const exists = prev.some(p => p.id === o.id);
-        return exists ? prev.map(p => p.id === o.id ? o : p) : [o, ...prev];
-      })}
-      onDeleteOferta={(id) => setOfertas(prev => prev.filter(p => p.id !== id))}
+      onSaveOferta={saveOferta}
+      onDeleteOferta={deleteOferta}
     />
   ) : (
     <CampanhasList
-      campanhas={campanhas}
+      campanhas={visiveis}
       ofertas={ofertas}
       onOpen={setSelectedId}
-      onSave={(c) => setCampanhas(prev => {
-        const exists = prev.some(p => p.id === c.id);
-        return exists ? prev.map(p => p.id === c.id ? c : p) : [c, ...prev];
-      })}
-      onDelete={(id) => {
-        setCampanhas(prev => prev.filter(p => p.id !== id));
-        setOfertas(prev => prev.filter(o => o.campanhaId !== id));
-      }}
+      onSave={saveCampanha}
+      onDelete={deleteCampanha}
     />
   );
 }
+
 
 // ============ CAMPANHAS LIST ============
 
