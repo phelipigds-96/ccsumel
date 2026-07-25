@@ -25,13 +25,22 @@ export interface ImportacaoHistorico {
   created_at: string;
 }
 
-export async function listProdutos(search = ""): Promise<Produto[]> {
-  let q = supabase.from("produtos").select("*").order("descricao", { ascending: true });
+export async function listProdutos(
+  search = "",
+  page = 1,
+  pageSize = 10,
+): Promise<{ rows: Produto[]; total: number }> {
+  let q = supabase
+    .from("produtos")
+    .select("*", { count: "exact" })
+    .order("descricao", { ascending: true });
   const s = search.trim();
   if (s) q = q.or(`descricao.ilike.%${s}%,gtin.ilike.%${s}%,codigo.ilike.%${s}%`);
-  const { data, error } = await q.limit(1000);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const { data, error, count } = await q.range(from, to);
   if (error) throw error;
-  return (data ?? []) as Produto[];
+  return { rows: (data ?? []) as Produto[], total: count ?? 0 };
 }
 
 export async function countProdutos(): Promise<{ total: number; ativos: number }> {

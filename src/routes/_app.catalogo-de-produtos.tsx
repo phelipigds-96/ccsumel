@@ -49,13 +49,17 @@ function CatalogoProdutos() {
   const [result, setResult] = useState<(ImportResult & { arquivo?: string }) | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Produto | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalResultados, setTotalResultados] = useState(0);
+  const pageSize = 10;
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const load = async () => {
+  const load = async (p = page) => {
     setLoading(true);
     try {
-      const [rows, c, li] = await Promise.all([listProdutos(busca), countProdutos(), getLastImport()]);
-      setProdutos(rows);
+      const [res, c, li] = await Promise.all([listProdutos(busca, p, pageSize), countProdutos(), getLastImport()]);
+      setProdutos(res.rows);
+      setTotalResultados(res.total);
       setCounts(c);
       setLastImport(li);
     } catch (e) {
@@ -66,15 +70,25 @@ function CatalogoProdutos() {
   };
 
   useEffect(() => {
-    load();
+    load(1);
+    setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => load(), 250);
+    const t = setTimeout(() => {
+      setPage(1);
+      load(1);
+    }, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busca]);
+
+  useEffect(() => {
+    load(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
 
   const handleFile = async (file: File) => {
     setImporting(true);
@@ -235,8 +249,9 @@ function CatalogoProdutos() {
             className="max-w-md flex-1 min-w-[220px]"
           />
           <div className="ml-auto text-xs text-muted-foreground">
-            {loading ? "Buscando..." : `${produtos.length.toLocaleString("pt-BR")} exibidos${counts.total > produtos.length ? ` de ${counts.total.toLocaleString("pt-BR")}` : ""}`}
+            {loading ? "Buscando..." : `${totalResultados.toLocaleString("pt-BR")} resultado(s)`}
           </div>
+
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -290,7 +305,36 @@ function CatalogoProdutos() {
             </TableBody>
           </Table>
         </div>
+        <div className="flex items-center justify-between gap-2 p-3 border-t text-sm">
+          <div className="text-xs text-muted-foreground">
+            {totalResultados === 0
+              ? "0 de 0"
+              : `${((page - 1) * pageSize + 1).toLocaleString("pt-BR")}–${Math.min(page * pageSize, totalResultados).toLocaleString("pt-BR")} de ${totalResultados.toLocaleString("pt-BR")}`}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            <div className="text-xs text-muted-foreground">
+              Página {page} de {Math.max(1, Math.ceil(totalResultados / pageSize))}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= Math.ceil(totalResultados / pageSize) || loading}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
       </div>
+
 
       <Dialog open={showResult} onOpenChange={setShowResult}>
         <DialogContent>
