@@ -111,6 +111,38 @@ const statusVariant: Record<Status, string> = {
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
 
+function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  doc.setFontSize(14); doc.setTextColor(30, 41, 82);
+  doc.text(`SGMC — Campanha: ${campanha.nome}`, 40, 40);
+  doc.setFontSize(9); doc.setTextColor(90);
+  doc.text(
+    `Vigência ${fmtDate(campanha.dataInicial)} a ${fmtDate(campanha.dataFinal)}  •  ${ofertas.length} oferta(s)  •  Gerado em ${new Date().toLocaleString("pt-BR")}`,
+    40, 56,
+  );
+
+  autoTable(doc, {
+    startY: 70,
+    head: [["Código", "Descrição", "Clube", "Preço Normal", "Preço Promocional", "Período", "Campanha"]],
+    body: ofertas.map(o => [
+      o.codigo,
+      o.descricao,
+      o.clubeSumel ? "Sim" : "Não",
+      brl(o.precoNormal),
+      brl(o.precoPromocional),
+      `${fmtDate(o.dataInicial)} a ${fmtDate(o.dataFinal)}`,
+      campanha.nome,
+    ]),
+    styles: { fontSize: 9, cellPadding: 5 },
+    headStyles: { fillColor: [200, 30, 40], textColor: 255 },
+    alternateRowStyles: { fillColor: [248, 248, 250] },
+  });
+
+  const url = doc.output("bloburl");
+  window.open(url, "_blank");
+}
+
+
 function CentralDeOfertas() {
   const [campanhas, setCampanhas] = useState<Campanha[]>(seedCampanhas);
   const [ofertas, setOfertas] = useState<Oferta[]>(seedOfertas);
@@ -242,12 +274,14 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                     <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
                   </span>
                   <div className="flex items-center gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
                       Abrir <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
+
                 </div>
               </div>
             );
@@ -316,28 +350,10 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   };
 
   const printPDF = () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-    doc.setFontSize(14); doc.setTextColor(30, 41, 82);
-    doc.text(`SGMC — Campanha: ${campanha.nome}`, 40, 40);
-    doc.setFontSize(9); doc.setTextColor(90);
-    doc.text(`Vigência ${fmtDate(campanha.dataInicial)} a ${fmtDate(campanha.dataFinal)}  •  ${filtered.length} oferta(s)  •  Gerado em ${new Date().toLocaleString("pt-BR")}`, 40, 56);
-
-    autoTable(doc, {
-      startY: 70,
-      head: [["Código", "Descrição", "Fornecedor", "Categoria", "Normal", "Promo", "Clube", "Início", "Fim", "Filial", "Corredor", "Estoque", "Margem", "Status"]],
-      body: filtered.map(o => [
-        o.codigo, o.descricao, o.fornecedor, o.categoria,
-        brl(o.precoNormal), brl(o.precoPromocional), o.clubeSumel ? "Sim" : "Não",
-        fmtDate(o.dataInicial), fmtDate(o.dataFinal), o.filial, o.corredor,
-        String(o.estoque), `${o.margem.toFixed(1)}%`, o.status,
-      ]),
-      styles: { fontSize: 7.5, cellPadding: 3 },
-      headStyles: { fillColor: [200, 30, 40], textColor: 255 },
-      alternateRowStyles: { fillColor: [248, 248, 250] },
-    });
-    doc.save(`campanha-${campanha.nome.toLowerCase().replace(/\s+/g, "-")}.pdf`);
-    toast.success("PDF gerado.");
+    printCampanhaPDF(campanha, filtered);
+    toast.success("PDF aberto em nova aba.");
   };
+
 
   return (
     <div>
