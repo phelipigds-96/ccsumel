@@ -112,6 +112,9 @@ const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", curren
 const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
 
 function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
+  // Abre a aba SINCRONAMENTE dentro do clique para não ser bloqueada pelo navegador
+  const win = window.open("", "_blank");
+
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   doc.setFontSize(14); doc.setTextColor(30, 41, 82);
   doc.text(`SGMC — Campanha: ${campanha.nome}`, 40, 40);
@@ -138,9 +141,17 @@ function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
     alternateRowStyles: { fillColor: [248, 248, 250] },
   });
 
-  const url = doc.output("bloburl");
-  window.open(url, "_blank");
+  const url = doc.output("bloburl") as unknown as string;
+
+  if (win && !win.closed) {
+    win.location.href = url;
+  } else {
+    // Pop-up bloqueado: cai para exibição na aba atual
+    window.location.href = url;
+    toast.warning("Permita pop-ups para abrir o PDF em nova aba.");
+  }
 }
+
 
 
 function CentralDeOfertas() {
