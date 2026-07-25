@@ -197,17 +197,45 @@ function CatalogoProdutos() {
         </div>
       </div>
 
+      {importing && (
+        <div className="mb-4 rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="font-medium text-navy">
+              {progress
+                ? `Importando ${progress.done.toLocaleString("pt-BR")} de ${progress.total.toLocaleString("pt-BR")} produtos...`
+                : "Lendo arquivo..."}
+            </span>
+            <span className="text-muted-foreground text-xs">
+              {progress && progress.total > 0
+                ? `${Math.round((progress.done / progress.total) * 100)}%`
+                : ""}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary transition-all duration-200"
+              style={{
+                width:
+                  progress && progress.total > 0
+                    ? `${Math.min(100, (progress.done / progress.total) * 100)}%`
+                    : "8%",
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl border bg-card">
-        <div className="p-4 border-b flex items-center gap-2">
+        <div className="p-4 border-b flex flex-wrap items-center gap-2">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por código, código de barras ou descrição..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="max-w-md"
+            className="max-w-md flex-1 min-w-[220px]"
           />
           <div className="ml-auto text-xs text-muted-foreground">
-            {produtos.length} exibidos
+            {loading ? "Buscando..." : `${produtos.length.toLocaleString("pt-BR")} exibidos${counts.total > produtos.length ? ` de ${counts.total.toLocaleString("pt-BR")}` : ""}`}
           </div>
         </div>
         <div className="overflow-x-auto">
