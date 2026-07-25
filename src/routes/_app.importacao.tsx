@@ -94,6 +94,10 @@ function normalizeKey(k: unknown) {
 }
 
 function inferColumnTarget(header: string): keyof ParsedRow | null {
+  // Evita confundir colunas institucionais do relatório/filial com produto.
+  // Ex.: "Cód." da loja pode vir preenchido como "1 SUMEL ... MATRIZ".
+  if (isBlockedHeaderContext(header)) return null;
+
   const exact = COL_MAP[header];
   if (exact) return exact;
 
@@ -105,6 +109,115 @@ function inferColumnTarget(header: string): keyof ParsedRow | null {
   if (header.includes("descr") || header.includes("produto") || header.includes("nome")) return "descricao";
   if (header.includes("codigo") || header.includes("cod") || compact === "sku") return "codigo";
   return null;
+}
+
+function isBlockedHeaderContext(header: string) {
+  const blocked = [
+    "empresa",
+    "filial",
+    "loja",
+    "matriz",
+    "cnpj",
+    "razao social",
+    "fantasia",
+    "unidade",
+  ];
+  const productHints = ["produto", "mercadoria", "item", "barra", "gtin", "ean", "preco", "prc", "venda", "descricao", "descr"];
+  return blocked.some((word) => header.includes(word)) && !productHints.some((word) => header.includes(word));
+}
+
+function isInstitutionalText(value: unknown) {
+  const text = normalizeKey(value);
+  if (!text) return false;
+  return (
+    text.includes("sumel alimentos") ||
+    text.includes("festa e embalagens") ||
+    text.includes("matriz") ||
+    text.includes("cnpj") ||
+    text.includes("relatorio") ||
+    text.includes("emitido") ||
+    text.includes("pagina") ||
+    text.includes("periodo")
+  );
+}
+
+function isMoneyLike(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return false;
+  const withoutCurrency = raw.replace(/r\$/gi, "").trim();
+  if (/[a-zA-ZÀ-ÿ]{3,}/.test(withoutCurrency)) return false;
+  return /\d/.test(withoutCurrency) && Number.isFinite(parseMoney(withoutCurrency));
+}
+
+function scoreColumnData(matrix: unknown[][], headerIdx: number, columnIdx: number, target: keyof ParsedRow) {
+  const sample = matrix.slice(headerIdx + 1, headerIdx + 301);
+  let nonEmpty = 0;
+  let valid = 0;
+  let invalid = 0;
+
+  for (const row of sample) {
+    const value = row?.[columnIdx];
+    const text = parseText(value);
+    if (!text) continue;
+    nonEmpty++;
+    if (isInstitutionalText(text)) {
+      invalid += 3;
+      continue;
+    }
+
+    const digits = text.replace(/\D/g, "");
+    if (target === "gtin") {
+      if (digits.length >= 6 && digits.length <= 14) valid += 2;
+      else invalid++;
+    } else if (target === "codigo") {
+      if (text.length <= 30 && /[a-zA-Z0-9]/.test(text)) valid++;
+      else invalid++;
+    } else if (target === "descricao") {
+      if (/[a-zA-ZÀ-ÿ]{3,}/.test(text) && text.length >= 3) valid += 2;
+      else invalid++;
+    } else if (target === "preco_venda") {
+      if (isMoneyLike(text)) valid += 2;
+      else invalid += 2;
+    }
+  }
+
+  if (nonEmpty === 0) return -10;
+  return valid - invalid;
+}
+
+function headerConfidence(header: string, target: keyof ParsedRow) {
+  if (COL_MAP[header] === target) return 20;
+  if (target === "gtin" && (header.includes("gtin") || header.includes("ean") || header.includes("barra"))) return 18;
+  if (target === "preco_venda" && (header.includes("preco") || header.includes("prc") || header.includes("valor") || header.includes("venda"))) return 18;
+  if (target === "descricao" && (header.includes("descr") || header.includes("produto") || header.includes("nome"))) return 16;
+  if (target === "codigo" && (header.includes("codigo") || header.includes("cod") || header.includes("sku") || header.includes("item"))) return 12;
+  return 4;
+}
+
+function buildColumnMapping(headers: string[], matrix: unknown[][], headerIdx: number) {
+  const candidates: Record<keyof ParsedRow, Array<{ column: number; total: number }>> = {
+    descricao: [],
+    codigo: [],
+    gtin: [],
+    preco_venda: [],
+  };
+
+  headers.forEach((header, column) => {
+    const target = inferColumnTarget(header);
+    if (!target) return;
+    const dataScore = scoreColumnData(matrix, headerIdx, column, target);
+    const total = headerConfidence(header, target) + dataScore;
+    if (dataScore <= -6) return;
+    candidates[target].push({ column, total });
+  });
+
+  const mapped = Array<keyof ParsedRow | null>(headers.length).fill(null);
+  (Object.keys(candidates) as Array<keyof ParsedRow>).forEach((target) => {
+    const [best] = candidates[target].sort((a, b) => b.total - a.total);
+    if (best && best.total >= 8) mapped[best.column] = target;
+  });
+
+  return mapped;
 }
 
 function parseMoney(value: unknown) {
@@ -133,13 +246,46 @@ function parseText(value: unknown) {
 
 // Encontra a linha de cabeçalho procurando por células que batam com COL_MAP.
 function findHeaderRow(matrix: unknown[][]): number {
-  for (let i = 0; i < Math.min(matrix.length, 30); i++) {
+  let bestIdx = 0;
+  let bestScore = -Infinity;
+  for (let i = 0; i < Math.min(matrix.length, 100); i++) {
     const row = matrix[i] ?? [];
-    let hits = 0;
-    for (const cell of row) if (inferColumnTarget(normalizeKey(cell))) hits++;
-    if (hits >= 2) return i;
+    const targets = new Set<keyof ParsedRow>();
+    let score = 0;
+    for (const cell of row) {
+      const header = normalizeKey(cell);
+      const target = inferColumnTarget(header);
+      if (!target) continue;
+      targets.add(target);
+      score += headerConfidence(header, target);
+    }
+    if (targets.has("descricao")) score += 12;
+    if (targets.has("preco_venda")) score += 8;
+    if (targets.has("gtin") || targets.has("codigo")) score += 8;
+    if (row.some(isInstitutionalText)) score -= 25;
+    if (targets.size >= 2 && score > bestScore) {
+      bestScore = score;
+      bestIdx = i;
+    }
   }
-  return 0;
+  return bestScore > 0 ? bestIdx : 0;
+}
+
+function isNonProductRow(row: ParsedRow) {
+  const text = `${row.descricao} ${row.codigo} ${row.gtin}`;
+  if (isInstitutionalText(text)) return true;
+  if (!row.descricao.trim()) return true;
+  if (row.preco_venda === 1 && isInstitutionalText(row.codigo || row.gtin || row.descricao)) return true;
+  return false;
+}
+
+function detectDelimiter(contents: string) {
+  const firstLines = contents.split(/\r?\n/).slice(0, 20).join("\n");
+  const options = [";", "\t", ",", "|"];
+  const best = options
+    .map((delimiter) => ({ delimiter, count: (firstLines.match(new RegExp(`\\${delimiter}`, "g")) ?? []).length }))
+    .sort((a, b) => b.count - a.count)[0];
+  return best && best.count > 0 ? best.delimiter : undefined;
 }
 
 function readFile(file: File): Promise<string | ArrayBuffer> {
@@ -160,7 +306,7 @@ async function parseWorkbook(file: File): Promise<ParsedRow[]> {
   const contents = await readFile(file);
   try {
     const wb = typeof contents === "string"
-      ? XLSX.read(contents, { type: "string", raw: true })
+      ? XLSX.read(contents, { type: "string", raw: true, FS: detectDelimiter(contents) })
       : XLSX.read(contents, { type: "array", raw: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
     if (!ws) throw new Error("Planilha vazia.");
@@ -168,7 +314,7 @@ async function parseWorkbook(file: File): Promise<ParsedRow[]> {
     if (matrix.length === 0) throw new Error("Planilha sem dados.");
     const headerIdx = findHeaderRow(matrix);
     const headers = (matrix[headerIdx] ?? []).map(normalizeKey);
-    const mapped = headers.map(inferColumnTarget);
+    const mapped = buildColumnMapping(headers, matrix, headerIdx);
     if (!mapped.some(Boolean)) {
       throw new Error(`Não encontrei colunas conhecidas. Cabeçalhos lidos: ${headers.join(" | ")}`);
     }
@@ -184,7 +330,7 @@ async function parseWorkbook(file: File): Promise<ParsedRow[]> {
         if (target === "preco_venda") out.preco_venda = parseMoney(val);
         else out[target] = parseText(val);
       }
-      if (out.descricao || out.gtin || out.codigo) rows.push(out);
+      if ((out.descricao || out.gtin || out.codigo) && !isNonProductRow(out)) rows.push(out);
     }
 
     const withDescription = rows.filter((row) => row.descricao.trim());
