@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Search, Pencil, Trash2, Printer, Tag } from "lucide-react";
+import {
+  Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -28,9 +31,9 @@ export const Route = createFileRoute("/_app/central-de-ofertas")({
   head: () => ({
     meta: [
       { title: "Central de Ofertas — SGMC" },
-      { name: "description", content: "Gerencie, filtre e imprima ofertas comerciais no SGMC." },
+      { name: "description", content: "Gerencie campanhas e suas ofertas comerciais no SGMC." },
       { property: "og:title", content: "Central de Ofertas — SGMC" },
-      { property: "og:description", content: "Gerencie ofertas comerciais no SGMC." },
+      { property: "og:description", content: "Gerencie campanhas e ofertas no SGMC." },
     ],
   }),
   component: CentralDeOfertas,
@@ -38,8 +41,18 @@ export const Route = createFileRoute("/_app/central-de-ofertas")({
 
 type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";
 
+interface Campanha {
+  id: string;
+  nome: string;
+  descricao: string;
+  dataInicial: string;
+  dataFinal: string;
+  status: Status;
+}
+
 interface Oferta {
   id: string;
+  campanhaId: string;
   codigo: string;
   descricao: string;
   fornecedor: string;
@@ -49,7 +62,6 @@ interface Oferta {
   clubeSumel: boolean;
   dataInicial: string;
   dataFinal: string;
-  campanha: string;
   filial: string;
   corredor: string;
   estoque: number;
@@ -62,18 +74,31 @@ const FORNECEDORES = ["Ambev", "Nestlé", "Unilever", "P&G", "Coca-Cola", "BRF",
 const FILIAIS = ["Matriz", "Filial 01", "Filial 02", "Filial 03"];
 const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
-const seed: Oferta[] = [
-  { id: "1", codigo: "OF-0001", descricao: "Cerveja Brahma 350ml Pack 12", fornecedor: "Ambev", categoria: "Bebidas", precoNormal: 59.9, precoPromocional: 44.9, clubeSumel: true, dataInicial: "2026-07-20", dataFinal: "2026-08-10", campanha: "Verão Gelado", filial: "Matriz", corredor: "A3", estoque: 320, margem: 18.5, status: "Ativa" },
-  { id: "2", codigo: "OF-0002", descricao: "Café Nescafé Tradicional 500g", fornecedor: "Nestlé", categoria: "Mercearia", precoNormal: 29.9, precoPromocional: 23.9, clubeSumel: false, dataInicial: "2026-07-15", dataFinal: "2026-07-30", campanha: "Café da Manhã", filial: "Filial 01", corredor: "B7", estoque: 180, margem: 22.0, status: "Ativa" },
-  { id: "3", codigo: "OF-0003", descricao: "Sabão em Pó OMO 1,6kg", fornecedor: "Unilever", categoria: "Limpeza", precoNormal: 39.9, precoPromocional: 31.9, clubeSumel: true, dataInicial: "2026-08-01", dataFinal: "2026-08-20", campanha: "Casa Limpa", filial: "Matriz", corredor: "C2", estoque: 240, margem: 15.0, status: "Programada" },
-  { id: "4", codigo: "OF-0004", descricao: "Fralda Pampers G 40un", fornecedor: "P&G", categoria: "Higiene", precoNormal: 89.9, precoPromocional: 69.9, clubeSumel: true, dataInicial: "2026-06-10", dataFinal: "2026-07-05", campanha: "Mês do Bebê", filial: "Filial 02", corredor: "D4", estoque: 60, margem: 25.5, status: "Encerrada" },
-  { id: "5", codigo: "OF-0005", descricao: "Refrigerante Coca-Cola 2L", fornecedor: "Coca-Cola", categoria: "Bebidas", precoNormal: 12.9, precoPromocional: 8.99, clubeSumel: false, dataInicial: "2026-07-25", dataFinal: "2026-08-15", campanha: "Verão Gelado", filial: "Filial 03", corredor: "A1", estoque: 500, margem: 12.0, status: "Ativa" },
+const seedCampanhas: Campanha[] = [
+  { id: "c1", nome: "Ofertas da Semana", descricao: "Ofertas semanais rotativas em todas as filiais.", dataInicial: "2026-07-22", dataFinal: "2026-07-28", status: "Ativa" },
+  { id: "c2", nome: "Verão Gelado", descricao: "Campanha sazonal de bebidas e sorvetes.", dataInicial: "2026-07-20", dataFinal: "2026-08-15", status: "Ativa" },
+  { id: "c3", nome: "Casa Limpa", descricao: "Promoções em produtos de limpeza doméstica.", dataInicial: "2026-08-01", dataFinal: "2026-08-20", status: "Programada" },
+  { id: "c4", nome: "Café da Manhã", descricao: "Pães, cafés, laticínios e cereais.", dataInicial: "2026-07-15", dataFinal: "2026-07-30", status: "Ativa" },
+  { id: "c5", nome: "Mês do Bebê", descricao: "Higiene infantil e cuidados com o bebê.", dataInicial: "2026-06-10", dataFinal: "2026-07-05", status: "Encerrada" },
 ];
 
-const emptyOferta = (): Oferta => ({
-  id: crypto.randomUUID(), codigo: "", descricao: "", fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
-  precoNormal: 0, precoPromocional: 0, clubeSumel: false, dataInicial: "", dataFinal: "",
-  campanha: "", filial: FILIAIS[0], corredor: "", estoque: 0, margem: 0, status: "Rascunho",
+const seedOfertas: Oferta[] = [
+  { id: "1", campanhaId: "c2", codigo: "OF-0001", descricao: "Cerveja Brahma 350ml Pack 12", fornecedor: "Ambev", categoria: "Bebidas", precoNormal: 59.9, precoPromocional: 44.9, clubeSumel: true, dataInicial: "2026-07-20", dataFinal: "2026-08-10", filial: "Matriz", corredor: "A3", estoque: 320, margem: 18.5, status: "Ativa" },
+  { id: "2", campanhaId: "c4", codigo: "OF-0002", descricao: "Café Nescafé Tradicional 500g", fornecedor: "Nestlé", categoria: "Mercearia", precoNormal: 29.9, precoPromocional: 23.9, clubeSumel: false, dataInicial: "2026-07-15", dataFinal: "2026-07-30", filial: "Filial 01", corredor: "B7", estoque: 180, margem: 22.0, status: "Ativa" },
+  { id: "3", campanhaId: "c3", codigo: "OF-0003", descricao: "Sabão em Pó OMO 1,6kg", fornecedor: "Unilever", categoria: "Limpeza", precoNormal: 39.9, precoPromocional: 31.9, clubeSumel: true, dataInicial: "2026-08-01", dataFinal: "2026-08-20", filial: "Matriz", corredor: "C2", estoque: 240, margem: 15.0, status: "Programada" },
+  { id: "4", campanhaId: "c5", codigo: "OF-0004", descricao: "Fralda Pampers G 40un", fornecedor: "P&G", categoria: "Higiene", precoNormal: 89.9, precoPromocional: 69.9, clubeSumel: true, dataInicial: "2026-06-10", dataFinal: "2026-07-05", filial: "Filial 02", corredor: "D4", estoque: 60, margem: 25.5, status: "Encerrada" },
+  { id: "5", campanhaId: "c2", codigo: "OF-0005", descricao: "Refrigerante Coca-Cola 2L", fornecedor: "Coca-Cola", categoria: "Bebidas", precoNormal: 12.9, precoPromocional: 8.99, clubeSumel: false, dataInicial: "2026-07-25", dataFinal: "2026-08-15", filial: "Filial 03", corredor: "A1", estoque: 500, margem: 12.0, status: "Ativa" },
+  { id: "6", campanhaId: "c1", codigo: "OF-0006", descricao: "Arroz Camil 5kg", fornecedor: "BRF", categoria: "Mercearia", precoNormal: 34.9, precoPromocional: 27.9, clubeSumel: true, dataInicial: "2026-07-22", dataFinal: "2026-07-28", filial: "Matriz", corredor: "B1", estoque: 400, margem: 14.0, status: "Ativa" },
+];
+
+const emptyCampanha = (): Campanha => ({
+  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho",
+});
+
+const emptyOferta = (campanhaId: string): Oferta => ({
+  id: crypto.randomUUID(), campanhaId, codigo: "", descricao: "", fornecedor: FORNECEDORES[0],
+  categoria: CATEGORIAS[0], precoNormal: 0, precoPromocional: 0, clubeSumel: false,
+  dataInicial: "", dataFinal: "", filial: FILIAIS[0], corredor: "", estoque: 0, margem: 0, status: "Rascunho",
 });
 
 const statusVariant: Record<Status, string> = {
@@ -87,19 +112,190 @@ const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", curren
 const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
 
 function CentralDeOfertas() {
-  const [ofertas, setOfertas] = useState<Oferta[]>(seed);
+  const [campanhas, setCampanhas] = useState<Campanha[]>(seedCampanhas);
+  const [ofertas, setOfertas] = useState<Oferta[]>(seedOfertas);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const selected = campanhas.find(c => c.id === selectedId) ?? null;
+
+  return selected ? (
+    <CampanhaDetalhe
+      campanha={selected}
+      ofertas={ofertas.filter(o => o.campanhaId === selected.id)}
+      onBack={() => setSelectedId(null)}
+      onSaveOferta={(o) => setOfertas(prev => {
+        const exists = prev.some(p => p.id === o.id);
+        return exists ? prev.map(p => p.id === o.id ? o : p) : [o, ...prev];
+      })}
+      onDeleteOferta={(id) => setOfertas(prev => prev.filter(p => p.id !== id))}
+    />
+  ) : (
+    <CampanhasList
+      campanhas={campanhas}
+      ofertas={ofertas}
+      onOpen={setSelectedId}
+      onSave={(c) => setCampanhas(prev => {
+        const exists = prev.some(p => p.id === c.id);
+        return exists ? prev.map(p => p.id === c.id ? c : p) : [c, ...prev];
+      })}
+      onDelete={(id) => {
+        setCampanhas(prev => prev.filter(p => p.id !== id));
+        setOfertas(prev => prev.filter(o => o.campanhaId !== id));
+      }}
+    />
+  );
+}
+
+// ============ CAMPANHAS LIST ============
+
+interface ListProps {
+  campanhas: Campanha[];
+  ofertas: Oferta[];
+  onOpen: (id: string) => void;
+  onSave: (c: Campanha) => void;
+  onDelete: (id: string) => void;
+}
+
+function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListProps) {
   const [search, setSearch] = useState("");
-  const [fCategoria, setFCategoria] = useState<string>("todas");
-  const [fStatus, setFStatus] = useState<string>("todos");
-  const [fClube, setFClube] = useState<string>("todos");
+  const [fStatus, setFStatus] = useState("todos");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Campanha | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const countByCampanha = useMemo(() => {
+    const m = new Map<string, number>();
+    ofertas.forEach(o => m.set(o.campanhaId, (m.get(o.campanhaId) ?? 0) + 1));
+    return m;
+  }, [ofertas]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return campanhas
+      .filter(c => {
+        if (q && !c.nome.toLowerCase().includes(q) && !c.descricao.toLowerCase().includes(q)) return false;
+        if (fStatus !== "todos" && c.status !== fStatus) return false;
+        return true;
+      })
+      .slice()
+      .sort((a, b) => (b.dataInicial || "").localeCompare(a.dataInicial || ""));
+  }, [campanhas, search, fStatus]);
+
+  const openNew = () => { setEditing(emptyCampanha()); setDialogOpen(true); };
+  const openEdit = (c: Campanha) => { setEditing({ ...c }); setDialogOpen(true); };
+
+  const save = () => {
+    if (!editing) return;
+    if (!editing.nome.trim()) { toast.error("Informe o nome da campanha."); return; }
+    onSave(editing);
+    toast.success("Campanha salva.");
+    setDialogOpen(false); setEditing(null);
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title="Central de Ofertas"
+        description="Campanhas comerciais e suas ofertas."
+        actions={
+          <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
+            <Plus className="mr-2 h-4 w-4" />Nova Campanha
+          </Button>
+        }
+      />
+
+      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_200px]">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar campanha..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <Select value={fStatus} onValueChange={setFStatus}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos status</SelectItem>
+            {STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
+          Nenhuma campanha encontrada.
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((c) => {
+            const count = countByCampanha.get(c.id) ?? 0;
+            return (
+              <div key={c.id} className="group rounded-xl border bg-card p-5 hover:border-primary/40 hover:shadow-md transition">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="font-semibold text-navy leading-tight">{c.nome}</h3>
+                  <Badge variant="outline" className={statusVariant[c.status]}>{c.status}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5rem]">{c.descricao || "Sem descrição."}</p>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                  <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t pt-3">
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Package className="h-4 w-4 text-primary" />
+                    <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
+                      Abrir <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <CampanhaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} campanha={editing} setCampanha={setEditing} onSave={save} />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
+            <AlertDialogDescription>Todas as ofertas vinculadas a esta campanha também serão excluídas.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteId) { onDelete(deleteId); toast.success("Campanha excluída."); setDeleteId(null); } }} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+// ============ CAMPANHA DETALHE (ofertas) ============
+
+interface DetalheProps {
+  campanha: Campanha;
+  ofertas: Oferta[];
+  onBack: () => void;
+  onSaveOferta: (o: Oferta) => void;
+  onDeleteOferta: (id: string) => void;
+}
+
+function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOferta }: DetalheProps) {
+  const [search, setSearch] = useState("");
+  const [fCategoria, setFCategoria] = useState("todas");
+  const [fStatus, setFStatus] = useState("todos");
+  const [fClube, setFClube] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Oferta | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return ofertas.filter((o) => {
-      if (q && ![o.codigo, o.descricao, o.fornecedor, o.campanha].some(f => f.toLowerCase().includes(q))) return false;
+    return ofertas.filter(o => {
+      if (q && ![o.codigo, o.descricao, o.fornecedor].some(f => f.toLowerCase().includes(q))) return false;
       if (fCategoria !== "todas" && o.categoria !== fCategoria) return false;
       if (fStatus !== "todos" && o.status !== fStatus) return false;
       if (fClube === "sim" && !o.clubeSumel) return false;
@@ -108,60 +304,53 @@ function CentralDeOfertas() {
     });
   }, [ofertas, search, fCategoria, fStatus, fClube]);
 
-  const openNew = () => { setEditing(emptyOferta()); setDialogOpen(true); };
+  const openNew = () => { setEditing(emptyOferta(campanha.id)); setDialogOpen(true); };
   const openEdit = (o: Oferta) => { setEditing({ ...o }); setDialogOpen(true); };
 
   const save = () => {
     if (!editing) return;
-    if (!editing.codigo.trim() || !editing.descricao.trim()) {
-      toast.error("Preencha código e descrição."); return;
-    }
-    setOfertas((prev) => {
-      const exists = prev.some(p => p.id === editing.id);
-      return exists ? prev.map(p => p.id === editing.id ? editing : p) : [editing, ...prev];
-    });
-    toast.success("Oferta salva com sucesso.");
+    if (!editing.codigo.trim() || !editing.descricao.trim()) { toast.error("Preencha código e descrição."); return; }
+    onSaveOferta(editing);
+    toast.success("Oferta salva.");
     setDialogOpen(false); setEditing(null);
-  };
-
-  const confirmDelete = () => {
-    if (!deleteId) return;
-    setOfertas((prev) => prev.filter(p => p.id !== deleteId));
-    toast.success("Oferta excluída.");
-    setDeleteId(null);
   };
 
   const printPDF = () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     doc.setFontSize(14); doc.setTextColor(30, 41, 82);
-    doc.text("SGMC — Central de Ofertas", 40, 40);
+    doc.text(`SGMC — Campanha: ${campanha.nome}`, 40, 40);
     doc.setFontSize(9); doc.setTextColor(90);
-    doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}  •  ${filtered.length} oferta(s)`, 40, 56);
+    doc.text(`Vigência ${fmtDate(campanha.dataInicial)} a ${fmtDate(campanha.dataFinal)}  •  ${filtered.length} oferta(s)  •  Gerado em ${new Date().toLocaleString("pt-BR")}`, 40, 56);
 
     autoTable(doc, {
       startY: 70,
-      head: [["Código", "Descrição", "Fornecedor", "Categoria", "Normal", "Promo", "Clube", "Início", "Fim", "Campanha", "Filial", "Corredor", "Estoque", "Margem", "Status"]],
+      head: [["Código", "Descrição", "Fornecedor", "Categoria", "Normal", "Promo", "Clube", "Início", "Fim", "Filial", "Corredor", "Estoque", "Margem", "Status"]],
       body: filtered.map(o => [
         o.codigo, o.descricao, o.fornecedor, o.categoria,
         brl(o.precoNormal), brl(o.precoPromocional), o.clubeSumel ? "Sim" : "Não",
-        fmtDate(o.dataInicial), fmtDate(o.dataFinal), o.campanha, o.filial, o.corredor,
+        fmtDate(o.dataInicial), fmtDate(o.dataFinal), o.filial, o.corredor,
         String(o.estoque), `${o.margem.toFixed(1)}%`, o.status,
       ]),
       styles: { fontSize: 7.5, cellPadding: 3 },
       headStyles: { fillColor: [200, 30, 40], textColor: 255 },
       alternateRowStyles: { fillColor: [248, 248, 250] },
     });
-    doc.save(`central-ofertas-${new Date().toISOString().slice(0,10)}.pdf`);
+    doc.save(`campanha-${campanha.nome.toLowerCase().replace(/\s+/g, "-")}.pdf`);
     toast.success("PDF gerado.");
   };
 
   return (
     <div>
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-4">
+        <ArrowLeft className="h-4 w-4" /> Voltar para campanhas
+      </button>
+
       <PageHeader
-        title="Central de Ofertas"
-        description="Publique, filtre e imprima ofertas comerciais."
+        title={campanha.nome}
+        description={`Vigência ${fmtDate(campanha.dataInicial)} → ${fmtDate(campanha.dataFinal)}  •  ${campanha.descricao || "Ofertas desta campanha."}`}
         actions={
           <>
+            <Badge variant="outline" className={`${statusVariant[campanha.status]} mr-1`}>{campanha.status}</Badge>
             <Button variant="outline" onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</Button>
             <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
           </>
@@ -171,24 +360,24 @@ function CentralDeOfertas() {
       <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_180px_180px_160px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por código, descrição, fornecedor ou campanha..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={fCategoria} onValueChange={setFCategoria}>
-          <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas categorias</SelectItem>
             {CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos status</SelectItem>
             {STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={fClube} onValueChange={setFClube}>
-          <SelectTrigger><SelectValue placeholder="Clube Sumel" /></SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Clube: Todos</SelectItem>
             <SelectItem value="sim">Somente Clube</SelectItem>
@@ -211,7 +400,6 @@ function CentralDeOfertas() {
                 <TableHead className="text-center">Clube</TableHead>
                 <TableHead>Início</TableHead>
                 <TableHead>Fim</TableHead>
-                <TableHead>Campanha</TableHead>
                 <TableHead>Filial</TableHead>
                 <TableHead>Corredor</TableHead>
                 <TableHead className="text-right">Estoque</TableHead>
@@ -223,8 +411,8 @@ function CentralDeOfertas() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={16} className="text-center py-10 text-muted-foreground">
-                    Nenhuma oferta encontrada com os filtros atuais.
+                  <TableCell colSpan={15} className="text-center py-10 text-muted-foreground">
+                    Nenhuma oferta cadastrada nesta campanha ainda.
                   </TableCell>
                 </TableRow>
               ) : filtered.map((o) => (
@@ -240,7 +428,6 @@ function CentralDeOfertas() {
                   </TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>
-                  <TableCell className="text-xs">{o.campanha}</TableCell>
                   <TableCell className="text-xs">{o.filial}</TableCell>
                   <TableCell className="text-xs">{o.corredor}</TableCell>
                   <TableCell className="text-right">{o.estoque}</TableCell>
@@ -257,13 +444,7 @@ function CentralDeOfertas() {
         </div>
       </div>
 
-      <OfertaDialog
-        open={dialogOpen}
-        onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}
-        oferta={editing}
-        setOferta={setEditing}
-        onSave={save}
-      />
+      <OfertaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} oferta={editing} setOferta={setEditing} onSave={save} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
@@ -273,7 +454,7 @@ function CentralDeOfertas() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+            <AlertDialogAction onClick={() => { if (deleteId) { onDeleteOferta(deleteId); toast.success("Oferta excluída."); setDeleteId(null); } }} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -281,15 +462,49 @@ function CentralDeOfertas() {
   );
 }
 
-interface DialogProps {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  oferta: Oferta | null;
-  setOferta: (o: Oferta) => void;
-  onSave: () => void;
+// ============ DIALOGS ============
+
+function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
+  open: boolean; onOpenChange: (v: boolean) => void; campanha: Campanha | null;
+  setCampanha: (c: Campanha) => void; onSave: () => void;
+}) {
+  if (!campanha) return null;
+  const upd = <K extends keyof Campanha>(k: K, v: Campanha[K]) => setCampanha({ ...campanha, [k]: v });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{campanha.nome ? "Editar Campanha" : "Nova Campanha"}</DialogTitle>
+          <DialogDescription>Defina o período e o status da campanha comercial.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <Field label="Nome"><Input value={campanha.nome} onChange={(e) => upd("nome", e.target.value)} placeholder="Ex: Ofertas da Semana" /></Field>
+          <Field label="Descrição"><Textarea value={campanha.descricao} onChange={(e) => upd("descricao", e.target.value)} rows={3} /></Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Data Inicial"><Input type="date" value={campanha.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
+            <Field label="Data Final"><Input type="date" value={campanha.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
+          </div>
+          <Field label="Status">
+            <Select value={campanha.status} onValueChange={(v) => upd("status", v as Status)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={onSave} className="bg-primary hover:bg-primary/90">Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: DialogProps) {
+function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
+  open: boolean; onOpenChange: (v: boolean) => void; oferta: Oferta | null;
+  setOferta: (o: Oferta) => void; onSave: () => void;
+}) {
   if (!oferta) return null;
   const upd = <K extends keyof Oferta>(k: K, v: Oferta[K]) => setOferta({ ...oferta, [k]: v });
 
@@ -298,11 +513,16 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: DialogP
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{oferta.codigo ? "Editar Oferta" : "Nova Oferta"}</DialogTitle>
-          <DialogDescription>Preencha os dados da oferta comercial.</DialogDescription>
+          <DialogDescription>Preencha os dados do produto em oferta.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2 md:grid-cols-2">
           <Field label="Código"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} placeholder="OF-0000" /></Field>
-          <Field label="Campanha"><Input value={oferta.campanha} onChange={(e) => upd("campanha", e.target.value)} /></Field>
+          <Field label="Status">
+            <Select value={oferta.status} onValueChange={(v) => upd("status", v as Status)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
           <Field label="Descrição" className="md:col-span-2"><Input value={oferta.descricao} onChange={(e) => upd("descricao", e.target.value)} /></Field>
           <Field label="Fornecedor">
             <Select value={oferta.fornecedor} onValueChange={(v) => upd("fornecedor", v)}>
@@ -329,13 +549,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: DialogP
           <Field label="Corredor"><Input value={oferta.corredor} onChange={(e) => upd("corredor", e.target.value)} placeholder="A1" /></Field>
           <Field label="Estoque"><Input type="number" value={oferta.estoque} onChange={(e) => upd("estoque", parseInt(e.target.value) || 0)} /></Field>
           <Field label="Margem (%)"><Input type="number" step="0.1" value={oferta.margem} onChange={(e) => upd("margem", parseFloat(e.target.value) || 0)} /></Field>
-          <Field label="Status">
-            <Select value={oferta.status} onValueChange={(v) => upd("status", v as Status)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <div className="flex items-center gap-3 rounded-md border p-3">
+          <div className="flex items-center gap-3 rounded-md border p-3 md:col-span-2">
             <Switch checked={oferta.clubeSumel} onCheckedChange={(v) => upd("clubeSumel", v)} id="clube" />
             <Label htmlFor="clube" className="cursor-pointer">Oferta Clube Sumel</Label>
           </div>
