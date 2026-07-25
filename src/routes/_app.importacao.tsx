@@ -226,7 +226,7 @@ function ProdutosTab() {
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
               <Download className="h-4 w-4 mr-2" />Modelo XLSX
             </Button>
-            <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={onFile} />
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={onFile} />
             <Button onClick={() => fileRef.current?.click()} className="bg-primary hover:bg-primary/90">
               <Upload className="h-4 w-4 mr-2" />Selecionar arquivo
             </Button>
