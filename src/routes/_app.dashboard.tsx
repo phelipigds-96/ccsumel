@@ -173,7 +173,7 @@ function DashboardPage() {
         <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Nova campanha", to: "/campanhas", icon: Megaphone },
-            { label: "Publicar oferta", to: "/central-de-ofertas", icon: Tag },
+            { label: "Publicar oferta", to: "/campanhas", icon: Tag },
             { label: "Solicitar verba", to: "/verbas-cooperadas", icon: Wallet },
             { label: "Cadastrar fornecedor", to: "/fornecedores", icon: Truck },
           ].map((s) => (

@@ -20,7 +20,6 @@ import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-
 import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
-import { Route as AppCentralDeOfertasRouteImport } from './routes/_app.central-de-ofertas'
 import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
 
 const LoginRoute = LoginRouteImport.update({
@@ -77,11 +76,6 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCentralDeOfertasRoute = AppCentralDeOfertasRouteImport.update({
-  id: '/central-de-ofertas',
-  path: '/central-de-ofertas',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppCampanhasRoute = AppCampanhasRouteImport.update({
   id: '/campanhas',
   path: '/campanhas',
@@ -92,7 +86,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/campanhas': typeof AppCampanhasRoute
-  '/central-de-ofertas': typeof AppCentralDeOfertasRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
@@ -106,7 +99,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/campanhas': typeof AppCampanhasRoute
-  '/central-de-ofertas': typeof AppCentralDeOfertasRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
@@ -122,7 +114,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/campanhas': typeof AppCampanhasRoute
-  '/_app/central-de-ofertas': typeof AppCentralDeOfertasRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/fornecedores': typeof AppFornecedoresRoute
@@ -138,7 +129,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/campanhas'
-    | '/central-de-ofertas'
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
@@ -152,7 +142,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/campanhas'
-    | '/central-de-ofertas'
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
@@ -167,7 +156,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/campanhas'
-    | '/_app/central-de-ofertas'
     | '/_app/configuracoes'
     | '/_app/dashboard'
     | '/_app/fornecedores'
@@ -263,13 +251,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/central-de-ofertas': {
-      id: '/_app/central-de-ofertas'
-      path: '/central-de-ofertas'
-      fullPath: '/central-de-ofertas'
-      preLoaderRoute: typeof AppCentralDeOfertasRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/campanhas': {
       id: '/_app/campanhas'
       path: '/campanhas'
@@ -282,7 +263,6 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppCampanhasRoute: typeof AppCampanhasRoute
-  AppCentralDeOfertasRoute: typeof AppCentralDeOfertasRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppFornecedoresRoute: typeof AppFornecedoresRoute
@@ -295,7 +275,6 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppCampanhasRoute: AppCampanhasRoute,
-  AppCentralDeOfertasRoute: AppCentralDeOfertasRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppFornecedoresRoute: AppFornecedoresRoute,
