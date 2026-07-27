@@ -93,6 +93,7 @@ const loadState = (): State => {
     const campanhasMigradas: Campanha[] = campanhasRaw.map((cp) => ({
       ...cp,
       filiais: Array.isArray(cp?.filiais) ? cp.filiais : [],
+      clubeSumel: typeof cp?.clubeSumel === "boolean" ? cp.clubeSumel : false,
       materiais: Array.isArray(cp?.materiais) ? cp.materiais : [],
     }));
     return {
