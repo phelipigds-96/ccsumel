@@ -15,6 +15,7 @@ import {
   Clock,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { useCampanhasStore, categoriaCampanha } from "@/lib/campanhas-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
