@@ -793,7 +793,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
             </Select>
           </Field>
           <Field label="Preço Atual (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
-          <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} onChange={(e) => upd("custo", parseFloat(e.target.value) || 0)} /></Field>
+          <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} readOnly disabled className="bg-muted cursor-not-allowed" /></Field>
 
           {/* Sugestões de desconto */}
           <div className="md:col-span-2 rounded-lg border p-4 bg-card">
