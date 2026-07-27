@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import logoAsset from "@/assets/logo-sumel.png.asset.json";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -50,11 +51,11 @@ function LoginPage() {
           style={{ backgroundImage: "radial-gradient(circle at 20% 20%, var(--primary) 0, transparent 40%), radial-gradient(circle at 80% 80%, var(--primary) 0, transparent 45%)" }}
         />
         <div className="relative">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-md bg-primary text-primary-foreground font-black text-lg">C</div>
-            <div>
-              <div className="text-lg font-bold">Central de Campanhas</div>
-              <div className="text-xs uppercase tracking-widest text-white/60">Marketing e Compras</div>
+          <div className="inline-flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-sm">
+            <img src={logoAsset.url} alt="Sumel" className="h-10 w-auto" />
+            <div className="border-l border-navy/10 pl-3">
+              <div className="text-sm font-bold text-navy">Central de Campanhas</div>
+              <div className="text-[10px] uppercase tracking-widest text-navy/60">Marketing e Compras</div>
             </div>
           </div>
         </div>
@@ -73,7 +74,7 @@ function LoginPage() {
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8 flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-md bg-primary text-primary-foreground font-black">C</div>
+            <img src={logoAsset.url} alt="Sumel" className="h-10 w-auto" />
             <div className="text-base font-bold text-navy">Central de Campanhas</div>
           </div>
           <h2 className="text-2xl font-bold text-foreground">Entrar</h2>
