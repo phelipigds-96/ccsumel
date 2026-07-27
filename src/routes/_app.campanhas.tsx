@@ -31,6 +31,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
