@@ -541,7 +541,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   </TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>
-                  <TableCell className="text-xs">{o.filial}</TableCell>
+                  <TableCell className="text-xs">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>
                   <TableCell className="text-xs">{o.corredor}</TableCell>
                   <TableCell className="text-right">{o.estoque}</TableCell>
                   <TableCell className="text-right">{o.margem.toFixed(1)}%</TableCell>
