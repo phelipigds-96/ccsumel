@@ -624,8 +624,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   {isVisible("margem") && <TableCell className="text-right">{o.margem.toFixed(1)}%</TableCell>}
                   {isVisible("status") && <TableCell><Badge variant="outline" className={statusVariant[o.status]}>{o.status}</Badge></TableCell>}
                   <TableCell className="text-right whitespace-nowrap">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    {readOnly ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      <>
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
