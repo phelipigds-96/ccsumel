@@ -63,20 +63,28 @@ const seedOfertas: Oferta[] = [
 
 const KEY_CAMP = "sgmc.campanhas.v1";
 const KEY_OFER = "sgmc.ofertas.v1";
+const KEY_ACER = "sgmc.acertos.v1";
 
-type State = { campanhas: Campanha[]; ofertas: Oferta[] };
+export interface Acerto {
+  quantidadeVendida: number;
+  registradoEm: string;
+}
+
+type State = { campanhas: Campanha[]; ofertas: Oferta[]; acertos: Record<string, Acerto> };
 
 const loadState = (): State => {
-  if (typeof window === "undefined") return { campanhas: seedCampanhas, ofertas: seedOfertas };
+  if (typeof window === "undefined") return { campanhas: seedCampanhas, ofertas: seedOfertas, acertos: {} };
   try {
     const c = window.localStorage.getItem(KEY_CAMP);
     const o = window.localStorage.getItem(KEY_OFER);
+    const a = window.localStorage.getItem(KEY_ACER);
     return {
       campanhas: c ? (JSON.parse(c) as Campanha[]) : seedCampanhas,
       ofertas: o ? (JSON.parse(o) as Oferta[]) : seedOfertas,
+      acertos: a ? (JSON.parse(a) as Record<string, Acerto>) : {},
     };
   } catch {
-    return { campanhas: seedCampanhas, ofertas: seedOfertas };
+    return { campanhas: seedCampanhas, ofertas: seedOfertas, acertos: {} };
   }
 };
 
@@ -89,6 +97,7 @@ const persist = () => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(KEY_CAMP, JSON.stringify(state.campanhas));
   window.localStorage.setItem(KEY_OFER, JSON.stringify(state.ofertas));
+  window.localStorage.setItem(KEY_ACER, JSON.stringify(state.acertos));
 };
 
 export const campanhasStore = {
@@ -107,9 +116,20 @@ export const campanhasStore = {
     persist();
     emit();
   },
+  setAcerto: (ofertaId: string, quantidadeVendida: number) => {
+    state = {
+      ...state,
+      acertos: {
+        ...state.acertos,
+        [ofertaId]: { quantidadeVendida, registradoEm: new Date().toISOString() },
+      },
+    };
+    persist();
+    emit();
+  },
 };
 
-const serverSnap: State = { campanhas: seedCampanhas, ofertas: seedOfertas };
+const serverSnap: State = { campanhas: seedCampanhas, ofertas: seedOfertas, acertos: {} };
 
 export function useCampanhasStore(): State {
   return useSyncExternalStore(
