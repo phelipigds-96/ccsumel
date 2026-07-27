@@ -1,5 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import logoSumel from "@/assets/logo-sumel.png.asset.json";
+
 import {
   LayoutDashboard,
   Megaphone,
