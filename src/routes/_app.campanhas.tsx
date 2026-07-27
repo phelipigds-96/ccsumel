@@ -57,7 +57,7 @@ const FILIAIS = ["Matriz", "Filial 01", "Filial 02", "Filial 03"];
 const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
 const emptyCampanha = (): Campanha => ({
-  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", materiais: [],
+  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", filiais: [], materiais: [],
 });
 
 const emptyOferta = (campanha: Campanha): Oferta => ({
@@ -65,7 +65,7 @@ const emptyOferta = (campanha: Campanha): Oferta => ({
   fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
   precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
-  filiais: [], corredor: "", estoque: 0, margem: 0, status: campanha.status,
+  filiais: [...(campanha.filiais ?? [])], corredor: "", estoque: 0, margem: 0, status: campanha.status,
   selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
 });
 
