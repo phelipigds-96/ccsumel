@@ -38,7 +38,7 @@ function Gate() {
             <div className="h-6 w-px bg-border" />
             <div className="text-sm font-semibold text-navy">Central de campanhas Sumel</div>
             <div className="ml-auto text-xs text-muted-foreground">
-              {user?.email}
+              {user?.username}
             </div>
           </header>
           <main className="flex-1 p-6">
