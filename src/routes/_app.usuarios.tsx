@@ -117,6 +117,7 @@ function UsuariosPage() {
       notes: u.notes ?? "",
       permissions: u.permissions,
       isAdmin: !!u.isAdmin,
+      readOnly: !!u.readOnly,
     });
     setDialogOpen(true);
   }
