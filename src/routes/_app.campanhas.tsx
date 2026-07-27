@@ -732,9 +732,9 @@ function MateriaisUploader({
   );
 }
 
-function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
+function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPermitidas }: {
   open: boolean; onOpenChange: (v: boolean) => void; oferta: Oferta | null;
-  setOferta: (o: Oferta) => void; onSave: () => void;
+  setOferta: (o: Oferta) => void; onSave: () => void; filiaisPermitidas: string[];
 }) {
   const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
