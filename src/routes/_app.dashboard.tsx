@@ -55,6 +55,26 @@ const STATUS: Record<string, string> = {
 
 function DashboardPage() {
   const hoje = new Date();
+  const { campanhas: rawCampanhas, ofertas: rawOfertas } = useCampanhasStore();
+
+  const campanhas: CampanhaDash[] = useMemo(() => {
+    return rawCampanhas.map((c) => {
+      const cat = categoriaCampanha(c);
+      const status: CampanhaDash["status"] =
+        cat === "ativa" ? "Ativa" : cat === "futura" ? "Programada" : "Encerrada";
+      const ofertas = rawOfertas.filter((o) => o.campanhaId === c.id).length;
+      return {
+        id: c.id,
+        nome: c.nome,
+        dataInicial: c.dataInicial,
+        dataFinal: c.dataFinal,
+        lojas: 0,
+        ofertas,
+        status,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawCampanhas, rawOfertas]);
 
   const ativas = useMemo(
     () => campanhas.filter(c =>
