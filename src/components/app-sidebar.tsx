@@ -103,18 +103,19 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground font-black">
-            C
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-white p-1">
+            <img src={logoSumel.url} alt="Sumel" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <div className="text-sm font-bold text-sidebar-foreground leading-tight truncate">Central de Campanhas</div>
-              <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60 truncate">
+            <div className="min-w-0 flex-1">
+              <img src={logoSumel.url} alt="Sumel" className="h-6 w-auto object-contain" />
+              <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60 truncate mt-0.5">
                 MARKETING E COMPRAS
               </div>
             </div>
           )}
         </div>
+
       </SidebarHeader>
 
       <SidebarContent>
