@@ -31,6 +31,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -191,6 +192,8 @@ interface ListProps {
 }
 
 function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListProps) {
+  const { user } = useAuth();
+  const readOnly = !!user?.readOnly;
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -268,8 +271,12 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
           </div>
           <div className="flex items-center gap-1">
             <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            {!readOnly && (
+              <>
+                <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </>
+            )}
             <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
               Abrir <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
@@ -285,9 +292,11 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         title="Campanhas"
         description="Campanhas ativas e programadas. As encerradas ficam em Campanhas Encerradas."
         actions={
-          <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
-            <Plus className="mr-2 h-4 w-4" />Nova Campanha
-          </Button>
+          !readOnly ? (
+            <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
+              <Plus className="mr-2 h-4 w-4" />Nova Campanha
+            </Button>
+          ) : undefined
         }
       />
 
@@ -375,6 +384,8 @@ interface DetalheProps {
 }
 
 function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOferta }: DetalheProps) {
+  const { user } = useAuth();
+  const readOnly = !!user?.readOnly;
   const [search, setSearch] = useState("");
   const [fCategoria, setFCategoria] = useState("todas");
   const [fStatus, setFStatus] = useState("todos");
@@ -465,7 +476,9 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           <>
             <Badge variant="outline" className={`${statusVariant[campanha.status]} mr-1`}>{campanha.status}</Badge>
             <Button variant="outline" onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</Button>
-            <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
+            {!readOnly && (
+              <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
+            )}
           </>
         }
       />
@@ -488,6 +501,10 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           <div className="text-xs text-muted-foreground mt-0.5">Materiais de apoio para as lojas</div>
         </div>
       </div>
+
+      {campanha.materiais.length > 0 && (
+        <MateriaisViewer materiais={campanha.materiais} />
+      )}
 
       <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_170px_170px_150px_170px_140px]">
         <div className="relative">
@@ -611,8 +628,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   {isVisible("margem") && <TableCell className="text-right">{o.margem.toFixed(1)}%</TableCell>}
                   {isVisible("status") && <TableCell><Badge variant="outline" className={statusVariant[o.status]}>{o.status}</Badge></TableCell>}
                   <TableCell className="text-right whitespace-nowrap">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    {readOnly ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      <>
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -716,6 +739,34 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
 // ============ MATERIAIS DE APOIO ============
 
 const BUCKET = "campanha-materiais";
+
+function MateriaisViewer({ materiais }: { materiais: MaterialApoio[] }) {
+  const openMaterial = async (m: MaterialApoio) => {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(m.path, 60 * 10);
+    if (error || !data) { toast.error("Não foi possível abrir o arquivo."); return; }
+    window.open(data.signedUrl, "_blank", "noopener");
+  };
+  return (
+    <div className="rounded-xl border bg-card p-4 mb-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Paperclip className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-navy">Anexos da campanha</h3>
+        <span className="text-xs text-muted-foreground">({materiais.length})</span>
+      </div>
+      <ul className="grid gap-1.5 sm:grid-cols-2">
+        {materiais.map((m) => (
+          <li key={m.path} className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
+            {m.tipo.startsWith("image/") ? <ImageIcon className="h-4 w-4 text-navy shrink-0" /> : <FileText className="h-4 w-4 text-primary shrink-0" />}
+            <button type="button" onClick={() => openMaterial(m)} className="flex-1 text-left truncate hover:underline text-navy">
+              {m.nome}
+            </button>
+            <span className="text-xs text-muted-foreground">{(m.tamanho / 1024).toFixed(0)} KB</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 const ACCEPT = "image/jpeg,image/jpg,image/png,application/pdf";
 
 function isImage(tipo: string) { return tipo.startsWith("image/"); }

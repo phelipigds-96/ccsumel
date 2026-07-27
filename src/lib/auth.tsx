@@ -29,6 +29,7 @@ export interface StoredUser {
   notes?: string;
   permissions: string[]; // urls the user can access
   isAdmin?: boolean;
+  readOnly?: boolean; // if true, can only view campanhas/ofertas (no edit)
   createdAt: string;
 }
 
@@ -38,6 +39,7 @@ export interface SessionUser {
   username: string;
   permissions: string[];
   isAdmin: boolean;
+  readOnly: boolean;
 }
 
 interface AuthContextValue {
@@ -126,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: found.username,
       permissions: found.isAdmin ? ALL_PERMISSIONS : found.permissions,
       isAdmin: !!found.isAdmin,
+      readOnly: !found.isAdmin && !!found.readOnly,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     setUser(session);
@@ -169,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: updated.username,
         permissions: updated.isAdmin ? ALL_PERMISSIONS : updated.permissions,
         isAdmin: !!updated.isAdmin,
+        readOnly: !updated.isAdmin && !!updated.readOnly,
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       setUser(session);

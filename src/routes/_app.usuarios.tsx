@@ -64,6 +64,7 @@ interface FormState {
   notes: string;
   permissions: string[];
   isAdmin: boolean;
+  readOnly: boolean;
 }
 
 const emptyForm = (): FormState => ({
@@ -75,6 +76,7 @@ const emptyForm = (): FormState => ({
   notes: "",
   permissions: [],
   isAdmin: false,
+  readOnly: false,
 });
 
 function UsuariosPage() {
@@ -115,6 +117,7 @@ function UsuariosPage() {
       notes: u.notes ?? "",
       permissions: u.permissions,
       isAdmin: !!u.isAdmin,
+      readOnly: !!u.readOnly,
     });
     setDialogOpen(true);
   }
@@ -162,6 +165,7 @@ function UsuariosPage() {
           notes: form.notes.trim() || undefined,
           permissions: form.isAdmin ? ALL_PERMISSIONS : form.permissions,
           isAdmin: form.isAdmin,
+          readOnly: !form.isAdmin && form.readOnly,
         };
         if (form.password) patch.password = form.password;
         updateUser(editing.id, patch);
@@ -175,6 +179,7 @@ function UsuariosPage() {
           notes: form.notes.trim() || undefined,
           permissions: form.isAdmin ? ALL_PERMISSIONS : form.permissions,
           isAdmin: form.isAdmin,
+          readOnly: !form.isAdmin && form.readOnly,
         });
         toast.success("Usuário cadastrado.");
       }
@@ -259,6 +264,10 @@ function UsuariosPage() {
                   {u.isAdmin ? (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
                       <ShieldCheck className="h-3.5 w-3.5" /> Administrador
+                    </span>
+                  ) : u.readOnly ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+                      <UserIcon className="h-3.5 w-3.5" /> Somente leitura
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -364,6 +373,21 @@ function UsuariosPage() {
                 />
               </div>
             </div>
+
+            {!form.isAdmin && (
+              <div className="flex items-center justify-between rounded-md border p-3 bg-amber-50/50">
+                <div>
+                  <div className="text-sm font-medium">Somente leitura em Campanhas</div>
+                  <div className="text-xs text-muted-foreground">
+                    O usuário poderá visualizar as campanhas, as ofertas e os anexos, mas não poderá criar, editar ou excluir.
+                  </div>
+                </div>
+                <Switch
+                  checked={form.readOnly}
+                  onCheckedChange={(v) => setForm({ ...form, readOnly: v })}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="notes">Observações (opcional)</Label>
