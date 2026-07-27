@@ -15,6 +15,7 @@ import {
   Clock,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { useCampanhasStore, categoriaCampanha } from "@/lib/campanhas-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,25 +37,15 @@ export const Route = createFileRoute("/_app/dashboard")({
   component: DashboardPage,
 });
 
-// ------- MOCK DATA -------
 interface CampanhaDash {
   id: string;
   nome: string;
-  dataInicial: string; // ISO
-  dataFinal: string;   // ISO
+  dataInicial: string;
+  dataFinal: string;
   lojas: number;
   ofertas: number;
   status: "Ativa" | "Programada" | "Encerrada";
 }
-
-const campanhas: CampanhaDash[] = [
-  { id: "c1", nome: "Semana do Cliente",       dataInicial: "2026-07-22", dataFinal: "2026-07-28", lojas: 42, ofertas: 24, status: "Ativa" },
-  { id: "c2", nome: "Verão Gelado",            dataInicial: "2026-07-20", dataFinal: "2026-08-15", lojas: 58, ofertas: 36, status: "Ativa" },
-  { id: "c3", nome: "Volta às Aulas",          dataInicial: "2026-08-01", dataFinal: "2026-08-20", lojas: 60, ofertas: 42, status: "Programada" },
-  { id: "c4", nome: "Café da Manhã",           dataInicial: "2026-07-15", dataFinal: "2026-07-30", lojas: 35, ofertas: 18, status: "Ativa" },
-  { id: "c5", nome: "Higiene em Dobro",        dataInicial: "2026-08-10", dataFinal: "2026-08-31", lojas: 50, ofertas: 28, status: "Programada" },
-  { id: "c6", nome: "Setembro Saudável",       dataInicial: "2026-09-01", dataFinal: "2026-09-15", lojas: 40, ofertas: 22, status: "Programada" },
-];
 
 const STATUS: Record<string, string> = {
   Ativa: "bg-primary/10 text-primary border-primary/20",
@@ -64,13 +55,33 @@ const STATUS: Record<string, string> = {
 
 function DashboardPage() {
   const hoje = new Date();
+  const { campanhas: rawCampanhas, ofertas: rawOfertas } = useCampanhasStore();
+
+  const campanhas: CampanhaDash[] = useMemo(() => {
+    return rawCampanhas.map((c) => {
+      const cat = categoriaCampanha(c);
+      const status: CampanhaDash["status"] =
+        cat === "ativa" ? "Ativa" : cat === "futura" ? "Programada" : "Encerrada";
+      const ofertas = rawOfertas.filter((o) => o.campanhaId === c.id).length;
+      return {
+        id: c.id,
+        nome: c.nome,
+        dataInicial: c.dataInicial,
+        dataFinal: c.dataFinal,
+        lojas: 0,
+        ofertas,
+        status,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawCampanhas, rawOfertas]);
 
   const ativas = useMemo(
     () => campanhas.filter(c =>
       isWithinInterval(hoje, { start: parseISO(c.dataInicial), end: parseISO(c.dataFinal) })
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [campanhas],
   );
 
   const proximas = useMemo(
@@ -79,14 +90,14 @@ function DashboardPage() {
       .sort((a, b) => a.dataInicial.localeCompare(b.dataInicial))
       .slice(0, 5),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [campanhas],
   );
 
   const ultimas = useMemo(
     () => [...campanhas]
       .sort((a, b) => b.dataInicial.localeCompare(a.dataInicial))
       .slice(0, 5),
-    [],
+    [campanhas],
   );
 
   const produtosEmOferta = campanhas
