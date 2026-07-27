@@ -192,6 +192,8 @@ interface ListProps {
 }
 
 function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListProps) {
+  const { user } = useAuth();
+  const readOnly = !!user?.readOnly;
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
