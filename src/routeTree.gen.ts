@@ -23,6 +23,7 @@ import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoe
 import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalogo-de-produtos'
 import { Route as AppCampanhasEncerradasRouteImport } from './routes/_app.campanhas-encerradas'
 import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
+import { Route as AppSellOutIndexRouteImport } from './routes/_app.sell-out.index'
 import { Route as AppSellOutAcertosRouteImport } from './routes/_app.sell-out.acertos'
 
 const LoginRoute = LoginRouteImport.update({
@@ -94,6 +95,11 @@ const AppCampanhasRoute = AppCampanhasRouteImport.update({
   path: '/campanhas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSellOutIndexRoute = AppSellOutIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSellOutRoute,
+} as any)
 const AppSellOutAcertosRoute = AppSellOutAcertosRouteImport.update({
   id: '/acertos',
   path: '/acertos',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
   '/sell-out/acertos': typeof AppSellOutAcertosRoute
+  '/sell-out/': typeof AppSellOutIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -127,10 +134,10 @@ export interface FileRoutesByTo {
   '/fornecedores': typeof AppFornecedoresRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/relatorios': typeof AppRelatoriosRoute
-  '/sell-out': typeof AppSellOutRouteWithChildren
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
   '/sell-out/acertos': typeof AppSellOutAcertosRoute
+  '/sell-out': typeof AppSellOutIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,6 +156,7 @@ export interface FileRoutesById {
   '/_app/usuarios': typeof AppUsuariosRoute
   '/_app/verbas-cooperadas': typeof AppVerbasCooperadasRoute
   '/_app/sell-out/acertos': typeof AppSellOutAcertosRoute
+  '/_app/sell-out/': typeof AppSellOutIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,6 +175,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/verbas-cooperadas'
     | '/sell-out/acertos'
+    | '/sell-out/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -179,10 +188,10 @@ export interface FileRouteTypes {
     | '/fornecedores'
     | '/pontas-de-gondola'
     | '/relatorios'
-    | '/sell-out'
     | '/usuarios'
     | '/verbas-cooperadas'
     | '/sell-out/acertos'
+    | '/sell-out'
   id:
     | '__root__'
     | '/'
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/_app/usuarios'
     | '/_app/verbas-cooperadas'
     | '/_app/sell-out/acertos'
+    | '/_app/sell-out/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -308,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCampanhasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/sell-out/': {
+      id: '/_app/sell-out/'
+      path: '/'
+      fullPath: '/sell-out/'
+      preLoaderRoute: typeof AppSellOutIndexRouteImport
+      parentRoute: typeof AppSellOutRoute
+    }
     '/_app/sell-out/acertos': {
       id: '/_app/sell-out/acertos'
       path: '/acertos'
@@ -320,10 +337,12 @@ declare module '@tanstack/react-router' {
 
 interface AppSellOutRouteChildren {
   AppSellOutAcertosRoute: typeof AppSellOutAcertosRoute
+  AppSellOutIndexRoute: typeof AppSellOutIndexRoute
 }
 
 const AppSellOutRouteChildren: AppSellOutRouteChildren = {
   AppSellOutAcertosRoute: AppSellOutAcertosRoute,
+  AppSellOutIndexRoute: AppSellOutIndexRoute,
 }
 
 const AppSellOutRouteWithChildren = AppSellOutRoute._addFileChildren(
