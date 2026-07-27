@@ -33,7 +33,7 @@ export interface Oferta {
   clubeSumel: boolean;
   dataInicial: string;
   dataFinal: string;
-  filial: string;
+  filiais: string[];
   corredor: string;
   estoque: number;
   margem: number;
