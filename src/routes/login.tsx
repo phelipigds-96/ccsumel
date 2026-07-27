@@ -69,9 +69,8 @@ function LoginPage() {
 
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-8 flex items-center gap-3">
-            <img src={logoAsset.url} alt="Sumel" className="h-10 w-auto" />
-            <div className="text-base font-bold text-navy">Central de Campanhas</div>
+          <div className="lg:hidden mb-8 flex justify-center">
+            <img src={logoAsset.url} alt="Sumel" className="h-12 w-auto" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">Entrar</h2>
           <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta para continuar.</p>
