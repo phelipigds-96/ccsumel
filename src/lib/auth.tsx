@@ -128,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: found.username,
       permissions: found.isAdmin ? ALL_PERMISSIONS : found.permissions,
       isAdmin: !!found.isAdmin,
+      readOnly: !found.isAdmin && !!found.readOnly,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     setUser(session);
