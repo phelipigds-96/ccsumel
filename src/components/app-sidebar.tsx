@@ -12,7 +12,7 @@ import {
   LogOut,
   Package,
   Archive,
-
+  Calculator,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,17 +25,33 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth";
 
-const items = [
+type Item = {
+  title: string;
+  url: string;
+  icon: typeof LayoutDashboard;
+  children?: { title: string; url: string; icon: typeof LayoutDashboard }[];
+};
+
+const items: Item[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Campanhas", url: "/campanhas", icon: Megaphone },
   { title: "Campanhas Encerradas", url: "/campanhas-encerradas", icon: Archive },
-
   { title: "Verbas Cooperadas", url: "/verbas-cooperadas", icon: Wallet },
-  { title: "Sell Out", url: "/sell-out", icon: ShoppingCart },
+  {
+    title: "Sell Out",
+    url: "/sell-out",
+    icon: ShoppingCart,
+    children: [
+      { title: "Acertos", url: "/sell-out/acertos", icon: Calculator },
+    ],
+  },
   { title: "Pontas de Gôndola", url: "/pontas-de-gondola", icon: PackageOpen },
   { title: "Fornecedores", url: "/fornecedores", icon: Truck },
   { title: "Catálogo de Produtos", url: "/catalogo-de-produtos", icon: Package },
@@ -82,6 +98,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => {
                 const active = pathname === item.url;
+                const hasChildren = !!item.children?.length;
+                const parentOpen = hasChildren && (active || item.children!.some((c) => pathname.startsWith(c.url)));
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
@@ -90,7 +108,23 @@ export function AppSidebar() {
                         {!collapsed && <span className="truncate">{item.title}</span>}
                       </Link>
                     </SidebarMenuButton>
-
+                    {hasChildren && !collapsed && parentOpen && (
+                      <SidebarMenuSub>
+                        {item.children!.map((child) => {
+                          const childActive = pathname === child.url;
+                          return (
+                            <SidebarMenuSubItem key={child.url}>
+                              <SidebarMenuSubButton asChild isActive={childActive}>
+                                <Link to={child.url} onClick={handleNavigate} className="flex items-center gap-2">
+                                  <child.icon className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="truncate">{child.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    )}
                   </SidebarMenuItem>
                 );
               })}
