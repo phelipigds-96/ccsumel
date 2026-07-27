@@ -122,7 +122,7 @@ function CatalogoProdutos() {
           );
         },
       });
-      await saveImportHistorico(res, { usuario: user?.email ?? null, arquivo: file.name });
+      await saveImportHistorico(res, { usuario: user?.username ?? null, arquivo: file.name });
       toast.success("Importação concluída", { id: toastId });
       setResult({ ...res, arquivo: file.name });
       setShowResult(true);
