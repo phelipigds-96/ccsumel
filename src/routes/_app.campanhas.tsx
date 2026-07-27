@@ -502,6 +502,10 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         </div>
       </div>
 
+      {campanha.materiais.length > 0 && (
+        <MateriaisViewer materiais={campanha.materiais} />
+      )}
+
       <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_170px_170px_150px_170px_140px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
