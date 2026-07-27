@@ -384,6 +384,8 @@ interface DetalheProps {
 }
 
 function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOferta }: DetalheProps) {
+  const { user } = useAuth();
+  const readOnly = !!user?.readOnly;
   const [search, setSearch] = useState("");
   const [fCategoria, setFCategoria] = useState("todas");
   const [fStatus, setFStatus] = useState("todos");
