@@ -65,7 +65,7 @@ const emptyOferta = (campanha: Campanha): Oferta => ({
   fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
   precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
-  filial: FILIAIS[0], corredor: "", estoque: 0, margem: 0, status: "Rascunho",
+  filiais: [], corredor: "", estoque: 0, margem: 0, status: campanha.status,
   selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
 });
 
