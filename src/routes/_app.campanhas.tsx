@@ -2,8 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
-  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign,
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useColumnPrefs } from "@/lib/column-prefs";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -380,6 +385,30 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const COLUMNS: { key: string; label: string }[] = [
+    { key: "codigo", label: "Código" },
+    { key: "descricao", label: "Descrição" },
+    { key: "fornecedor", label: "Fornecedor" },
+    { key: "categoria", label: "Categoria" },
+    { key: "precoNormal", label: "Preço Normal" },
+    { key: "precoPromocional", label: "Preço Promo" },
+    { key: "clubeSumel", label: "Clube" },
+    { key: "sellout", label: "Sell Out" },
+    { key: "dataInicial", label: "Início" },
+    { key: "dataFinal", label: "Fim" },
+    { key: "filiais", label: "Filial" },
+    { key: "corredor", label: "Corredor" },
+    { key: "estoque", label: "Estoque" },
+    { key: "margem", label: "Margem" },
+    { key: "status", label: "Status" },
+  ];
+  const { isVisible, toggle } = useColumnPrefs(
+    "campanhas.ofertas",
+    COLUMNS.map((c) => c.key),
+    { filiais: false },
+  );
+  const visibleCount = COLUMNS.filter((c) => isVisible(c.key)).length + 1; // +Ações
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return ofertas.filter(o => {
@@ -460,7 +489,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_170px_170px_150px_170px]">
+      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_170px_170px_150px_170px_140px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -495,6 +524,30 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             <SelectItem value="sem">Sem verba</SelectItem>
           </SelectContent>
         </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="justify-start">
+              <Columns3 className="h-4 w-4 mr-2" /> Colunas
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Colunas visíveis</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {COLUMNS.map((col) => {
+              const on = isVisible(col.key);
+              return (
+                <DropdownMenuItem
+                  key={col.key}
+                  onSelect={(e) => { e.preventDefault(); toggle(col.key); }}
+                  className="flex items-center justify-between cursor-pointer"
+                >
+                  <span>{col.label}</span>
+                  {on && <Check className="h-4 w-4 text-primary" />}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="rounded-xl border bg-card overflow-hidden">
@@ -502,57 +555,61 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           <Table>
             <TableHeader>
               <TableRow className="bg-navy/5">
-                <TableHead>Código</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Fornecedor</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead className="text-right">Normal</TableHead>
-                <TableHead className="text-right">Promo</TableHead>
-                <TableHead className="text-center">Clube</TableHead>
-                <TableHead className="text-right">Sell Out</TableHead>
-                <TableHead>Início</TableHead>
-                <TableHead>Fim</TableHead>
-                <TableHead>Filial</TableHead>
-                <TableHead>Corredor</TableHead>
-                <TableHead className="text-right">Estoque</TableHead>
-                <TableHead className="text-right">Margem</TableHead>
-                <TableHead>Status</TableHead>
+                {isVisible("codigo") && <TableHead>Código</TableHead>}
+                {isVisible("descricao") && <TableHead>Descrição</TableHead>}
+                {isVisible("fornecedor") && <TableHead>Fornecedor</TableHead>}
+                {isVisible("categoria") && <TableHead>Categoria</TableHead>}
+                {isVisible("precoNormal") && <TableHead className="text-right">Normal</TableHead>}
+                {isVisible("precoPromocional") && <TableHead className="text-right">Promo</TableHead>}
+                {isVisible("clubeSumel") && <TableHead className="text-center">Clube</TableHead>}
+                {isVisible("sellout") && <TableHead className="text-right">Sell Out</TableHead>}
+                {isVisible("dataInicial") && <TableHead>Início</TableHead>}
+                {isVisible("dataFinal") && <TableHead>Fim</TableHead>}
+                {isVisible("filiais") && <TableHead>Filial</TableHead>}
+                {isVisible("corredor") && <TableHead>Corredor</TableHead>}
+                {isVisible("estoque") && <TableHead className="text-right">Estoque</TableHead>}
+                {isVisible("margem") && <TableHead className="text-right">Margem</TableHead>}
+                {isVisible("status") && <TableHead>Status</TableHead>}
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={16} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={visibleCount} className="text-center py-10 text-muted-foreground">
                     Nenhuma oferta cadastrada nesta campanha ainda.
                   </TableCell>
                 </TableRow>
               ) : filtered.map((o) => (
                 <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs">{o.codigo}</TableCell>
-                  <TableCell className="font-medium max-w-[240px] truncate">{o.descricao}</TableCell>
-                  <TableCell>{o.fornecedor}</TableCell>
-                  <TableCell>{o.categoria}</TableCell>
-                  <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>
-                  <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>
-                  <TableCell className="text-center">
-                    {o.clubeSumel ? <Badge className="bg-primary/10 text-primary border-primary/20"><Tag className="h-3 w-3 mr-1" />Sim</Badge> : <span className="text-muted-foreground text-xs">Não</span>}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {o.selloutTemVerba ? (
-                      <div className="flex flex-col items-end leading-tight">
-                        <span className="font-semibold text-navy">{brl(o.selloutValor)}</span>
-                        {o.selloutFornecedor && <span className="text-[10px] text-muted-foreground">{o.selloutFornecedor}</span>}
-                      </div>
-                    ) : <span className="text-muted-foreground text-xs">—</span>}
-                  </TableCell>
-                  <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>
-                  <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>
-                  <TableCell className="text-xs">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>
-                  <TableCell className="text-xs">{o.corredor}</TableCell>
-                  <TableCell className="text-right">{o.estoque}</TableCell>
-                  <TableCell className="text-right">{o.margem.toFixed(1)}%</TableCell>
-                  <TableCell><Badge variant="outline" className={statusVariant[o.status]}>{o.status}</Badge></TableCell>
+                  {isVisible("codigo") && <TableCell className="font-mono text-xs">{o.codigo}</TableCell>}
+                  {isVisible("descricao") && <TableCell className="font-medium max-w-[240px] truncate">{o.descricao}</TableCell>}
+                  {isVisible("fornecedor") && <TableCell>{o.fornecedor}</TableCell>}
+                  {isVisible("categoria") && <TableCell>{o.categoria}</TableCell>}
+                  {isVisible("precoNormal") && <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>}
+                  {isVisible("precoPromocional") && <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>}
+                  {isVisible("clubeSumel") && (
+                    <TableCell className="text-center">
+                      {o.clubeSumel ? <Badge className="bg-primary/10 text-primary border-primary/20"><Tag className="h-3 w-3 mr-1" />Sim</Badge> : <span className="text-muted-foreground text-xs">Não</span>}
+                    </TableCell>
+                  )}
+                  {isVisible("sellout") && (
+                    <TableCell className="text-right">
+                      {o.selloutTemVerba ? (
+                        <div className="flex flex-col items-end leading-tight">
+                          <span className="font-semibold text-navy">{brl(o.selloutValor)}</span>
+                          {o.selloutFornecedor && <span className="text-[10px] text-muted-foreground">{o.selloutFornecedor}</span>}
+                        </div>
+                      ) : <span className="text-muted-foreground text-xs">—</span>}
+                    </TableCell>
+                  )}
+                  {isVisible("dataInicial") && <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>}
+                  {isVisible("dataFinal") && <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>}
+                  {isVisible("filiais") && <TableCell className="text-xs">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>}
+                  {isVisible("corredor") && <TableCell className="text-xs">{o.corredor}</TableCell>}
+                  {isVisible("estoque") && <TableCell className="text-right">{o.estoque}</TableCell>}
+                  {isVisible("margem") && <TableCell className="text-right">{o.margem.toFixed(1)}%</TableCell>}
+                  {isVisible("status") && <TableCell><Badge variant="outline" className={statusVariant[o.status]}>{o.status}</Badge></TableCell>}
                   <TableCell className="text-right whitespace-nowrap">
                     <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -563,6 +620,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           </Table>
         </div>
       </div>
+
 
 
       <OfertaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} oferta={editing} setOferta={setEditing} onSave={save} filiaisPermitidas={campanha.filiais ?? []} />
