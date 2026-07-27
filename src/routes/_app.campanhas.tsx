@@ -385,6 +385,30 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const COLUMNS: { key: string; label: string }[] = [
+    { key: "codigo", label: "Código" },
+    { key: "descricao", label: "Descrição" },
+    { key: "fornecedor", label: "Fornecedor" },
+    { key: "categoria", label: "Categoria" },
+    { key: "precoNormal", label: "Preço Normal" },
+    { key: "precoPromocional", label: "Preço Promo" },
+    { key: "clubeSumel", label: "Clube" },
+    { key: "sellout", label: "Sell Out" },
+    { key: "dataInicial", label: "Início" },
+    { key: "dataFinal", label: "Fim" },
+    { key: "filiais", label: "Filial" },
+    { key: "corredor", label: "Corredor" },
+    { key: "estoque", label: "Estoque" },
+    { key: "margem", label: "Margem" },
+    { key: "status", label: "Status" },
+  ];
+  const { isVisible, toggle } = useColumnPrefs(
+    "campanhas.ofertas",
+    COLUMNS.map((c) => c.key),
+    { filiais: false },
+  );
+  const visibleCount = COLUMNS.filter((c) => isVisible(c.key)).length + 1; // +Ações
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return ofertas.filter(o => {
