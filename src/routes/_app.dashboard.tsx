@@ -81,7 +81,7 @@ function DashboardPage() {
       isWithinInterval(hoje, { start: parseISO(c.dataInicial), end: parseISO(c.dataFinal) })
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [campanhas],
   );
 
   const proximas = useMemo(
@@ -90,14 +90,14 @@ function DashboardPage() {
       .sort((a, b) => a.dataInicial.localeCompare(b.dataInicial))
       .slice(0, 5),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [campanhas],
   );
 
   const ultimas = useMemo(
     () => [...campanhas]
       .sort((a, b) => b.dataInicial.localeCompare(a.dataInicial))
       .slice(0, 5),
-    [],
+    [campanhas],
   );
 
   const produtosEmOferta = campanhas
