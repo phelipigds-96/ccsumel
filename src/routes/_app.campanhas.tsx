@@ -613,6 +613,28 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
             </Select>
           </Field>
 
+          <Field label="Filiais participantes (selecione uma ou mais)">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-md border p-3">
+              {FILIAIS.map((f) => {
+                const checked = campanha.filiais?.includes(f) ?? false;
+                return (
+                  <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const atuais = campanha.filiais ?? [];
+                        upd("filiais", e.target.checked ? [...atuais, f] : atuais.filter((x) => x !== f));
+                      }}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    {f}
+                  </label>
+                );
+              })}
+            </div>
+          </Field>
+
           <MateriaisUploader
             campanhaId={campanha.id}
             materiais={campanha.materiais}
