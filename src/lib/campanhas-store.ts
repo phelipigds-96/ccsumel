@@ -88,8 +88,14 @@ const loadState = (): State => {
       }
       return of as Oferta;
     });
+    const campanhasRaw = c ? (JSON.parse(c) as any[]) : seedCampanhas;
+    const campanhasMigradas: Campanha[] = campanhasRaw.map((cp) => ({
+      ...cp,
+      filiais: Array.isArray(cp?.filiais) ? cp.filiais : [],
+      materiais: Array.isArray(cp?.materiais) ? cp.materiais : [],
+    }));
     return {
-      campanhas: c ? (JSON.parse(c) as Campanha[]) : seedCampanhas,
+      campanhas: campanhasMigradas,
       ofertas: ofertasMigradas,
       acertos: a ? (JSON.parse(a) as Record<string, Acerto>) : {},
     };
