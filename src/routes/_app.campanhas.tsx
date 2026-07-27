@@ -292,9 +292,11 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         title="Campanhas"
         description="Campanhas ativas e programadas. As encerradas ficam em Campanhas Encerradas."
         actions={
-          <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
-            <Plus className="mr-2 h-4 w-4" />Nova Campanha
-          </Button>
+          !readOnly ? (
+            <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
+              <Plus className="mr-2 h-4 w-4" />Nova Campanha
+            </Button>
+          ) : undefined
         }
       />
 
