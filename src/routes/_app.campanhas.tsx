@@ -57,7 +57,7 @@ const FILIAIS = ["Matriz", "Filial 01", "Filial 02", "Filial 03"];
 const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
 const emptyCampanha = (): Campanha => ({
-  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", materiais: [],
+  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", filiais: [], materiais: [],
 });
 
 const emptyOferta = (campanha: Campanha): Oferta => ({
@@ -65,7 +65,7 @@ const emptyOferta = (campanha: Campanha): Oferta => ({
   fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
   precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
-  filiais: [], corredor: "", estoque: 0, margem: 0, status: campanha.status,
+  filiais: [...(campanha.filiais ?? [])], corredor: "", estoque: 0, margem: 0, status: campanha.status,
   selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
 });
 
@@ -565,7 +565,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
       </div>
 
 
-      <OfertaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} oferta={editing} setOferta={setEditing} onSave={save} />
+      <OfertaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} oferta={editing} setOferta={setEditing} onSave={save} filiaisPermitidas={campanha.filiais ?? []} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
@@ -611,6 +611,28 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
+          </Field>
+
+          <Field label="Filiais participantes (selecione uma ou mais)">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-md border p-3">
+              {FILIAIS.map((f) => {
+                const checked = campanha.filiais?.includes(f) ?? false;
+                return (
+                  <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const atuais = campanha.filiais ?? [];
+                        upd("filiais", e.target.checked ? [...atuais, f] : atuais.filter((x) => x !== f));
+                      }}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    {f}
+                  </label>
+                );
+              })}
+            </div>
           </Field>
 
           <MateriaisUploader
@@ -710,9 +732,9 @@ function MateriaisUploader({
   );
 }
 
-function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
+function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPermitidas }: {
   open: boolean; onOpenChange: (v: boolean) => void; oferta: Oferta | null;
-  setOferta: (o: Oferta) => void; onSave: () => void;
+  setOferta: (o: Oferta) => void; onSave: () => void; filiaisPermitidas: string[];
 }) {
   const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
@@ -861,26 +883,32 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
 
           <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
           <Field label="Data Final"><Input type="date" value={oferta.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
-          <Field label="Filiais (selecione uma ou mais)" className="md:col-span-2">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-md border p-3">
-              {FILIAIS.map((f) => {
-                const checked = oferta.filiais?.includes(f) ?? false;
-                return (
-                  <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        const atuais = oferta.filiais ?? [];
-                        upd("filiais", e.target.checked ? [...atuais, f] : atuais.filter((x) => x !== f));
-                      }}
-                      className="h-4 w-4 accent-primary"
-                    />
-                    {f}
-                  </label>
-                );
-              })}
-            </div>
+          <Field label="Filiais (herdadas da campanha — desmarque para excluir alguma)" className="md:col-span-2">
+            {filiaisPermitidas.length === 0 ? (
+              <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                Nenhuma filial foi selecionada na campanha. Edite a campanha e escolha as filiais participantes.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-md border p-3">
+                {filiaisPermitidas.map((f) => {
+                  const checked = oferta.filiais?.includes(f) ?? false;
+                  return (
+                    <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          const atuais = oferta.filiais ?? [];
+                          upd("filiais", e.target.checked ? [...atuais, f] : atuais.filter((x) => x !== f));
+                        }}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      {f}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </Field>
           <Field label="Corredor"><Input value={oferta.corredor} onChange={(e) => upd("corredor", e.target.value)} placeholder="A1" /></Field>
           <Field label="Estoque"><Input type="number" value={oferta.estoque} onChange={(e) => upd("estoque", parseInt(e.target.value) || 0)} /></Field>
