@@ -377,6 +377,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [fSellout, setFSellout] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Oferta | null>(null);
+  const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -399,15 +400,21 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     return { qtd: comVerba.length, total };
   }, [ofertas]);
 
-  const openNew = () => { setEditing(emptyOferta(campanha)); setDialogOpen(true); };
-  const openEdit = (o: Oferta) => { setEditing({ ...o }); setDialogOpen(true); };
+  const openNew = () => { setEditing(emptyOferta(campanha)); setIsNew(true); setDialogOpen(true); };
+  const openEdit = (o: Oferta) => { setEditing({ ...o }); setIsNew(false); setDialogOpen(true); };
 
   const save = () => {
     if (!editing) return;
     if (!editing.codigo.trim() || !editing.descricao.trim()) { toast.error("Preencha código e descrição."); return; }
     onSaveOferta(editing);
     toast.success("Oferta salva.");
-    setDialogOpen(false); setEditing(null);
+    if (isNew) {
+      // Reabre com nova oferta em branco para cadastro contínuo
+      setEditing(emptyOferta(campanha));
+    } else {
+      setDialogOpen(false);
+      setEditing(null);
+    }
   };
 
   const printPDF = () => {
