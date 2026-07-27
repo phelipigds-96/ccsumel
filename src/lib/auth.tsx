@@ -29,6 +29,7 @@ export interface StoredUser {
   notes?: string;
   permissions: string[]; // urls the user can access
   isAdmin?: boolean;
+  readOnly?: boolean; // if true, can only view campanhas/ofertas (no edit)
   createdAt: string;
 }
 
@@ -38,6 +39,7 @@ export interface SessionUser {
   username: string;
   permissions: string[];
   isAdmin: boolean;
+  readOnly: boolean;
 }
 
 interface AuthContextValue {
