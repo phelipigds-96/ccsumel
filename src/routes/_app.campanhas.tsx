@@ -883,26 +883,32 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
           <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
           <Field label="Data Final"><Input type="date" value={oferta.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
-          <Field label="Filiais (selecione uma ou mais)" className="md:col-span-2">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-md border p-3">
-              {FILIAIS.map((f) => {
-                const checked = oferta.filiais?.includes(f) ?? false;
-                return (
-                  <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        const atuais = oferta.filiais ?? [];
-                        upd("filiais", e.target.checked ? [...atuais, f] : atuais.filter((x) => x !== f));
-                      }}
-                      className="h-4 w-4 accent-primary"
-                    />
-                    {f}
-                  </label>
-                );
-              })}
-            </div>
+          <Field label="Filiais (herdadas da campanha — desmarque para excluir alguma)" className="md:col-span-2">
+            {filiaisPermitidas.length === 0 ? (
+              <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                Nenhuma filial foi selecionada na campanha. Edite a campanha e escolha as filiais participantes.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-md border p-3">
+                {filiaisPermitidas.map((f) => {
+                  const checked = oferta.filiais?.includes(f) ?? false;
+                  return (
+                    <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          const atuais = oferta.filiais ?? [];
+                          upd("filiais", e.target.checked ? [...atuais, f] : atuais.filter((x) => x !== f));
+                        }}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      {f}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </Field>
           <Field label="Corredor"><Input value={oferta.corredor} onChange={(e) => upd("corredor", e.target.value)} placeholder="A1" /></Field>
           <Field label="Estoque"><Input type="number" value={oferta.estoque} onChange={(e) => upd("estoque", parseInt(e.target.value) || 0)} /></Field>
