@@ -23,6 +23,7 @@ import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoe
 import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalogo-de-produtos'
 import { Route as AppCampanhasEncerradasRouteImport } from './routes/_app.campanhas-encerradas'
 import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
+import { Route as AppSellOutAcertosRouteImport } from './routes/_app.sell-out.acertos'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -93,6 +94,11 @@ const AppCampanhasRoute = AppCampanhasRouteImport.update({
   path: '/campanhas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSellOutAcertosRoute = AppSellOutAcertosRouteImport.update({
+  id: '/acertos',
+  path: '/acertos',
+  getParentRoute: () => AppSellOutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -105,9 +111,10 @@ export interface FileRoutesByFullPath {
   '/fornecedores': typeof AppFornecedoresRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/relatorios': typeof AppRelatoriosRoute
-  '/sell-out': typeof AppSellOutRoute
+  '/sell-out': typeof AppSellOutRouteWithChildren
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
+  '/sell-out/acertos': typeof AppSellOutAcertosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -120,9 +127,10 @@ export interface FileRoutesByTo {
   '/fornecedores': typeof AppFornecedoresRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/relatorios': typeof AppRelatoriosRoute
-  '/sell-out': typeof AppSellOutRoute
+  '/sell-out': typeof AppSellOutRouteWithChildren
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
+  '/sell-out/acertos': typeof AppSellOutAcertosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -137,9 +145,10 @@ export interface FileRoutesById {
   '/_app/fornecedores': typeof AppFornecedoresRoute
   '/_app/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/_app/relatorios': typeof AppRelatoriosRoute
-  '/_app/sell-out': typeof AppSellOutRoute
+  '/_app/sell-out': typeof AppSellOutRouteWithChildren
   '/_app/usuarios': typeof AppUsuariosRoute
   '/_app/verbas-cooperadas': typeof AppVerbasCooperadasRoute
+  '/_app/sell-out/acertos': typeof AppSellOutAcertosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/sell-out'
     | '/usuarios'
     | '/verbas-cooperadas'
+    | '/sell-out/acertos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/sell-out'
     | '/usuarios'
     | '/verbas-cooperadas'
+    | '/sell-out/acertos'
   id:
     | '__root__'
     | '/'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/_app/sell-out'
     | '/_app/usuarios'
     | '/_app/verbas-cooperadas'
+    | '/_app/sell-out/acertos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -296,8 +308,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCampanhasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/sell-out/acertos': {
+      id: '/_app/sell-out/acertos'
+      path: '/acertos'
+      fullPath: '/sell-out/acertos'
+      preLoaderRoute: typeof AppSellOutAcertosRouteImport
+      parentRoute: typeof AppSellOutRoute
+    }
   }
 }
+
+interface AppSellOutRouteChildren {
+  AppSellOutAcertosRoute: typeof AppSellOutAcertosRoute
+}
+
+const AppSellOutRouteChildren: AppSellOutRouteChildren = {
+  AppSellOutAcertosRoute: AppSellOutAcertosRoute,
+}
+
+const AppSellOutRouteWithChildren = AppSellOutRoute._addFileChildren(
+  AppSellOutRouteChildren,
+)
 
 interface AppRouteChildren {
   AppCampanhasRoute: typeof AppCampanhasRoute
@@ -308,7 +339,7 @@ interface AppRouteChildren {
   AppFornecedoresRoute: typeof AppFornecedoresRoute
   AppPontasDeGondolaRoute: typeof AppPontasDeGondolaRoute
   AppRelatoriosRoute: typeof AppRelatoriosRoute
-  AppSellOutRoute: typeof AppSellOutRoute
+  AppSellOutRoute: typeof AppSellOutRouteWithChildren
   AppUsuariosRoute: typeof AppUsuariosRoute
   AppVerbasCooperadasRoute: typeof AppVerbasCooperadasRoute
 }
@@ -322,7 +353,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFornecedoresRoute: AppFornecedoresRoute,
   AppPontasDeGondolaRoute: AppPontasDeGondolaRoute,
   AppRelatoriosRoute: AppRelatoriosRoute,
-  AppSellOutRoute: AppSellOutRoute,
+  AppSellOutRoute: AppSellOutRouteWithChildren,
   AppUsuariosRoute: AppUsuariosRoute,
   AppVerbasCooperadasRoute: AppVerbasCooperadasRoute,
 }
@@ -337,3 +368,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
