@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Megaphone,
@@ -13,6 +14,7 @@ import {
   Package,
   Archive,
   Calculator,
+  ChevronRight,
 } from "lucide-react";
 import {
   Sidebar,
@@ -67,11 +69,25 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, logout } = useAuth();
 
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    // auto-open a group when we navigate into one of its children
+    items.forEach((item) => {
+      if (item.children?.some((c) => pathname.startsWith(c.url))) {
+        setOpenMenus((prev) => (prev[item.url] ? prev : { ...prev, [item.url]: true }));
+      }
+    });
+  }, [pathname]);
+
   const handleNavigate = () => {
     if (isMobile) setOpenMobile(false);
     else setOpen(false);
   };
 
+  const toggleMenu = (url: string) => {
+    setOpenMenus((prev) => ({ ...prev, [url]: !prev[url] }));
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -99,22 +115,41 @@ export function AppSidebar() {
               {items.map((item) => {
                 const active = pathname === item.url;
                 const hasChildren = !!item.children?.length;
-                const parentOpen = hasChildren && (active || item.children!.some((c) => pathname.startsWith(c.url)));
+                const childActive = hasChildren && item.children!.some((c) => pathname.startsWith(c.url));
+                const isOpen = openMenus[item.url] ?? childActive;
                 return (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
-                      <Link to={item.url} onClick={handleNavigate} className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span className="truncate">{item.title}</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                    {hasChildren && !collapsed && parentOpen && (
+                    <div className="flex items-center">
+                      <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="flex-1">
+                        <Link to={item.url} onClick={handleNavigate} className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          {!collapsed && <span className="truncate">{item.title}</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                      {hasChildren && !collapsed && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMenu(item.url);
+                          }}
+                          className="mr-1 grid h-7 w-7 shrink-0 place-items-center rounded-md text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                          aria-label={isOpen ? "Recolher submenu" : "Expandir submenu"}
+                          aria-expanded={isOpen}
+                        >
+                          <ChevronRight
+                            className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                          />
+                        </button>
+                      )}
+                    </div>
+                    {hasChildren && !collapsed && isOpen && (
                       <SidebarMenuSub>
                         {item.children!.map((child) => {
-                          const childActive = pathname === child.url;
+                          const cActive = pathname === child.url;
                           return (
                             <SidebarMenuSubItem key={child.url}>
-                              <SidebarMenuSubButton asChild isActive={childActive}>
+                              <SidebarMenuSubButton asChild isActive={cActive}>
                                 <Link to={child.url} onClick={handleNavigate} className="flex items-center gap-2">
                                   <child.icon className="h-3.5 w-3.5 shrink-0" />
                                   <span className="truncate">{child.title}</span>
@@ -132,6 +167,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
 
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>

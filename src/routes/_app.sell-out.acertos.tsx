@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Copy, Search } from "lucide-react";
+import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -43,10 +50,15 @@ const fmtData = (iso: string) => {
   return `${d}/${m}/${y}`;
 };
 
+type SortKey = "produto" | "fornecedor" | "total-desc" | "total-asc" | "qtd-desc";
+
 function AcertosSellOut() {
   const { campanhas, ofertas, acertos } = useCampanhasStore();
   const [busca, setBusca] = useState("");
+  const [fornecedorFiltro, setFornecedorFiltro] = useState<string>("__todos");
+  const [sortKey, setSortKey] = useState<SortKey>("total-desc");
   const [quantidades, setQuantidades] = useState<Record<string, string>>({});
+  const [fornecedoresAbertos, setFornecedoresAbertos] = useState<Record<string, boolean>>({});
 
   const campanhaById = useMemo(() => {
     const m = new Map<string, Campanha>();
@@ -59,7 +71,6 @@ function AcertosSellOut() {
       .filter((o) => o.selloutTemVerba)
       .map((o) => {
         const campanha = campanhaById.get(o.campanhaId);
-        // Última campanha do produto (excluindo atual): mesma chave (codigo+gtin), data final < atual
         const chave = (x: Oferta) =>
           (x.codigo || "") + "|" + (x.gtin || "") + "|" + (x.descricao || "");
         const chaveAtual = chave(o);
@@ -78,24 +89,6 @@ function AcertosSellOut() {
       });
   }, [ofertas, acertos, campanhaById]);
 
-  const filtradas = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    if (!q) return ofertasSellOut;
-    return ofertasSellOut.filter(({ oferta, campanha }) =>
-      [
-        oferta.descricao,
-        oferta.codigo,
-        oferta.gtin,
-        oferta.fornecedor,
-        oferta.selloutFornecedor,
-        campanha?.nome ?? "",
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(q),
-    );
-  }, [ofertasSellOut, busca]);
-
   const getQtd = (id: string): number => {
     const raw = quantidades[id];
     if (raw !== undefined) return Number(raw) || 0;
@@ -112,41 +105,113 @@ function AcertosSellOut() {
     toast.success("Acerto salvo", { description: `Quantidade registrada: ${qtd}` });
   };
 
+  const fornecedoresDisponiveis = useMemo(() => {
+    const s = new Set<string>();
+    ofertasSellOut.forEach(({ oferta }) => {
+      s.add(oferta.selloutFornecedor || oferta.fornecedor || "—");
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
+  }, [ofertasSellOut]);
+
+  const filtradas = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    let list = ofertasSellOut.filter(({ oferta, campanha }) => {
+      const forn = oferta.selloutFornecedor || oferta.fornecedor || "—";
+      if (fornecedorFiltro !== "__todos" && forn !== fornecedorFiltro) return false;
+      if (!q) return true;
+      return [
+        oferta.descricao,
+        oferta.codigo,
+        oferta.gtin,
+        oferta.fornecedor,
+        oferta.selloutFornecedor,
+        campanha?.nome ?? "",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
+    });
+
+    list = [...list].sort((a, b) => {
+      const totalA = getQtd(a.oferta.id) * (a.oferta.selloutValor || 0);
+      const totalB = getQtd(b.oferta.id) * (b.oferta.selloutValor || 0);
+      const fornA = a.oferta.selloutFornecedor || a.oferta.fornecedor || "";
+      const fornB = b.oferta.selloutFornecedor || b.oferta.fornecedor || "";
+      switch (sortKey) {
+        case "produto":
+          return a.oferta.descricao.localeCompare(b.oferta.descricao);
+        case "fornecedor":
+          return fornA.localeCompare(fornB);
+        case "total-asc":
+          return totalA - totalB;
+        case "qtd-desc":
+          return getQtd(b.oferta.id) - getQtd(a.oferta.id);
+        case "total-desc":
+        default:
+          return totalB - totalA;
+      }
+    });
+    return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ofertasSellOut, busca, fornecedorFiltro, sortKey, quantidades, acertos]);
+
   const totalGeral = filtradas.reduce((acc, { oferta }) => {
     return acc + getQtd(oferta.id) * (oferta.selloutValor || 0);
   }, 0);
 
-  const totalPorFornecedor = useMemo(() => {
-    const m = new Map<string, number>();
-    filtradas.forEach(({ oferta }) => {
-      const key = oferta.selloutFornecedor || oferta.fornecedor || "—";
-      const v = getQtd(oferta.id) * (oferta.selloutValor || 0);
-      m.set(key, (m.get(key) ?? 0) + v);
+  const resumoPorFornecedor = useMemo(() => {
+    const m = new Map<string, typeof filtradas>();
+    filtradas.forEach((item) => {
+      const key = item.oferta.selloutFornecedor || item.oferta.fornecedor || "—";
+      const arr = m.get(key) ?? [];
+      arr.push(item);
+      m.set(key, arr);
     });
-    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+    return Array.from(m.entries())
+      .map(([forn, itens]) => ({
+        fornecedor: forn,
+        itens,
+        total: itens.reduce(
+          (acc, it) => acc + getQtd(it.oferta.id) * (it.oferta.selloutValor || 0),
+          0,
+        ),
+      }))
+      .sort((a, b) => b.total - a.total);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtradas, quantidades, acertos]);
 
-  const copiarTexto = async (item: (typeof ofertasSellOut)[number]) => {
+  const toggleFornecedor = (forn: string) => {
+    setFornecedoresAbertos((prev) => ({ ...prev, [forn]: !prev[forn] }));
+  };
+
+  const gerarTextoProduto = (item: (typeof filtradas)[number]) => {
     const { oferta, campanha, ultimaCampanha, ultimaQtd } = item;
     const qtd = getQtd(oferta.id);
     const total = qtd * (oferta.selloutValor || 0);
-    const fornecedor = oferta.selloutFornecedor || oferta.fornecedor || "Fornecedor";
-    const periodo =
-      campanha ? `${fmtData(campanha.dataInicial)} a ${fmtData(campanha.dataFinal)}` : "";
+    const periodo = campanha
+      ? `${fmtData(campanha.dataInicial)} a ${fmtData(campanha.dataFinal)}`
+      : "";
     const historico = ultimaCampanha
       ? `\nNa última campanha (${ultimaCampanha.nome} — ${fmtData(ultimaCampanha.dataInicial)} a ${fmtData(ultimaCampanha.dataFinal)}) foram vendidas ${ultimaQtd} unidades deste produto.`
       : "";
+    return {
+      periodo,
+      historico,
+      qtd,
+      total,
+      linhaProduto: `Produto: ${oferta.descricao}\nCódigo interno: ${oferta.codigo || "—"}\nCódigo de barras: ${oferta.gtin || "—"}\nQuantidade vendida: ${qtd} un\nVerba acordada: ${brl(oferta.selloutValor || 0)} por unidade\nTotal a repassar: ${brl(total)}${oferta.selloutObs ? `\nObservações: ${oferta.selloutObs}` : ""}${historico}`,
+    };
+  };
+
+  const copiarTexto = async (item: (typeof filtradas)[number]) => {
+    const { oferta, campanha } = item;
+    const fornecedor = oferta.selloutFornecedor || oferta.fornecedor || "Fornecedor";
+    const g = gerarTextoProduto(item);
     const texto = `Prezado(a) ${fornecedor},
 
-Segue o acerto de sell out referente à campanha "${campanha?.nome ?? ""}"${periodo ? ` (${periodo})` : ""}.
+Segue o acerto de sell out referente à campanha "${campanha?.nome ?? ""}"${g.periodo ? ` (${g.periodo})` : ""}.
 
-Produto: ${oferta.descricao}
-Código interno: ${oferta.codigo || "—"}
-Código de barras: ${oferta.gtin || "—"}
-Quantidade vendida: ${qtd} un
-Verba acordada: ${brl(oferta.selloutValor || 0)} por unidade
-Total a repassar: ${brl(total)}${oferta.selloutObs ? `\nObservações: ${oferta.selloutObs}` : ""}${historico}
+${g.linhaProduto}
 
 Solicitamos a gentileza de nos encaminhar a nota de débito / boleto correspondente.
 
@@ -155,6 +220,36 @@ Central de Campanhas Sumel`;
     try {
       await navigator.clipboard.writeText(texto);
       toast.success("Texto copiado", { description: "Cole no e-mail ou WhatsApp do fornecedor." });
+    } catch {
+      toast.error("Não foi possível copiar. Tente novamente.");
+    }
+  };
+
+  const copiarFornecedor = async (grupo: (typeof resumoPorFornecedor)[number]) => {
+    const blocos = grupo.itens
+      .map((it) => {
+        const g = gerarTextoProduto(it);
+        const camp = it.campanha ? `Campanha: ${it.campanha.nome}${g.periodo ? ` (${g.periodo})` : ""}\n` : "";
+        return `${camp}${g.linhaProduto}`;
+      })
+      .join("\n\n----------\n\n");
+    const texto = `Prezado(a) ${grupo.fornecedor},
+
+Segue o acerto de sell out consolidado dos produtos abaixo:
+
+${blocos}
+
+Total geral a repassar: ${brl(grupo.total)}
+
+Solicitamos a gentileza de nos encaminhar a nota de débito / boleto correspondente.
+
+Atenciosamente,
+Central de Campanhas Sumel`;
+    try {
+      await navigator.clipboard.writeText(texto);
+      toast.success("Mensagem consolidada copiada", {
+        description: `${grupo.itens.length} produto(s) de ${grupo.fornecedor}.`,
+      });
     } catch {
       toast.error("Não foi possível copiar. Tente novamente.");
     }
@@ -176,26 +271,52 @@ Central de Campanhas Sumel`;
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Total geral a cobrar</div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Total geral a cobrar (filtro atual)</div>
             <div className="mt-1 text-2xl font-bold text-primary">{brl(totalGeral)}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Fornecedores</div>
-            <div className="mt-1 text-2xl font-bold text-navy">{totalPorFornecedor.length}</div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Fornecedores (filtro atual)</div>
+            <div className="mt-1 text-2xl font-bold text-navy">{resumoPorFornecedor.length}</div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="mb-4 relative max-w-md">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por produto, fornecedor ou campanha..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          className="pl-9"
-        />
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por produto, código, campanha..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={fornecedorFiltro} onValueChange={setFornecedorFiltro}>
+          <SelectTrigger className="md:w-64">
+            <SelectValue placeholder="Fornecedor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__todos">Todos os fornecedores</SelectItem>
+            {fornecedoresDisponiveis.map((f) => (
+              <SelectItem key={f} value={f}>{f}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+          <SelectTrigger className="md:w-56">
+            <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
+            <SelectValue placeholder="Ordenar" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="total-desc">Maior total a cobrar</SelectItem>
+            <SelectItem value="total-asc">Menor total a cobrar</SelectItem>
+            <SelectItem value="qtd-desc">Maior quantidade vendida</SelectItem>
+            <SelectItem value="fornecedor">Fornecedor (A–Z)</SelectItem>
+            <SelectItem value="produto">Produto (A–Z)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-xl border bg-card overflow-x-auto">
@@ -216,7 +337,7 @@ Central de Campanhas Sumel`;
             {filtradas.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">
-                  Nenhum produto com sell out marcado.
+                  Nenhum produto encontrado com os filtros atuais.
                 </TableCell>
               </TableRow>
             )}
@@ -288,19 +409,85 @@ Central de Campanhas Sumel`;
         </Table>
       </div>
 
-      {totalPorFornecedor.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold text-navy mb-2">Resumo por fornecedor</h3>
-          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-            {totalPorFornecedor.map(([forn, val]) => (
-              <div
-                key={forn}
-                className="flex items-center justify-between rounded-lg border bg-card px-4 py-3"
-              >
-                <span className="text-sm font-medium">{forn}</span>
-                <span className="text-sm font-bold text-primary">{brl(val)}</span>
-              </div>
-            ))}
+      {resumoPorFornecedor.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-sm font-semibold text-navy mb-3">Resumo por fornecedor</h3>
+          <div className="space-y-3">
+            {resumoPorFornecedor.map((grupo) => {
+              const aberto = fornecedoresAbertos[grupo.fornecedor] ?? false;
+              return (
+                <div key={grupo.fornecedor} className="rounded-lg border bg-card">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleFornecedor(grupo.fornecedor)}
+                      className="flex flex-1 items-center gap-2 text-left"
+                    >
+                      {aberto ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span className="text-sm font-semibold text-navy">{grupo.fornecedor}</span>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {grupo.itens.length} produto{grupo.itens.length > 1 ? "s" : ""}
+                      </Badge>
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-primary">{brl(grupo.total)}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copiarFornecedor(grupo)}
+                        className="gap-2"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copiar mensagem
+                      </Button>
+                    </div>
+                  </div>
+                  {aberto && (
+                    <div className="border-t px-4 py-2">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Produto</TableHead>
+                            <TableHead>Campanha</TableHead>
+                            <TableHead className="text-right">Qtd.</TableHead>
+                            <TableHead className="text-right">Verba/un</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {grupo.itens.map((it) => {
+                            const qtd = getQtd(it.oferta.id);
+                            const total = qtd * (it.oferta.selloutValor || 0);
+                            return (
+                              <TableRow key={it.oferta.id}>
+                                <TableCell>
+                                  <div className="text-sm font-medium">{it.oferta.descricao}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {it.oferta.codigo || "—"}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">{it.campanha?.nome ?? "—"}</TableCell>
+                                <TableCell className="text-right text-sm">{qtd}</TableCell>
+                                <TableCell className="text-right text-sm">
+                                  {brl(it.oferta.selloutValor || 0)}
+                                </TableCell>
+                                <TableCell className="text-right text-sm font-semibold text-primary">
+                                  {brl(total)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
