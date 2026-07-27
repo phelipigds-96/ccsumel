@@ -716,6 +716,15 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
 }) {
   const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
+  const buscaRef = useRef<HTMLInputElement>(null);
+
+  // Reset campo de busca e foca quando abre uma nova oferta (id muda)
+  useEffect(() => {
+    if (!open || !oferta) return;
+    setBusca("");
+    const t = setTimeout(() => buscaRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, [open, oferta?.id]);
 
   if (!oferta) return null;
   const upd = <K extends keyof Oferta>(k: K, v: Oferta[K]) => setOferta({ ...oferta, [k]: v });
