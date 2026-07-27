@@ -370,6 +370,21 @@ function UsuariosPage() {
               </div>
             </div>
 
+            {!form.isAdmin && (
+              <div className="flex items-center justify-between rounded-md border p-3 bg-amber-50/50">
+                <div>
+                  <div className="text-sm font-medium">Somente leitura em Campanhas</div>
+                  <div className="text-xs text-muted-foreground">
+                    O usuário poderá visualizar as campanhas, as ofertas e os anexos, mas não poderá criar, editar ou excluir.
+                  </div>
+                </div>
+                <Switch
+                  checked={form.readOnly}
+                  onCheckedChange={(v) => setForm({ ...form, readOnly: v })}
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="notes">Observações (opcional)</Label>
               <Textarea
