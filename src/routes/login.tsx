@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { AuthProvider, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,17 +14,13 @@ export const Route = createFileRoute("/login")({
       { property: "og:description", content: "Acesse o SGMC." },
     ],
   }),
-  component: () => (
-    <AuthProvider>
-      <LoginPage />
-    </AuthProvider>
-  ),
+  component: LoginPage,
 });
 
 function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,16 +28,16 @@ function LoginPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!email || !password) {
-      setError("Preencha e-mail e senha.");
+    if (!username || !password) {
+      setError("Preencha usuário e senha.");
       return;
     }
     setLoading(true);
     try {
-      await login(email, password);
+      await login(username, password);
       navigate({ to: "/dashboard", replace: true });
-    } catch {
-      setError("Falha ao entrar. Tente novamente.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao entrar. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -55,10 +51,10 @@ function LoginPage() {
         />
         <div className="relative">
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-md bg-primary text-primary-foreground font-black text-lg">S</div>
+            <div className="grid h-11 w-11 place-items-center rounded-md bg-primary text-primary-foreground font-black text-lg">C</div>
             <div>
-              <div className="text-lg font-bold">SGMC</div>
-              <div className="text-xs uppercase tracking-widest text-white/60">Marketing Comercial</div>
+              <div className="text-lg font-bold">Central de Campanhas</div>
+              <div className="text-xs uppercase tracking-widest text-white/60">Marketing e Compras</div>
             </div>
           </div>
         </div>
@@ -71,23 +67,23 @@ function LoginPage() {
             Centralize campanhas, ofertas, verbas cooperadas e sell out em um único lugar.
           </p>
         </div>
-        <div className="relative text-xs text-white/50">© {new Date().getFullYear()} SGMC</div>
+        <div className="relative text-xs text-white/50">© {new Date().getFullYear()} Central de Campanhas Sumel</div>
       </div>
 
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8 flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-md bg-primary text-primary-foreground font-black">S</div>
-            <div className="text-base font-bold text-navy">SGMC</div>
+            <div className="grid h-10 w-10 place-items-center rounded-md bg-primary text-primary-foreground font-black">C</div>
+            <div className="text-base font-bold text-navy">Central de Campanhas</div>
           </div>
           <h2 className="text-2xl font-bold text-foreground">Entrar</h2>
           <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta para continuar.</p>
 
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" placeholder="voce@empresa.com"
-                value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+              <Label htmlFor="username">Usuário</Label>
+              <Input id="username" type="text" placeholder="seu.login"
+                value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -101,7 +97,7 @@ function LoginPage() {
           </form>
 
           <p className="mt-6 text-xs text-muted-foreground text-center">
-            Ao entrar você concorda com os termos internos do SGMC.{" "}
+            Acesso restrito ao uso interno.{" "}
             <Link to="/" className="text-navy font-medium hover:underline">Voltar</Link>
           </p>
         </div>
