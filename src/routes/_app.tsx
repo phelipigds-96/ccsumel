@@ -2,27 +2,18 @@ import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { AuthProvider, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
 });
 
 function AppLayout() {
-  return (
-    <AuthProvider>
-      <Gate />
-    </AuthProvider>
-  );
-}
-
-function Gate() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) {
-      // check storage directly for hydration
       const stored = typeof window !== "undefined" && localStorage.getItem("sgmc.auth.user");
       if (!stored) navigate({ to: "/login", replace: true });
     }

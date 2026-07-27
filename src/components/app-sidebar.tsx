@@ -69,16 +69,26 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, logout } = useAuth();
 
+  const allowed = new Set(user?.permissions ?? []);
+  const visibleItems = items
+    .map((item) => {
+      const filteredChildren = item.children?.filter((c) => allowed.has(c.url));
+      const parentAllowed = allowed.has(item.url);
+      // Show the parent if it's allowed OR any of its children are allowed.
+      if (!parentAllowed && !(filteredChildren && filteredChildren.length > 0)) return null;
+      return { ...item, children: filteredChildren };
+    })
+    .filter(Boolean) as Item[];
+
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    // auto-open a group when we navigate into one of its children
-    items.forEach((item) => {
+    visibleItems.forEach((item) => {
       if (item.children?.some((c) => pathname.startsWith(c.url))) {
         setOpenMenus((prev) => (prev[item.url] ? prev : { ...prev, [item.url]: true }));
       }
     });
-  }, [pathname]);
+  }, [pathname, visibleItems]);
 
   const handleNavigate = () => {
     if (isMobile) setOpenMobile(false);
@@ -112,7 +122,7 @@ export function AppSidebar() {
           {!collapsed && <SidebarGroupLabel>Módulos</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => {
+              {visibleItems.map((item) => {
                 const active = pathname === item.url;
                 const hasChildren = !!item.children?.length;
                 const childActive = hasChildren && item.children!.some((c) => pathname.startsWith(c.url));
