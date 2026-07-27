@@ -51,11 +51,11 @@ function LoginPage() {
           style={{ backgroundImage: "radial-gradient(circle at 20% 20%, var(--primary) 0, transparent 40%), radial-gradient(circle at 80% 80%, var(--primary) 0, transparent 45%)" }}
         />
         <div className="relative">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-md bg-primary text-primary-foreground font-black text-lg">C</div>
-            <div>
-              <div className="text-lg font-bold">Central de Campanhas</div>
-              <div className="text-xs uppercase tracking-widest text-white/60">Marketing e Compras</div>
+          <div className="inline-flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-sm">
+            <img src={logoAsset.url} alt="Sumel" className="h-10 w-auto" />
+            <div className="border-l border-navy/10 pl-3">
+              <div className="text-sm font-bold text-navy">Central de Campanhas</div>
+              <div className="text-[10px] uppercase tracking-widest text-navy/60">Marketing e Compras</div>
             </div>
           </div>
         </div>
