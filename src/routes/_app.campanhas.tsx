@@ -635,6 +635,11 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
             </div>
           </Field>
 
+          <div className="flex items-center gap-3 rounded-md border p-3">
+            <Switch checked={campanha.clubeSumel ?? false} onCheckedChange={(v) => upd("clubeSumel", v)} id="camp-clube" />
+            <Label htmlFor="camp-clube" className="cursor-pointer">Campanha Clube Sumel (as ofertas herdam essa marcação)</Label>
+          </div>
+
           <MateriaisUploader
             campanhaId={campanha.id}
             materiais={campanha.materiais}
