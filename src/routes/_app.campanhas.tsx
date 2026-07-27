@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
   Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign,
@@ -65,7 +65,7 @@ const emptyOferta = (campanha: Campanha): Oferta => ({
   fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
   precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
-  filial: FILIAIS[0], corredor: "", estoque: 0, margem: 0, status: "Rascunho",
+  filiais: [], corredor: "", estoque: 0, margem: 0, status: campanha.status,
   selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
 });
 
@@ -377,6 +377,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [fSellout, setFSellout] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Oferta | null>(null);
+  const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -399,15 +400,21 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     return { qtd: comVerba.length, total };
   }, [ofertas]);
 
-  const openNew = () => { setEditing(emptyOferta(campanha)); setDialogOpen(true); };
-  const openEdit = (o: Oferta) => { setEditing({ ...o }); setDialogOpen(true); };
+  const openNew = () => { setEditing(emptyOferta(campanha)); setIsNew(true); setDialogOpen(true); };
+  const openEdit = (o: Oferta) => { setEditing({ ...o }); setIsNew(false); setDialogOpen(true); };
 
   const save = () => {
     if (!editing) return;
     if (!editing.codigo.trim() || !editing.descricao.trim()) { toast.error("Preencha código e descrição."); return; }
     onSaveOferta(editing);
     toast.success("Oferta salva.");
-    setDialogOpen(false); setEditing(null);
+    if (isNew) {
+      // Reabre com nova oferta em branco para cadastro contínuo
+      setEditing(emptyOferta(campanha));
+    } else {
+      setDialogOpen(false);
+      setEditing(null);
+    }
   };
 
   const printPDF = () => {
@@ -541,7 +548,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   </TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>
                   <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>
-                  <TableCell className="text-xs">{o.filial}</TableCell>
+                  <TableCell className="text-xs">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>
                   <TableCell className="text-xs">{o.corredor}</TableCell>
                   <TableCell className="text-right">{o.estoque}</TableCell>
                   <TableCell className="text-right">{o.margem.toFixed(1)}%</TableCell>
@@ -709,6 +716,15 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
 }) {
   const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
+  const buscaRef = useRef<HTMLInputElement>(null);
+
+  // Reset campo de busca e foca quando abre uma nova oferta (id muda)
+  useEffect(() => {
+    if (!open || !oferta) return;
+    setBusca("");
+    const t = setTimeout(() => buscaRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, [open, oferta?.id]);
 
   if (!oferta) return null;
   const upd = <K extends keyof Oferta>(k: K, v: Oferta[K]) => setOferta({ ...oferta, [k]: v });
@@ -763,6 +779,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
           <Label className="text-xs text-muted-foreground">Código interno ou código de barras</Label>
           <div className="flex gap-2 mt-1.5">
             <Input
+              ref={buscaRef}
               autoFocus
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
@@ -793,7 +810,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
             </Select>
           </Field>
           <Field label="Preço Atual (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
-          <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} onChange={(e) => upd("custo", parseFloat(e.target.value) || 0)} /></Field>
+          <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} readOnly disabled className="bg-muted cursor-not-allowed" /></Field>
 
           {/* Sugestões de desconto */}
           <div className="md:col-span-2 rounded-lg border p-4 bg-card">
@@ -844,11 +861,26 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
 
           <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
           <Field label="Data Final"><Input type="date" value={oferta.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
-          <Field label="Filial">
-            <Select value={oferta.filial} onValueChange={(v) => upd("filial", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{FILIAIS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-            </Select>
+          <Field label="Filiais (selecione uma ou mais)" className="md:col-span-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-md border p-3">
+              {FILIAIS.map((f) => {
+                const checked = oferta.filiais?.includes(f) ?? false;
+                return (
+                  <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const atuais = oferta.filiais ?? [];
+                        upd("filiais", e.target.checked ? [...atuais, f] : atuais.filter((x) => x !== f));
+                      }}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    {f}
+                  </label>
+                );
+              })}
+            </div>
           </Field>
           <Field label="Corredor"><Input value={oferta.corredor} onChange={(e) => upd("corredor", e.target.value)} placeholder="A1" /></Field>
           <Field label="Estoque"><Input type="number" value={oferta.estoque} onChange={(e) => upd("estoque", parseInt(e.target.value) || 0)} /></Field>
