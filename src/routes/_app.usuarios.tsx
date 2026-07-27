@@ -265,6 +265,10 @@ function UsuariosPage() {
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
                       <ShieldCheck className="h-3.5 w-3.5" /> Administrador
                     </span>
+                  ) : u.readOnly ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+                      <UserIcon className="h-3.5 w-3.5" /> Somente leitura
+                    </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <UserIcon className="h-3.5 w-3.5" /> Usuário
