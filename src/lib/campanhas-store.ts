@@ -17,6 +17,7 @@ export interface Campanha {
   dataFinal: string;
   status: Status;
   filiais: string[];
+  clubeSumel: boolean;
   materiais: MaterialApoio[];
 }
 
