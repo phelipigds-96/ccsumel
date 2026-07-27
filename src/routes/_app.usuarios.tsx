@@ -165,6 +165,7 @@ function UsuariosPage() {
           notes: form.notes.trim() || undefined,
           permissions: form.isAdmin ? ALL_PERMISSIONS : form.permissions,
           isAdmin: form.isAdmin,
+          readOnly: !form.isAdmin && form.readOnly,
         };
         if (form.password) patch.password = form.password;
         updateUser(editing.id, patch);
@@ -178,6 +179,7 @@ function UsuariosPage() {
           notes: form.notes.trim() || undefined,
           permissions: form.isAdmin ? ALL_PERMISSIONS : form.permissions,
           isAdmin: form.isAdmin,
+          readOnly: !form.isAdmin && form.readOnly,
         });
         toast.success("Usuário cadastrado.");
       }
