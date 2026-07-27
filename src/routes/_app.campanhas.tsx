@@ -57,13 +57,13 @@ const FILIAIS = ["Matriz", "Filial 01", "Filial 02", "Filial 03"];
 const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
 const emptyCampanha = (): Campanha => ({
-  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", filiais: [], materiais: [],
+  id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", filiais: [], clubeSumel: false, materiais: [],
 });
 
 const emptyOferta = (campanha: Campanha): Oferta => ({
   id: crypto.randomUUID(), campanhaId: campanha.id, codigo: "", gtin: "", descricao: "",
   fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
-  precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: false,
+  precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: campanha.clubeSumel ?? false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
   filiais: [...(campanha.filiais ?? [])], corredor: "", estoque: 0, margem: 0, status: campanha.status,
   selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
@@ -634,6 +634,11 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
               })}
             </div>
           </Field>
+
+          <div className="flex items-center gap-3 rounded-md border p-3">
+            <Switch checked={campanha.clubeSumel ?? false} onCheckedChange={(v) => upd("clubeSumel", v)} id="camp-clube" />
+            <Label htmlFor="camp-clube" className="cursor-pointer">Campanha Clube Sumel (as ofertas herdam essa marcação)</Label>
+          </div>
 
           <MateriaisUploader
             campanhaId={campanha.id}
