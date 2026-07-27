@@ -779,6 +779,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave }: {
           <Label className="text-xs text-muted-foreground">Código interno ou código de barras</Label>
           <div className="flex gap-2 mt-1.5">
             <Input
+              ref={buscaRef}
               autoFocus
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
