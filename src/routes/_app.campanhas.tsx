@@ -2,8 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
-  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign,
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useColumnPrefs } from "@/lib/column-prefs";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
