@@ -78,9 +78,18 @@ const loadState = (): State => {
     const c = window.localStorage.getItem(KEY_CAMP);
     const o = window.localStorage.getItem(KEY_OFER);
     const a = window.localStorage.getItem(KEY_ACER);
+    const ofertasRaw = o ? (JSON.parse(o) as any[]) : seedOfertas;
+    const ofertasMigradas: Oferta[] = ofertasRaw.map((of) => {
+      if (of && !Array.isArray(of.filiais)) {
+        const legacy = typeof of.filial === "string" && of.filial ? [of.filial] : [];
+        const { filial: _drop, ...rest } = of;
+        return { ...rest, filiais: legacy } as Oferta;
+      }
+      return of as Oferta;
+    });
     return {
       campanhas: c ? (JSON.parse(c) as Campanha[]) : seedCampanhas,
-      ofertas: o ? (JSON.parse(o) as Oferta[]) : seedOfertas,
+      ofertas: ofertasMigradas,
       acertos: a ? (JSON.parse(a) as Record<string, Acerto>) : {},
     };
   } catch {
