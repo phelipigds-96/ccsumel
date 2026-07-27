@@ -64,6 +64,7 @@ interface FormState {
   notes: string;
   permissions: string[];
   isAdmin: boolean;
+  readOnly: boolean;
 }
 
 const emptyForm = (): FormState => ({
@@ -75,6 +76,7 @@ const emptyForm = (): FormState => ({
   notes: "",
   permissions: [],
   isAdmin: false,
+  readOnly: false,
 });
 
 function UsuariosPage() {
