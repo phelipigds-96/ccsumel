@@ -51,12 +51,8 @@ function LoginPage() {
           style={{ backgroundImage: "radial-gradient(circle at 20% 20%, var(--primary) 0, transparent 40%), radial-gradient(circle at 80% 80%, var(--primary) 0, transparent 45%)" }}
         />
         <div className="relative">
-          <div className="inline-flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-sm">
-            <img src={logoAsset.url} alt="Sumel" className="h-10 w-auto" />
-            <div className="border-l border-navy/10 pl-3">
-              <div className="text-sm font-bold text-navy">Central de Campanhas</div>
-              <div className="text-[10px] uppercase tracking-widest text-navy/60">Marketing e Compras</div>
-            </div>
+          <div className="inline-flex items-center rounded-lg bg-white px-4 py-3 shadow-sm">
+            <img src={logoAsset.url} alt="Sumel" className="h-12 w-auto" />
           </div>
         </div>
         <div className="relative space-y-3">
@@ -73,9 +69,8 @@ function LoginPage() {
 
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-8 flex items-center gap-3">
-            <img src={logoAsset.url} alt="Sumel" className="h-10 w-auto" />
-            <div className="text-base font-bold text-navy">Central de Campanhas</div>
+          <div className="lg:hidden mb-8 flex justify-center">
+            <img src={logoAsset.url} alt="Sumel" className="h-12 w-auto" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">Entrar</h2>
           <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta para continuar.</p>
