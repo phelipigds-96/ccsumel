@@ -16,6 +16,7 @@ export interface Campanha {
   dataInicial: string;
   dataFinal: string;
   status: Status;
+  filiais: string[];
   materiais: MaterialApoio[];
 }
 
