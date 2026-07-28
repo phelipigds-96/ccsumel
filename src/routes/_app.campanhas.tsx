@@ -962,7 +962,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
         custo,
         precoPromocional: preco,
       });
-      toast.success("Produto carregado. Escolha uma sugestão de desconto.");
+      setTimeout(() => { promoRef.current?.focus(); promoRef.current?.select(); }, 60);
+      toast.success("Produto carregado. Informe o preço promocional ou clique num desconto.");
     } catch (e) { toast.error("Erro na consulta: " + (e as Error).message); }
     finally { setLookingUp(false); }
   };
