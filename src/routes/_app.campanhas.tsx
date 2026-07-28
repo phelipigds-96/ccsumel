@@ -360,6 +360,13 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
 
       <CampanhaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} campanha={editing} setCampanha={setEditing} onSave={save} />
 
+      <CampanhaQuickView
+        campanha={quickView}
+        ofertas={quickView ? ofertas.filter((o) => o.campanhaId === quickView.id) : []}
+        onOpenChange={(v) => { if (!v) setQuickView(null); }}
+        onAbrir={(id) => { setQuickView(null); onOpen(id); }}
+      />
+
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
