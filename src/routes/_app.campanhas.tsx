@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
-  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check,
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -193,12 +193,14 @@ interface ListProps {
 
 function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListProps) {
   const { user } = useAuth();
-  const readOnly = !!user?.readOnly;
+  // Somente administradores podem criar/editar/excluir campanhas e ofertas.
+  const readOnly = !user?.isAdmin || !!user?.readOnly;
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Campanha | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [quickView, setQuickView] = useState<Campanha | null>(null);
 
   const countByCampanha = useMemo(() => {
     const m = new Map<string, number>();
@@ -270,6 +272,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
             )}
           </div>
           <div className="flex items-center gap-1">
+            <Button size="icon" variant="ghost" title="Ver produtos e anexos" onClick={() => setQuickView(c)}><Eye className="h-4 w-4" /></Button>
             <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
             {!readOnly && (
               <>
@@ -357,6 +360,13 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
 
       <CampanhaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} campanha={editing} setCampanha={setEditing} onSave={save} />
 
+      <CampanhaQuickView
+        campanha={quickView}
+        ofertas={quickView ? ofertas.filter((o) => o.campanhaId === quickView.id) : []}
+        onOpenChange={(v) => { if (!v) setQuickView(null); }}
+        onAbrir={(id) => { setQuickView(null); onOpen(id); }}
+      />
+
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -373,6 +383,73 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   );
 }
 
+// ============ QUICK VIEW (produtos + anexos em pop-up) ============
+
+function CampanhaQuickView({
+  campanha, ofertas, onOpenChange, onAbrir,
+}: {
+  campanha: Campanha | null;
+  ofertas: Oferta[];
+  onOpenChange: (v: boolean) => void;
+  onAbrir: (id: string) => void;
+}) {
+  if (!campanha) return null;
+  return (
+    <Dialog open={!!campanha} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{campanha.nome}</DialogTitle>
+          <DialogDescription>
+            {fmtDate(campanha.dataInicial)} → {fmtDate(campanha.dataFinal)} • {ofertas.length} produto(s) em oferta
+          </DialogDescription>
+        </DialogHeader>
+
+        {campanha.materiais.length > 0 && <MateriaisViewer materiais={campanha.materiais} />}
+
+        <div className="rounded-xl border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead>Código</TableHead>
+                <TableHead>Produto</TableHead>
+                <TableHead>Clube</TableHead>
+                <TableHead className="text-right">Preço normal</TableHead>
+                <TableHead className="text-right">Preço promocional</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {ofertas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                    Nenhum produto em oferta nesta campanha.
+                  </TableCell>
+                </TableRow>
+              ) : ofertas.map((o) => (
+                <TableRow key={o.id}>
+                  <TableCell className="font-mono text-xs">{o.codigo}</TableCell>
+                  <TableCell className="max-w-[280px] truncate">{o.descricao}</TableCell>
+                  <TableCell>{o.clubeSumel ? "Sim" : "Não"}</TableCell>
+                  <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>
+                  <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { printCampanhaPDF(campanha, ofertas); toast.success("PDF aberto em nova aba."); }}>
+            <Printer className="mr-2 h-4 w-4" />Imprimir PDF
+          </Button>
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => onAbrir(campanha.id)}>
+            Abrir campanha <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ============ CAMPANHA DETALHE (ofertas) ============
 
 interface DetalheProps {
@@ -385,7 +462,7 @@ interface DetalheProps {
 
 function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOferta }: DetalheProps) {
   const { user } = useAuth();
-  const readOnly = !!user?.readOnly;
+  const readOnly = !user?.isAdmin || !!user?.readOnly;
   const [search, setSearch] = useState("");
   const [fCategoria, setFCategoria] = useState("todas");
   const [fStatus, setFStatus] = useState("todos");
