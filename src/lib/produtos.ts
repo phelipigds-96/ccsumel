@@ -7,6 +7,7 @@ export interface Produto {
   descricao: string;
   preco_venda: number;
   custo: number;
+  fornecedor: string;
   ativo: boolean;
   created_at?: string;
   updated_at?: string;
@@ -87,6 +88,7 @@ export interface ImportRow {
   descricao: string;
   preco_venda: number;
   custo: number;
+  fornecedor: string;
 }
 
 export interface ImportResult {
@@ -96,6 +98,7 @@ export interface ImportResult {
   sem_barras: number;
   erros: number;
   duracao_ms: number;
+  fornecedores_novos?: number;
 }
 
 /**
