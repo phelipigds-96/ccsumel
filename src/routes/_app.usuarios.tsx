@@ -149,10 +149,10 @@ function UsuariosPage() {
 
     if (!editing) {
       if (!form.password) return toast.error("Informe a senha.");
-      if (form.password.length < 4) return toast.error("A senha deve ter ao menos 4 caracteres.");
+      if (form.password.length < 6) return toast.error("A senha deve ter ao menos 6 caracteres.");
       if (form.password !== form.confirmPassword) return toast.error("As senhas não coincidem.");
     } else if (form.password || form.confirmPassword) {
-      if (form.password.length < 4) return toast.error("A nova senha deve ter ao menos 4 caracteres.");
+      if (form.password.length < 6) return toast.error("A nova senha deve ter ao menos 6 caracteres.");
       if (form.password !== form.confirmPassword) return toast.error("As senhas não coincidem.");
     }
 
