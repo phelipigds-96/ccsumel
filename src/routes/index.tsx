@@ -1,9 +1,35 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { hasSessionPointer } from "@/lib/auth";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
-  beforeLoad: () => {
-    throw redirect({ to: hasSessionPointer() ? "/dashboard" : "/login" });
-  },
-  component: () => null,
+  head: () => ({
+    meta: [
+      { title: "Central de Campanhas Sumel" },
+      {
+        name: "description",
+        content: "Gestão de campanhas, ofertas e verbas cooperadas da Sumel.",
+      },
+      { property: "og:title", content: "Central de Campanhas Sumel" },
+      {
+        property: "og:description",
+        content: "Gestão de campanhas, ofertas e verbas cooperadas da Sumel.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: IndexRedirect,
 });
+
+function IndexRedirect() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) return;
+    navigate({ to: user ? "/dashboard" : "/login", replace: true });
+  }, [user, loading, navigate]);
+
+  return null;
+}
