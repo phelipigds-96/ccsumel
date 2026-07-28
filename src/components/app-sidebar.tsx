@@ -188,21 +188,25 @@ export function AppSidebar() {
       </SidebarContent>
 
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="border-t border-sidebar-border/60">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout} tooltip="Sair">
-              <LogOut className="h-4 w-4 shrink-0" />
+            <SidebarMenuButton onClick={logout} tooltip="Sair" className="h-11 rounded-lg">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-sidebar-accent text-[11px] font-bold uppercase text-sidebar-accent-foreground">
+                {(user?.name ?? user?.username ?? "?").charAt(0)}
+              </span>
               {!collapsed && (
                 <div className="flex min-w-0 flex-col items-start">
                   <span className="truncate text-xs font-semibold">{user?.name ?? "Sair"}</span>
                   <span className="truncate text-[10px] text-sidebar-foreground/60">Sair</span>
                 </div>
               )}
+              {!collapsed && <LogOut className="ml-auto h-4 w-4 shrink-0 text-sidebar-foreground/60" />}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
     </Sidebar>
   );
 }
