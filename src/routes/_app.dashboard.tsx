@@ -4,7 +4,7 @@ import { Plus, FileText, ArrowRight, Eye } from "lucide-react";
 import { useCampanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView } from "@/components/campanha-quick-view";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { format, isSameDay, isWithinInterval, parseISO, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
