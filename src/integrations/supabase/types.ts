@@ -207,7 +207,7 @@ export type Database = {
             foreignKeyName: "preferencias_colunas_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: "usuarios"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -341,48 +341,6 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
-        }
-        Relationships: []
-      }
-      usuarios: {
-        Row: {
-          created_at: string
-          id: string
-          is_admin: boolean
-          name: string
-          notes: string
-          password: string
-          permissions: Json
-          read_only: boolean
-          status: string
-          updated_at: string
-          username: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_admin?: boolean
-          name: string
-          notes?: string
-          password: string
-          permissions?: Json
-          read_only?: boolean
-          status?: string
-          updated_at?: string
-          username: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_admin?: boolean
-          name?: string
-          notes?: string
-          password?: string
-          permissions?: Json
-          read_only?: boolean
-          status?: string
-          updated_at?: string
-          username?: string
         }
         Relationships: []
       }
