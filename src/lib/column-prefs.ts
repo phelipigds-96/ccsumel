@@ -47,17 +47,31 @@ export function useColumnPrefs(tableKey: string, allKeys: string[], defaults?: R
     };
   }, [userId, tableKey, baseline, stableKeys]);
 
-  const toggle = (key: string) => {
-    setVisible((prev) => {
-      const next = { ...prev, [key]: !(prev[key] !== false) };
-      if (userId) {
-        void supabase
-          .from("preferencias_colunas" as any)
-          .upsert({ usuario_id: userId, tabela: tableKey, colunas: next }, { onConflict: "usuario_id,tabela" });
-      }
-      return next;
-    });
-  };
+  const persist = useCallback(
+    async (next: Record<string, boolean>) => {
+      if (!userId) return;
+      const { error } = await supabase
+        .from("preferencias_colunas" as any)
+        .upsert(
+          { usuario_id: userId, tabela: tableKey, colunas: next },
+          { onConflict: "usuario_id,tabela" },
+        );
+      if (error) console.error("[column-prefs] falha ao salvar preferências", error);
+    },
+    [userId, tableKey],
+  );
+
+  const toggle = useCallback(
+    (key: string) => {
+      setVisible((prev) => {
+        const next = { ...prev, [key]: !(prev[key] !== false) };
+        void persist(next);
+        return next;
+      });
+    },
+    [persist],
+  );
+
 
   const isVisible = (k: string) => visible[k] !== false;
 
