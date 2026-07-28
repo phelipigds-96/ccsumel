@@ -1101,9 +1101,6 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
               </div>
             )}
           </Field>
-          <Field label="Corredor"><Input value={oferta.corredor} onChange={(e) => upd("corredor", e.target.value)} placeholder="A1" /></Field>
-          <Field label="Estoque"><Input type="number" value={oferta.estoque} onChange={(e) => upd("estoque", parseInt(e.target.value) || 0)} /></Field>
-          <Field label="Margem (%)"><Input type="number" step="0.1" value={oferta.margem} onChange={(e) => upd("margem", parseFloat(e.target.value) || 0)} /></Field>
           <Field label="Status">
             <Select value={oferta.status} onValueChange={(v) => upd("status", v as Status)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
