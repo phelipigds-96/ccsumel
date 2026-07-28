@@ -129,7 +129,7 @@ export function AppSidebar() {
           )}
           <SidebarGroupContent>
 
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               {visibleItems.map((item) => {
                 const active = pathname === item.url;
                 const hasChildren = !!item.children?.length;
@@ -138,12 +138,13 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={item.url}>
                     <div className="flex items-center">
-                      <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="flex-1">
-                        <Link to={item.url} onClick={handleNavigate} className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          {!collapsed && <span className="truncate">{item.title}</span>}
+                      <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="h-9 flex-1 rounded-lg">
+                        <Link to={item.url} onClick={handleNavigate} className="flex items-center gap-2.5">
+                          <item.icon className={`h-4 w-4 shrink-0 ${active ? "" : "text-sidebar-foreground/60"}`} />
+                          {!collapsed && <span className="truncate text-[13px]">{item.title}</span>}
                         </Link>
                       </SidebarMenuButton>
+
                       {hasChildren && !collapsed && (
                         <button
                           type="button"
