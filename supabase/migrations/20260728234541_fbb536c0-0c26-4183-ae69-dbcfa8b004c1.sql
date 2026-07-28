@@ -1,0 +1,1 @@
+ALTER TABLE public.ofertas ADD COLUMN IF NOT EXISTS gtins_cresce_vendas text NOT NULL DEFAULT '';

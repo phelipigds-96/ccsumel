@@ -27,6 +27,7 @@ export interface Oferta {
   campanhaId: string;
   codigo: string;
   gtin: string;
+  gtinsCresceVendas: string;
   descricao: string;
   fornecedor: string;
   categoria: string;
@@ -94,6 +95,7 @@ const toOferta = (r: any): Oferta => ({
   campanhaId: r.campanha_id,
   codigo: r.codigo ?? "",
   gtin: r.gtin ?? "",
+  gtinsCresceVendas: r.gtins_cresce_vendas ?? "",
   descricao: r.descricao ?? "",
   fornecedor: r.fornecedor ?? "",
   categoria: r.categoria ?? "",
@@ -119,6 +121,7 @@ const fromOferta = (o: Oferta) => ({
   campanha_id: o.campanhaId,
   codigo: o.codigo ?? "",
   gtin: o.gtin ?? "",
+  gtins_cresce_vendas: o.gtinsCresceVendas ?? "",
   descricao: o.descricao ?? "",
   fornecedor: o.fornecedor ?? "",
   categoria: o.categoria ?? "",
