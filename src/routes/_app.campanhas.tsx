@@ -881,6 +881,14 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
           <Field label="Código interno"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} /></Field>
           <Field label="Código de barras (GTIN)"><Input value={oferta.gtin} onChange={(e) => upd("gtin", e.target.value)} /></Field>
           <Field label="Descrição" className="md:col-span-2"><Input value={oferta.descricao} onChange={(e) => upd("descricao", e.target.value)} /></Field>
+          <Field label="Códigos de barras cresce vendas" className="md:col-span-2">
+            <Textarea
+              value={oferta.gtinsCresceVendas}
+              onChange={(e) => upd("gtinsCresceVendas", e.target.value)}
+              placeholder="Informe um código de barras por linha (ou separados por vírgula) para variações do produto"
+              rows={3}
+            />
+          </Field>
           <Field label="Preço Atual (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
           <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} readOnly disabled className="bg-muted cursor-not-allowed" /></Field>
 
