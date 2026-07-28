@@ -1065,6 +1065,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
             <Field label="Preço Promocional (R$) — ou informe manualmente">
               <Input
+                ref={promoRef}
                 type="number" step="0.01"
                 value={oferta.precoPromocional}
                 onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)}
