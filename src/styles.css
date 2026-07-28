@@ -79,6 +79,12 @@
   --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(0.31 0.05 258);
   --sidebar-ring: oklch(0.535 0.211 27.5);
+
+  /* Immersive auth backdrop */
+  --gradient-auth: radial-gradient(1200px 800px at 15% 10%, oklch(0.535 0.211 27.5 / 0.55) 0%, transparent 55%),
+    radial-gradient(1000px 700px at 85% 85%, oklch(0.45 0.16 20 / 0.45) 0%, transparent 55%),
+    linear-gradient(140deg, oklch(0.18 0.045 258) 0%, oklch(0.234 0.048 258) 45%, oklch(0.30 0.10 20) 100%);
+  --shadow-auth: 0 30px 80px -20px oklch(0.1 0.04 258 / 0.65);
 }
 
 .dark {
