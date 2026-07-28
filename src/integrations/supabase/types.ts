@@ -131,6 +131,7 @@ export type Database = {
           filiais: Json
           fornecedor: string
           gtin: string
+          gtins_cresce_vendas: string
           id: string
           margem: number
           preco_normal: number
@@ -157,6 +158,7 @@ export type Database = {
           filiais?: Json
           fornecedor?: string
           gtin?: string
+          gtins_cresce_vendas?: string
           id?: string
           margem?: number
           preco_normal?: number
@@ -183,6 +185,7 @@ export type Database = {
           filiais?: Json
           fornecedor?: string
           gtin?: string
+          gtins_cresce_vendas?: string
           id?: string
           margem?: number
           preco_normal?: number
