@@ -371,6 +371,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
   const COLUMNS: { key: string; label: string }[] = [
     { key: "codigo", label: "Código" },
+    { key: "gtin", label: "Código de barras" },
     { key: "descricao", label: "Descrição" },
     { key: "fornecedor", label: "Fornecedor" },
     { key: "categoria", label: "Categoria" },
