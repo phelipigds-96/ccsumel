@@ -471,72 +471,8 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   );
 }
 
-// ============ QUICK VIEW (produtos + anexos em pop-up) ============
+// QuickView e geração de PDF vivem em @/components/campanha-quick-view
 
-function CampanhaQuickView({
-  campanha, ofertas, onOpenChange, onAbrir,
-}: {
-  campanha: Campanha | null;
-  ofertas: Oferta[];
-  onOpenChange: (v: boolean) => void;
-  onAbrir: (id: string) => void;
-}) {
-  if (!campanha) return null;
-  return (
-    <Dialog open={!!campanha} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{campanha.nome}</DialogTitle>
-          <DialogDescription>
-            {fmtDate(campanha.dataInicial)} → {fmtDate(campanha.dataFinal)} • {ofertas.length} produto(s) em oferta
-          </DialogDescription>
-        </DialogHeader>
-
-        {campanha.materiais.length > 0 && <MateriaisViewer materiais={campanha.materiais} />}
-
-        <div className="rounded-xl border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead>Código</TableHead>
-                <TableHead>Produto</TableHead>
-                <TableHead>Clube</TableHead>
-                <TableHead className="text-right">Preço normal</TableHead>
-                <TableHead className="text-right">Preço promocional</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ofertas.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
-                    Nenhum produto em oferta nesta campanha.
-                  </TableCell>
-                </TableRow>
-              ) : ofertas.map((o) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs">{o.codigo}</TableCell>
-                  <TableCell className="max-w-[280px] truncate">{o.descricao}</TableCell>
-                  <TableCell>{o.clubeSumel ? "Sim" : "Não"}</TableCell>
-                  <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>
-                  <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => { printCampanhaPDF(campanha, ofertas); toast.success("PDF aberto em nova aba."); }}>
-            <Printer className="mr-2 h-4 w-4" />Imprimir PDF
-          </Button>
-          <Button className="bg-primary hover:bg-primary/90" onClick={() => onAbrir(campanha.id)}>
-            Abrir campanha <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ============ CAMPANHA DETALHE (ofertas) ============
 
