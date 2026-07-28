@@ -65,7 +65,7 @@ const emptyCampanha = (): Campanha => ({
 });
 
 const emptyOferta = (campanha: Campanha): Oferta => ({
-  id: crypto.randomUUID(), campanhaId: campanha.id, codigo: "", gtin: "", descricao: "",
+  id: crypto.randomUUID(), campanhaId: campanha.id, codigo: "", gtin: "", gtinsCresceVendas: "", descricao: "",
   fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
   precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: campanha.clubeSumel ?? false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
