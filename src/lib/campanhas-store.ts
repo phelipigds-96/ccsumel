@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";
 
@@ -46,115 +47,201 @@ export interface Oferta {
   selloutObs: string;
 }
 
-const seedCampanhas: Campanha[] = [
-  { id: "c1", nome: "Ofertas da Semana", descricao: "Ofertas semanais rotativas em todas as filiais.", dataInicial: "2026-07-22", dataFinal: "2026-07-28", status: "Ativa", filiais: [], clubeSumel: false, materiais: [] },
-  { id: "c2", nome: "Verão Gelado", descricao: "Campanha sazonal de bebidas e sorvetes.", dataInicial: "2026-07-20", dataFinal: "2026-08-15", status: "Ativa", filiais: [], clubeSumel: false, materiais: [] },
-  { id: "c3", nome: "Casa Limpa", descricao: "Promoções em produtos de limpeza doméstica.", dataInicial: "2026-08-01", dataFinal: "2026-08-20", status: "Programada", filiais: [], clubeSumel: false, materiais: [] },
-  { id: "c4", nome: "Café da Manhã", descricao: "Pães, cafés, laticínios e cereais.", dataInicial: "2026-07-15", dataFinal: "2026-07-30", status: "Ativa", filiais: [], clubeSumel: false, materiais: [] },
-  { id: "c5", nome: "Mês do Bebê", descricao: "Higiene infantil e cuidados com o bebê.", dataInicial: "2026-06-10", dataFinal: "2026-07-05", status: "Encerrada", filiais: [], clubeSumel: false, materiais: [] },
-];
-
-const seedOfertas: Oferta[] = [
-  { id: "1", campanhaId: "c2", codigo: "OF-0001", gtin: "", descricao: "Cerveja Brahma 350ml Pack 12", fornecedor: "Ambev", categoria: "Bebidas", precoNormal: 59.9, custo: 0, precoPromocional: 44.9, clubeSumel: true, dataInicial: "2026-07-20", dataFinal: "2026-08-10", filiais: ["Matriz"], corredor: "A3", estoque: 320, margem: 18.5, status: "Ativa", selloutTemVerba: true, selloutFornecedor: "Ambev", selloutValor: 1500, selloutObs: "Verba de exposição — pack promocional." },
-  { id: "2", campanhaId: "c4", codigo: "OF-0002", gtin: "", descricao: "Café Nescafé Tradicional 500g", fornecedor: "Nestlé", categoria: "Mercearia", precoNormal: 29.9, custo: 0, precoPromocional: 23.9, clubeSumel: false, dataInicial: "2026-07-15", dataFinal: "2026-07-30", filiais: ["Filial 01"], corredor: "B7", estoque: 180, margem: 22.0, status: "Ativa", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
-  { id: "3", campanhaId: "c3", codigo: "OF-0003", gtin: "", descricao: "Sabão em Pó OMO 1,6kg", fornecedor: "Unilever", categoria: "Limpeza", precoNormal: 39.9, custo: 0, precoPromocional: 31.9, clubeSumel: true, dataInicial: "2026-08-01", dataFinal: "2026-08-20", filiais: ["Matriz"], corredor: "C2", estoque: 240, margem: 15.0, status: "Programada", selloutTemVerba: true, selloutFornecedor: "Unilever", selloutValor: 800, selloutObs: "" },
-  { id: "4", campanhaId: "c5", codigo: "OF-0004", gtin: "", descricao: "Fralda Pampers G 40un", fornecedor: "P&G", categoria: "Higiene", precoNormal: 89.9, custo: 0, precoPromocional: 69.9, clubeSumel: true, dataInicial: "2026-06-10", dataFinal: "2026-07-05", filiais: ["Filial 02"], corredor: "D4", estoque: 60, margem: 25.5, status: "Encerrada", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
-  { id: "5", campanhaId: "c2", codigo: "OF-0005", gtin: "", descricao: "Refrigerante Coca-Cola 2L", fornecedor: "Coca-Cola", categoria: "Bebidas", precoNormal: 12.9, custo: 0, precoPromocional: 8.99, clubeSumel: false, dataInicial: "2026-07-25", dataFinal: "2026-08-15", filiais: ["Filial 03"], corredor: "A1", estoque: 500, margem: 12.0, status: "Ativa", selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "" },
-  { id: "6", campanhaId: "c1", codigo: "OF-0006", gtin: "", descricao: "Arroz Camil 5kg", fornecedor: "BRF", categoria: "Mercearia", precoNormal: 34.9, custo: 0, precoPromocional: 27.9, clubeSumel: true, dataInicial: "2026-07-22", dataFinal: "2026-07-28", filiais: ["Matriz"], corredor: "B1", estoque: 400, margem: 14.0, status: "Ativa", selloutTemVerba: true, selloutFornecedor: "BRF", selloutValor: 500, selloutObs: "Encarte semanal." },
-];
-
-const KEY_CAMP = "sgmc.campanhas.v1";
-const KEY_OFER = "sgmc.ofertas.v1";
-const KEY_ACER = "sgmc.acertos.v1";
-
 export interface Acerto {
   quantidadeVendida: number;
   registradoEm: string;
 }
 
-type State = { campanhas: Campanha[]; ofertas: Oferta[]; acertos: Record<string, Acerto> };
+type State = { campanhas: Campanha[]; ofertas: Oferta[]; acertos: Record<string, Acerto>; carregando: boolean };
 
-const loadState = (): State => {
-  if (typeof window === "undefined") return { campanhas: seedCampanhas, ofertas: seedOfertas, acertos: {} };
-  try {
-    const c = window.localStorage.getItem(KEY_CAMP);
-    const o = window.localStorage.getItem(KEY_OFER);
-    const a = window.localStorage.getItem(KEY_ACER);
-    const ofertasRaw = o ? (JSON.parse(o) as any[]) : seedOfertas;
-    const ofertasMigradas: Oferta[] = ofertasRaw.map((of) => {
-      if (of && !Array.isArray(of.filiais)) {
-        const legacy = typeof of.filial === "string" && of.filial ? [of.filial] : [];
-        const { filial: _drop, ...rest } = of;
-        return { ...rest, filiais: legacy } as Oferta;
-      }
-      return of as Oferta;
-    });
-    const campanhasRaw = c ? (JSON.parse(c) as any[]) : seedCampanhas;
-    const campanhasMigradas: Campanha[] = campanhasRaw.map((cp) => ({
-      ...cp,
-      filiais: Array.isArray(cp?.filiais) ? cp.filiais : [],
-      clubeSumel: typeof cp?.clubeSumel === "boolean" ? cp.clubeSumel : false,
-      materiais: Array.isArray(cp?.materiais) ? cp.materiais : [],
-    }));
-    return {
-      campanhas: campanhasMigradas,
-      ofertas: ofertasMigradas,
-      acertos: a ? (JSON.parse(a) as Record<string, Acerto>) : {},
-    };
-  } catch {
-    return { campanhas: seedCampanhas, ofertas: seedOfertas, acertos: {} };
-  }
-};
+const emptyState: State = { campanhas: [], ofertas: [], acertos: {}, carregando: true };
 
-let state: State = loadState();
+let state: State = emptyState;
 const listeners = new Set<() => void>();
-
-const emit = () => listeners.forEach((l) => l());
-
-const persist = () => {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(KEY_CAMP, JSON.stringify(state.campanhas));
-  window.localStorage.setItem(KEY_OFER, JSON.stringify(state.ofertas));
-  window.localStorage.setItem(KEY_ACER, JSON.stringify(state.acertos));
+const emit = () => {
+  state = { ...state };
+  listeners.forEach((l) => l());
 };
+
+/* ---------- mapeamento banco <-> app ---------- */
+
+const toCampanha = (r: any): Campanha => ({
+  id: r.id,
+  nome: r.nome ?? "",
+  descricao: r.descricao ?? "",
+  dataInicial: r.data_inicial ?? "",
+  dataFinal: r.data_final ?? "",
+  status: (r.status ?? "Rascunho") as Status,
+  filiais: Array.isArray(r.filiais) ? r.filiais : [],
+  clubeSumel: !!r.clube_sumel,
+  materiais: Array.isArray(r.materiais) ? r.materiais : [],
+});
+
+const fromCampanha = (c: Campanha) => ({
+  id: c.id,
+  nome: c.nome,
+  descricao: c.descricao ?? "",
+  data_inicial: c.dataInicial || null,
+  data_final: c.dataFinal || null,
+  status: c.status,
+  filiais: c.filiais ?? [],
+  clube_sumel: !!c.clubeSumel,
+  materiais: c.materiais ?? [],
+});
+
+const toOferta = (r: any): Oferta => ({
+  id: r.id,
+  campanhaId: r.campanha_id,
+  codigo: r.codigo ?? "",
+  gtin: r.gtin ?? "",
+  descricao: r.descricao ?? "",
+  fornecedor: r.fornecedor ?? "",
+  categoria: r.categoria ?? "",
+  precoNormal: Number(r.preco_normal ?? 0),
+  custo: Number(r.custo ?? 0),
+  precoPromocional: Number(r.preco_promocional ?? 0),
+  clubeSumel: !!r.clube_sumel,
+  dataInicial: r.data_inicial ?? "",
+  dataFinal: r.data_final ?? "",
+  filiais: Array.isArray(r.filiais) ? r.filiais : [],
+  corredor: r.corredor ?? "",
+  estoque: Number(r.estoque ?? 0),
+  margem: Number(r.margem ?? 0),
+  status: (r.status ?? "Rascunho") as Status,
+  selloutTemVerba: !!r.sellout_tem_verba,
+  selloutFornecedor: r.sellout_fornecedor ?? "",
+  selloutValor: Number(r.sellout_valor ?? 0),
+  selloutObs: r.sellout_obs ?? "",
+});
+
+const fromOferta = (o: Oferta) => ({
+  id: o.id,
+  campanha_id: o.campanhaId,
+  codigo: o.codigo ?? "",
+  gtin: o.gtin ?? "",
+  descricao: o.descricao ?? "",
+  fornecedor: o.fornecedor ?? "",
+  categoria: o.categoria ?? "",
+  preco_normal: Number(o.precoNormal ?? 0),
+  custo: Number(o.custo ?? 0),
+  preco_promocional: Number(o.precoPromocional ?? 0),
+  clube_sumel: !!o.clubeSumel,
+  data_inicial: o.dataInicial || null,
+  data_final: o.dataFinal || null,
+  filiais: o.filiais ?? [],
+  corredor: o.corredor ?? "",
+  estoque: Number(o.estoque ?? 0),
+  margem: Number(o.margem ?? 0),
+  status: o.status,
+  sellout_tem_verba: !!o.selloutTemVerba,
+  sellout_fornecedor: o.selloutFornecedor ?? "",
+  sellout_valor: Number(o.selloutValor ?? 0),
+  sellout_obs: o.selloutObs ?? "",
+});
+
+/* ---------- carregamento inicial ---------- */
+
+let carregado = false;
+
+export async function carregarCampanhas() {
+  if (typeof window === "undefined") return;
+  const [{ data: camps }, { data: ofs }, { data: acs }] = await Promise.all([
+    supabase.from("campanhas" as any).select("*").order("data_inicial", { ascending: false }),
+    supabase.from("ofertas" as any).select("*"),
+    supabase.from("acertos" as any).select("*"),
+  ]);
+  const acertos: Record<string, Acerto> = {};
+  for (const a of (acs ?? []) as any[]) {
+    acertos[a.oferta_id] = {
+      quantidadeVendida: Number(a.quantidade_vendida ?? 0),
+      registradoEm: a.registrado_em ?? new Date().toISOString(),
+    };
+  }
+  state = {
+    campanhas: ((camps ?? []) as any[]).map(toCampanha),
+    ofertas: ((ofs ?? []) as any[]).map(toOferta),
+    acertos,
+    carregando: false,
+  };
+  emit();
+}
+
+function ensureLoaded() {
+  if (carregado || typeof window === "undefined") return;
+  carregado = true;
+  void carregarCampanhas().catch(() => {
+    state = { ...state, carregando: false };
+    emit();
+  });
+}
+
+/* ---------- persistência por diferença ---------- */
+
+async function syncCampanhas(prev: Campanha[], next: Campanha[]) {
+  const prevMap = new Map(prev.map((c) => [c.id, c]));
+  const nextMap = new Map(next.map((c) => [c.id, c]));
+  const removidos = prev.filter((c) => !nextMap.has(c.id)).map((c) => c.id);
+  const alterados = next.filter((c) => {
+    const p = prevMap.get(c.id);
+    return !p || JSON.stringify(p) !== JSON.stringify(c);
+  });
+  if (removidos.length) await supabase.from("campanhas" as any).delete().in("id", removidos);
+  if (alterados.length) await supabase.from("campanhas" as any).upsert(alterados.map(fromCampanha));
+}
+
+async function syncOfertas(prev: Oferta[], next: Oferta[]) {
+  const prevMap = new Map(prev.map((o) => [o.id, o]));
+  const nextMap = new Map(next.map((o) => [o.id, o]));
+  const removidos = prev.filter((o) => !nextMap.has(o.id)).map((o) => o.id);
+  const alterados = next.filter((o) => {
+    const p = prevMap.get(o.id);
+    return !p || JSON.stringify(p) !== JSON.stringify(o);
+  });
+  if (removidos.length) await supabase.from("ofertas" as any).delete().in("id", removidos);
+  if (alterados.length) await supabase.from("ofertas" as any).upsert(alterados.map(fromOferta));
+}
 
 export const campanhasStore = {
   get: () => state,
   subscribe: (fn: () => void) => {
+    ensureLoaded();
     listeners.add(fn);
     return () => listeners.delete(fn);
   },
+  reload: () => carregarCampanhas(),
   setCampanhas: (updater: (prev: Campanha[]) => Campanha[]) => {
-    state = { ...state, campanhas: updater(state.campanhas) };
-    persist();
+    const prev = state.campanhas;
+    const next = updater(prev);
+    state = { ...state, campanhas: next };
     emit();
+    void syncCampanhas(prev, next);
   },
   setOfertas: (updater: (prev: Oferta[]) => Oferta[]) => {
-    state = { ...state, ofertas: updater(state.ofertas) };
-    persist();
+    const prev = state.ofertas;
+    const next = updater(prev);
+    state = { ...state, ofertas: next };
     emit();
+    void syncOfertas(prev, next);
   },
   setAcerto: (ofertaId: string, quantidadeVendida: number) => {
+    const registradoEm = new Date().toISOString();
     state = {
       ...state,
-      acertos: {
-        ...state.acertos,
-        [ofertaId]: { quantidadeVendida, registradoEm: new Date().toISOString() },
-      },
+      acertos: { ...state.acertos, [ofertaId]: { quantidadeVendida, registradoEm } },
     };
-    persist();
     emit();
+    void supabase.from("acertos" as any).upsert({
+      oferta_id: ofertaId,
+      quantidade_vendida: quantidadeVendida,
+      registrado_em: registradoEm,
+    });
   },
 };
 
-const serverSnap: State = { campanhas: seedCampanhas, ofertas: seedOfertas, acertos: {} };
+const serverSnap: State = { campanhas: [], ofertas: [], acertos: {}, carregando: true };
 
 export function useCampanhasStore(): State {
-  return useSyncExternalStore(
-    campanhasStore.subscribe,
-    campanhasStore.get,
-    () => serverSnap,
-  );
+  return useSyncExternalStore(campanhasStore.subscribe, campanhasStore.get, () => serverSnap);
 }
 
 /** Today's date (local) as YYYY-MM-DD. */
