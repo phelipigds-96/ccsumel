@@ -110,12 +110,15 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <img src={logoSumel.url} alt="Sumel" className="h-6 w-auto object-contain" />
-              <div className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/55">
+              <div className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
+                Central de Campanhas
+              </div>
+              <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/55">
                 MARKETING E COMPRAS
               </div>
             </div>
           )}
+
         </div>
 
       </SidebarHeader>
