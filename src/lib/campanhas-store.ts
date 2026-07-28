@@ -27,6 +27,7 @@ export interface Oferta {
   campanhaId: string;
   codigo: string;
   gtin: string;
+  gtinsCresceVendas: string;
   descricao: string;
   fornecedor: string;
   categoria: string;
