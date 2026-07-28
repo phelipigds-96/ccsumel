@@ -86,34 +86,114 @@ const statusVariant: Record<Status, string> = {
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
 
+/** Limpa o texto para o PDF: remove caracteres de controle, normaliza acentos
+ *  e colapsa espaços/quebras de linha que quebravam o layout da tabela. */
+const pdfText = (v: unknown) =>
+  String(v ?? "")
+    .normalize("NFC")
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2028\u2029\uFEFF]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
   // Abre a aba SINCRONAMENTE dentro do clique para não ser bloqueada pelo navegador
   const win = window.open("", "_blank");
 
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-  doc.setFontSize(14); doc.setTextColor(30, 41, 82);
-  doc.text(`SGMC — Campanha: ${campanha.nome}`, 40, 40);
-  doc.setFontSize(9); doc.setTextColor(90);
-  doc.text(
-    `Vigência ${fmtDate(campanha.dataInicial)} a ${fmtDate(campanha.dataFinal)}  •  ${ofertas.length} oferta(s)  •  Gerado em ${new Date().toLocaleString("pt-BR")}`,
-    40, 56,
+  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const M = 32;
+
+  const periodo = `${fmtDate(campanha.dataInicial)} a ${fmtDate(campanha.dataFinal)}`;
+  const mesmoPeriodo = ofertas.every(
+    (o) => o.dataInicial === campanha.dataInicial && o.dataFinal === campanha.dataFinal,
   );
 
-  autoTable(doc, {
-    startY: 70,
-    head: [["Código", "Descrição", "Clube", "Preço Normal", "Preço Promocional", "Período", "Campanha"]],
-    body: ofertas.map(o => [
-      o.codigo,
-      o.descricao,
-      o.clubeSumel ? "Sim" : "Não",
+  const head = mesmoPeriodo
+    ? [["Código", "Descrição do Produto", "Clube", "De", "Por"]]
+    : [["Código", "Descrição do Produto", "Clube", "De", "Por", "Período"]];
+
+  const body = ofertas.map((o) => {
+    const base = [
+      pdfText(o.codigo),
+      pdfText(o.descricao),
+      o.clubeSumel ? "SIM" : "—",
       brl(o.precoNormal),
       brl(o.precoPromocional),
-      `${fmtDate(o.dataInicial)} a ${fmtDate(o.dataFinal)}`,
-      campanha.nome,
-    ]),
-    styles: { fontSize: 9, cellPadding: 5 },
-    headStyles: { fillColor: [200, 30, 40], textColor: 255 },
-    alternateRowStyles: { fillColor: [248, 248, 250] },
+    ];
+    return mesmoPeriodo
+      ? base
+      : [...base, `${fmtDate(o.dataInicial)} a ${fmtDate(o.dataFinal)}`];
+  });
+
+  autoTable(doc, {
+    head,
+    body,
+    startY: 96,
+    margin: { top: 96, right: M, bottom: 44, left: M },
+    theme: "grid",
+    styles: {
+      font: "helvetica",
+      fontSize: 10,
+      cellPadding: { top: 6, right: 6, bottom: 6, left: 6 },
+      overflow: "linebreak",
+      valign: "middle",
+      lineColor: [222, 226, 233],
+      lineWidth: 0.5,
+      textColor: [20, 26, 40],
+    },
+    headStyles: {
+      fillColor: [200, 16, 46],
+      textColor: 255,
+      fontStyle: "bold",
+      fontSize: 10,
+      halign: "left",
+    },
+    alternateRowStyles: { fillColor: [247, 249, 251] },
+    columnStyles: mesmoPeriodo
+      ? {
+          0: { cellWidth: 62, halign: "left" },
+          1: { cellWidth: "auto" },
+          2: { cellWidth: 46, halign: "center" },
+          3: { cellWidth: 72, halign: "right", textColor: [120, 128, 140] },
+          4: { cellWidth: 78, halign: "right", fontStyle: "bold", textColor: [200, 16, 46] },
+        }
+      : {
+          0: { cellWidth: 56, halign: "left" },
+          1: { cellWidth: "auto" },
+          2: { cellWidth: 40, halign: "center" },
+          3: { cellWidth: 64, halign: "right", textColor: [120, 128, 140] },
+          4: { cellWidth: 70, halign: "right", fontStyle: "bold", textColor: [200, 16, 46] },
+          5: { cellWidth: 110, halign: "center", fontSize: 8 },
+        },
+    didDrawPage: () => {
+      // Cabeçalho
+      doc.setFillColor(11, 31, 58);
+      doc.rect(0, 0, pageW, 72, "F");
+      doc.setTextColor(255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text(pdfText(campanha.nome).toUpperCase(), M, 34);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(200, 210, 225);
+      doc.text(
+        `Central de Campanhas Sumel  •  Vigência ${periodo}  •  ${ofertas.length} produto(s)`,
+        M,
+        52,
+      );
+
+      // Rodapé
+      const pageH = doc.internal.pageSize.getHeight();
+      const page = doc.getNumberOfPages();
+      doc.setDrawColor(222, 226, 233);
+      doc.setLineWidth(0.5);
+      doc.line(M, pageH - 30, pageW - M, pageH - 30);
+      doc.setFontSize(8);
+      doc.setTextColor(140);
+      doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, M, pageH - 18);
+      doc.text(`Página ${page}`, pageW - M, pageH - 18, { align: "right" });
+    },
   });
 
   const url = doc.output("bloburl") as unknown as string;
@@ -126,6 +206,7 @@ function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
     toast.warning("Permita pop-ups para abrir o PDF em nova aba.");
   }
 }
+
 
 
 
