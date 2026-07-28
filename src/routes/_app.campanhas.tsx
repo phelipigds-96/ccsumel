@@ -930,6 +930,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
   const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
   const buscaRef = useRef<HTMLInputElement>(null);
+  const promoRef = useRef<HTMLInputElement>(null);
 
   // Reset campo de busca e foca quando abre uma nova oferta (id muda)
   useEffect(() => {
