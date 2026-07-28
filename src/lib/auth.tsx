@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { usernameToEmail } from "@/lib/user-email";
+import { adminCreateUser, adminUpdateUser, adminDeleteUser } from "@/lib/users.functions";
 
 // ---------- Permissions catalog ----------
 // Each key maps to a sidebar url in `app-sidebar.tsx`.
@@ -25,12 +27,12 @@ export interface StoredUser {
   id: string;
   name: string;
   username: string;
-  password: string; // prototype only — plain text
+  password?: string; // only used when creating/updating (never stored client-side)
   status: "ativo" | "inativo";
   notes?: string;
-  permissions: string[]; // urls the user can access
+  permissions: string[];
   isAdmin?: boolean;
-  readOnly?: boolean; // if true, can only view campanhas/ofertas (no edit)
+  readOnly?: boolean;
   createdAt: string;
 }
 
@@ -47,9 +49,9 @@ interface AuthContextValue {
   user: SessionUser | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   users: StoredUser[];
-  createUser: (u: Omit<StoredUser, "id" | "createdAt">) => Promise<StoredUser>;
+  createUser: (u: Omit<StoredUser, "id" | "createdAt">) => Promise<void>;
   updateUser: (id: string, patch: Partial<Omit<StoredUser, "id" | "createdAt">>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -57,24 +59,17 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/**
- * Only the id of the signed-in user is kept in the browser (session pointer).
- * All user data, permissions and preferences live in the database.
- */
-const SESSION_ID_KEY = "sgmc.session.id";
+const profiles = () => supabase.from("profiles" as any);
 
-const table = () => supabase.from("usuarios" as any);
-
-const toStored = (r: any): StoredUser => ({
+const toStored = (r: any, isAdmin: boolean): StoredUser => ({
   id: r.id,
   name: r.name ?? "",
   username: r.username ?? "",
-  password: r.password ?? "",
   status: (r.status === "inativo" ? "inativo" : "ativo") as StoredUser["status"],
   notes: r.notes || undefined,
   permissions: Array.isArray(r.permissions) ? r.permissions : [],
-  isAdmin: !!r.is_admin,
-  readOnly: !!r.read_only,
+  isAdmin,
+  readOnly: !isAdmin && !!r.read_only,
   createdAt: r.created_at ?? new Date().toISOString(),
 });
 
@@ -87,10 +82,31 @@ const toSession = (u: StoredUser): SessionUser => ({
   readOnly: !u.isAdmin && !!u.readOnly,
 });
 
+async function fetchRoles(): Promise<Map<string, string>> {
+  const { data } = await supabase.from("user_roles" as any).select("user_id, role");
+  const map = new Map<string, string>();
+  ((data ?? []) as any[]).forEach((r) => map.set(r.user_id, r.role));
+  return map;
+}
+
 export async function fetchUsers(): Promise<StoredUser[]> {
-  const { data, error } = await table().select("*").order("created_at", { ascending: true });
+  const [{ data, error }, roles] = await Promise.all([
+    profiles().select("*").order("created_at", { ascending: true }),
+    fetchRoles(),
+  ]);
   if (error) throw new Error(error.message);
-  return ((data ?? []) as any[]).map(toStored);
+  return ((data ?? []) as any[]).map((r) => toStored(r, roles.get(r.id) === "admin"));
+}
+
+async function loadSessionUser(userId: string): Promise<SessionUser | null> {
+  const [{ data }, roles] = await Promise.all([
+    profiles().select("*").eq("id", userId).maybeSingle(),
+    fetchRoles(),
+  ]);
+  if (!data) return null;
+  const stored = toStored(data, roles.get(userId) === "admin");
+  if (stored.status !== "ativo") return null;
+  return toSession(stored);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -102,103 +118,110 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setUsers(await fetchUsers());
     } catch {
-      // ignore
+      // non-admins cannot list users — ignore
     }
   };
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      try {
-        const list = await fetchUsers();
-        if (!alive) return;
-        setUsers(list);
-        const id = localStorage.getItem(SESSION_ID_KEY);
-        const found = id ? list.find((u) => u.id === id) : null;
-        if (found && found.status === "ativo") setUser(toSession(found));
-        else if (id) localStorage.removeItem(SESSION_ID_KEY);
-      } finally {
-        if (alive) setLoading(false);
+
+    const sync = async (userId: string | null) => {
+      if (!userId) {
+        if (alive) {
+          setUser(null);
+          setUsers([]);
+        }
+        return;
       }
+      const session = await loadSessionUser(userId);
+      if (!alive) return;
+      setUser(session);
+      if (!session) await supabase.auth.signOut();
+      else void refresh();
+    };
+
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      await sync(data.session?.user?.id ?? null);
+      if (alive) setLoading(false);
     })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        void sync(session?.user?.id ?? null);
+      }
+    });
+
     return () => {
       alive = false;
+      sub.subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (username: string, password: string) => {
-    const { data, error } = await table()
-      .select("*")
-      .ilike("username", username.trim())
-      .limit(1);
-    if (error) throw new Error("Não foi possível conectar ao servidor.");
-    const row = (data ?? [])[0] as any;
-    if (!row || row.password !== password) throw new Error("Usuário ou senha inválidos.");
-    const found = toStored(row);
-    if (found.status !== "ativo") throw new Error("Usuário inativo. Contate o administrador.");
-    localStorage.setItem(SESSION_ID_KEY, found.id);
-    setUser(toSession(found));
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: usernameToEmail(username),
+      password,
+    });
+    if (error || !data.user) throw new Error("Usuário ou senha inválidos.");
+    const session = await loadSessionUser(data.user.id);
+    if (!session) {
+      await supabase.auth.signOut();
+      throw new Error("Usuário inativo. Contate o administrador.");
+    }
+    setUser(session);
     void refresh();
   };
 
-  const logout = () => {
-    localStorage.removeItem(SESSION_ID_KEY);
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setUsers([]);
   };
 
   const createUser: AuthContextValue["createUser"] = async (u) => {
-    const { data, error } = await table()
-      .insert({
+    await adminCreateUser({
+      data: {
         name: u.name,
-        username: u.username.trim(),
-        password: u.password,
+        username: u.username,
+        password: u.password ?? "",
         status: u.status,
         notes: u.notes ?? "",
         permissions: u.permissions ?? [],
-        is_admin: !!u.isAdmin,
-        read_only: !!u.readOnly,
-      })
-      .select()
-      .maybeSingle();
-    if (error) {
-      if (error.code === "23505") throw new Error("Já existe um usuário com esse login.");
-      throw new Error(error.message);
-    }
-    const created = toStored(data);
-    setUsers((prev) => [...prev, created]);
-    return created;
+        isAdmin: !!u.isAdmin,
+        readOnly: !!u.readOnly,
+      },
+    });
+    await refresh();
   };
 
   const updateUser: AuthContextValue["updateUser"] = async (id, patch) => {
-    const payload: Record<string, unknown> = {};
-    if (patch.name !== undefined) payload.name = patch.name;
-    if (patch.username !== undefined) payload.username = patch.username.trim();
-    if (patch.password !== undefined) payload.password = patch.password;
-    if (patch.status !== undefined) payload.status = patch.status;
-    if (patch.notes !== undefined) payload.notes = patch.notes ?? "";
-    if (patch.permissions !== undefined) payload.permissions = patch.permissions;
-    if (patch.isAdmin !== undefined) payload.is_admin = patch.isAdmin;
-    if (patch.readOnly !== undefined) payload.read_only = patch.readOnly;
-
-    const { data, error } = await table().update(payload).eq("id", id).select().maybeSingle();
-    if (error) {
-      if (error.code === "23505") throw new Error("Já existe um usuário com esse login.");
-      throw new Error(error.message);
+    const current = users.find((x) => x.id === id);
+    if (!current) throw new Error("Usuário não encontrado.");
+    await adminUpdateUser({
+      data: {
+        id,
+        name: patch.name ?? current.name,
+        username: patch.username ?? current.username,
+        password: patch.password || undefined,
+        status: patch.status ?? current.status,
+        notes: patch.notes ?? current.notes ?? "",
+        permissions: patch.permissions ?? current.permissions,
+        isAdmin: patch.isAdmin ?? !!current.isAdmin,
+        readOnly: patch.readOnly ?? !!current.readOnly,
+      },
+    });
+    await refresh();
+    if (user && user.id === id) {
+      const session = await loadSessionUser(id);
+      setUser(session);
     }
-    const updated = toStored(data);
-    setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
-    if (user && user.id === id) setUser(toSession(updated));
   };
 
   const deleteUser: AuthContextValue["deleteUser"] = async (id) => {
-    const list = users.length ? users : await fetchUsers();
-    const target = list.find((u) => u.id === id);
-    if (target?.isAdmin && list.filter((u) => u.isAdmin).length <= 1) {
-      throw new Error("Não é possível excluir o único administrador.");
-    }
-    const { error } = await table().delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    setUsers((prev) => prev.filter((u) => u.id !== id));
+    await adminDeleteUser({ data: { id } });
+    await refresh();
   };
 
   return (
@@ -215,10 +238,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
-
-export function hasSessionPointer() {
-  if (typeof window === "undefined") return false;
-  return !!localStorage.getItem(SESSION_ID_KEY);
-}
-
-export const isAuthenticated = hasSessionPointer;
