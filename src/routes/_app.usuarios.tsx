@@ -138,7 +138,7 @@ function UsuariosPage() {
     }));
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const name = form.name.trim();
     const username = form.username.trim();
@@ -168,10 +168,10 @@ function UsuariosPage() {
           readOnly: !form.isAdmin && form.readOnly,
         };
         if (form.password) patch.password = form.password;
-        updateUser(editing.id, patch);
+        await updateUser(editing.id, patch);
         toast.success("Usuário atualizado.");
       } else {
-        createUser({
+        await createUser({
           name,
           username,
           password: form.password,
@@ -189,16 +189,17 @@ function UsuariosPage() {
     }
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!confirmDelete) return;
     try {
-      deleteUser(confirmDelete.id);
+      await deleteUser(confirmDelete.id);
       toast.success("Usuário removido.");
       setConfirmDelete(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao remover usuário.");
     }
   }
+
 
   const allSelected = form.permissions.length === ALL_PERMISSIONS.length;
 
