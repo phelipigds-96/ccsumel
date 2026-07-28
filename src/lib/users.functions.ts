@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { usernameToEmail } from "@/lib/user-email";
 
-export const USER_EMAIL_DOMAIN = "sumel.local";
-
-export const usernameToEmail = (username: string) =>
-  `${username.trim().toLowerCase()}@${USER_EMAIL_DOMAIN}`;
 
 interface UpsertInput {
   id?: string;
