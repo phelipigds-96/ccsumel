@@ -1,12 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { hasSessionPointer } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("sgmc.auth.user");
-      throw redirect({ to: stored ? "/dashboard" : "/login" });
-    }
-    throw redirect({ to: "/login" });
+    throw redirect({ to: hasSessionPointer() ? "/dashboard" : "/login" });
   },
   component: () => null,
 });
