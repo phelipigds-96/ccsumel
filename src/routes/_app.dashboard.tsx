@@ -111,9 +111,10 @@ function DashboardPage() {
     </button>
   );
 
-  const { diasAtivos, diasProgramados } = useMemo(() => {
+  const { diasAtivos, diasProgramados, campanhasPorDia } = useMemo(() => {
     const a: Date[] = [];
     const p: Date[] = [];
+    const map = new Map<string, string[]>();
     campanhas.forEach((c) => {
       const start = parseISO(c.dataInicial);
       const end = parseISO(c.dataFinal);
@@ -121,11 +122,15 @@ function DashboardPage() {
       while (cursor <= end) {
         if (c.status === "Ativa") a.push(new Date(cursor));
         else if (c.status === "Programada") p.push(new Date(cursor));
+        const key = format(cursor, "yyyy-MM-dd");
+        const label = `${c.nome} (${c.status}) — ${format(start, "dd/MM")} a ${format(end, "dd/MM")}`;
+        map.set(key, [...(map.get(key) ?? []), label]);
         cursor.setDate(cursor.getDate() + 1);
       }
     });
-    return { diasAtivos: a, diasProgramados: p };
+    return { diasAtivos: a, diasProgramados: p, campanhasPorDia: map };
   }, [campanhas]);
+
 
   const campanhasDoDia = diaSelecionado
     ? campanhas.filter(
