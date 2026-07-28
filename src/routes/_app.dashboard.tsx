@@ -222,8 +222,24 @@ function DashboardPage() {
               ativa: "bg-primary/10 text-primary font-semibold rounded-md",
               programada: "bg-navy/10 text-navy font-semibold rounded-md",
             }}
+            components={{
+              DayButton: (props) => {
+                const nomes = campanhasPorDia.get(format(props.day.date, "yyyy-MM-dd"));
+                return (
+                  <CalendarDayButton
+                    {...props}
+                    title={
+                      nomes?.length
+                        ? `${format(props.day.date, "dd/MM/yyyy")}\n${nomes.map((n) => `• ${n}`).join("\n")}`
+                        : `${format(props.day.date, "dd/MM/yyyy")}\nSem campanhas`
+                    }
+                  />
+                );
+              },
+            }}
             className="pointer-events-auto rounded-xl border p-4 [--cell-size:2.6rem]"
           />
+
           <div className="min-w-0">
             <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               {diaSelecionado ? format(diaSelecionado, "PPP", { locale: ptBR }) : "Selecione um dia"}
