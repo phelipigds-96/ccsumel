@@ -177,6 +177,41 @@ export type Database = {
           },
         ]
       }
+      preferencias_colunas: {
+        Row: {
+          colunas: Json
+          created_at: string
+          id: string
+          tabela: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          colunas?: Json
+          created_at?: string
+          id?: string
+          tabela: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          colunas?: Json
+          created_at?: string
+          id?: string
+          tabela?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preferencias_colunas_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto_importacoes: {
         Row: {
           arquivo: string | null
@@ -249,6 +284,48 @@ export type Database = {
           id?: string
           preco_venda?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      usuarios: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean
+          name: string
+          notes: string
+          password: string
+          permissions: Json
+          read_only: boolean
+          status: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          name: string
+          notes?: string
+          password: string
+          permissions?: Json
+          read_only?: boolean
+          status?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          name?: string
+          notes?: string
+          password?: string
+          permissions?: Json
+          read_only?: boolean
+          status?: string
+          updated_at?: string
+          username?: string
         }
         Relationships: []
       }

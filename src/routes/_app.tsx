@@ -9,15 +9,13 @@ export const Route = createFileRoute("/_app")({
 });
 
 function AppLayout() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) {
-      const stored = typeof window !== "undefined" && localStorage.getItem("sgmc.auth.user");
-      if (!stored) navigate({ to: "/login", replace: true });
-    }
-  }, [user, navigate]);
+    if (!loading && !user) navigate({ to: "/login", replace: true });
+  }, [user, loading, navigate]);
+
 
   return (
     <SidebarProvider>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 // ---------- Permissions catalog ----------
 // Each key maps to a sidebar url in `app-sidebar.tsx`.
@@ -44,156 +45,165 @@ export interface SessionUser {
 
 interface AuthContextValue {
   user: SessionUser | null;
+  loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   users: StoredUser[];
-  createUser: (u: Omit<StoredUser, "id" | "createdAt">) => StoredUser;
-  updateUser: (id: string, patch: Partial<Omit<StoredUser, "id" | "createdAt">>) => void;
-  deleteUser: (id: string) => void;
-  refresh: () => void;
+  createUser: (u: Omit<StoredUser, "id" | "createdAt">) => Promise<StoredUser>;
+  updateUser: (id: string, patch: Partial<Omit<StoredUser, "id" | "createdAt">>) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const SESSION_KEY = "sgmc.auth.user";
-const USERS_KEY = "sgmc.auth.users";
 
-function loadUsers(): StoredUser[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    if (!raw) return seedUsers();
-    const parsed = JSON.parse(raw) as StoredUser[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return seedUsers();
-    return parsed;
-  } catch {
-    return seedUsers();
-  }
-}
+/**
+ * Only the id of the signed-in user is kept in the browser (session pointer).
+ * All user data, permissions and preferences live in the database.
+ */
+const SESSION_ID_KEY = "sgmc.session.id";
 
-function seedUsers(): StoredUser[] {
-  const admin: StoredUser = {
-    id: crypto.randomUUID(),
-    name: "Administrador",
-    username: "admin",
-    password: "admin",
-    status: "ativo",
-    notes: "Usuário administrador padrão. Altere a senha após o primeiro acesso.",
-    permissions: ALL_PERMISSIONS,
-    isAdmin: true,
-    createdAt: new Date().toISOString(),
-  };
-  const list = [admin];
-  try {
-    localStorage.setItem(USERS_KEY, JSON.stringify(list));
-  } catch {
-    // ignore
-  }
-  return list;
-}
+const table = () => supabase.from("usuarios" as any);
 
-function persistUsers(list: StoredUser[]) {
-  try {
-    localStorage.setItem(USERS_KEY, JSON.stringify(list));
-  } catch {
-    // ignore
-  }
+const toStored = (r: any): StoredUser => ({
+  id: r.id,
+  name: r.name ?? "",
+  username: r.username ?? "",
+  password: r.password ?? "",
+  status: (r.status === "inativo" ? "inativo" : "ativo") as StoredUser["status"],
+  notes: r.notes || undefined,
+  permissions: Array.isArray(r.permissions) ? r.permissions : [],
+  isAdmin: !!r.is_admin,
+  readOnly: !!r.read_only,
+  createdAt: r.created_at ?? new Date().toISOString(),
+});
+
+const toSession = (u: StoredUser): SessionUser => ({
+  id: u.id,
+  name: u.name,
+  username: u.username,
+  permissions: u.isAdmin ? ALL_PERMISSIONS : u.permissions,
+  isAdmin: !!u.isAdmin,
+  readOnly: !u.isAdmin && !!u.readOnly,
+});
+
+export async function fetchUsers(): Promise<StoredUser[]> {
+  const { data, error } = await table().select("*").order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as any[]).map(toStored);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [users, setUsers] = useState<StoredUser[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setUsers(loadUsers());
+  const refresh = async () => {
     try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      if (raw) setUser(JSON.parse(raw));
+      setUsers(await fetchUsers());
     } catch {
       // ignore
     }
+  };
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const list = await fetchUsers();
+        if (!alive) return;
+        setUsers(list);
+        const id = localStorage.getItem(SESSION_ID_KEY);
+        const found = id ? list.find((u) => u.id === id) : null;
+        if (found && found.status === "ativo") setUser(toSession(found));
+        else if (id) localStorage.removeItem(SESSION_ID_KEY);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const refresh = () => setUsers(loadUsers());
-
   const login = async (username: string, password: string) => {
-    const list = loadUsers();
-    const found = list.find(
-      (u) => u.username.trim().toLowerCase() === username.trim().toLowerCase() && u.password === password,
-    );
-    if (!found) throw new Error("Usuário ou senha inválidos.");
+    const { data, error } = await table()
+      .select("*")
+      .ilike("username", username.trim())
+      .limit(1);
+    if (error) throw new Error("Não foi possível conectar ao servidor.");
+    const row = (data ?? [])[0] as any;
+    if (!row || row.password !== password) throw new Error("Usuário ou senha inválidos.");
+    const found = toStored(row);
     if (found.status !== "ativo") throw new Error("Usuário inativo. Contate o administrador.");
-    const session: SessionUser = {
-      id: found.id,
-      name: found.name,
-      username: found.username,
-      permissions: found.isAdmin ? ALL_PERMISSIONS : found.permissions,
-      isAdmin: !!found.isAdmin,
-      readOnly: !found.isAdmin && !!found.readOnly,
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    setUser(session);
+    localStorage.setItem(SESSION_ID_KEY, found.id);
+    setUser(toSession(found));
+    void refresh();
   };
 
   const logout = () => {
-    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_ID_KEY);
     setUser(null);
   };
 
-  const createUser: AuthContextValue["createUser"] = (u) => {
-    const list = loadUsers();
-    if (list.some((x) => x.username.trim().toLowerCase() === u.username.trim().toLowerCase())) {
-      throw new Error("Já existe um usuário com esse login.");
+  const createUser: AuthContextValue["createUser"] = async (u) => {
+    const { data, error } = await table()
+      .insert({
+        name: u.name,
+        username: u.username.trim(),
+        password: u.password,
+        status: u.status,
+        notes: u.notes ?? "",
+        permissions: u.permissions ?? [],
+        is_admin: !!u.isAdmin,
+        read_only: !!u.readOnly,
+      })
+      .select()
+      .maybeSingle();
+    if (error) {
+      if (error.code === "23505") throw new Error("Já existe um usuário com esse login.");
+      throw new Error(error.message);
     }
-    const created: StoredUser = { ...u, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-    const next = [...list, created];
-    persistUsers(next);
-    setUsers(next);
+    const created = toStored(data);
+    setUsers((prev) => [...prev, created]);
     return created;
   };
 
-  const updateUser: AuthContextValue["updateUser"] = (id, patch) => {
-    const list = loadUsers();
-    const next = list.map((u) => {
-      if (u.id !== id) return u;
-      // Prevent duplicate usernames
-      if (patch.username && list.some((x) => x.id !== id && x.username.trim().toLowerCase() === patch.username!.trim().toLowerCase())) {
-        throw new Error("Já existe um usuário com esse login.");
-      }
-      return { ...u, ...patch };
-    });
-    persistUsers(next);
-    setUsers(next);
-    // if it's the logged-in user, refresh session
-    if (user && user.id === id) {
-      const updated = next.find((u) => u.id === id)!;
-      const session: SessionUser = {
-        id: updated.id,
-        name: updated.name,
-        username: updated.username,
-        permissions: updated.isAdmin ? ALL_PERMISSIONS : updated.permissions,
-        isAdmin: !!updated.isAdmin,
-        readOnly: !updated.isAdmin && !!updated.readOnly,
-      };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      setUser(session);
+  const updateUser: AuthContextValue["updateUser"] = async (id, patch) => {
+    const payload: Record<string, unknown> = {};
+    if (patch.name !== undefined) payload.name = patch.name;
+    if (patch.username !== undefined) payload.username = patch.username.trim();
+    if (patch.password !== undefined) payload.password = patch.password;
+    if (patch.status !== undefined) payload.status = patch.status;
+    if (patch.notes !== undefined) payload.notes = patch.notes ?? "";
+    if (patch.permissions !== undefined) payload.permissions = patch.permissions;
+    if (patch.isAdmin !== undefined) payload.is_admin = patch.isAdmin;
+    if (patch.readOnly !== undefined) payload.read_only = patch.readOnly;
+
+    const { data, error } = await table().update(payload).eq("id", id).select().maybeSingle();
+    if (error) {
+      if (error.code === "23505") throw new Error("Já existe um usuário com esse login.");
+      throw new Error(error.message);
     }
+    const updated = toStored(data);
+    setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
+    if (user && user.id === id) setUser(toSession(updated));
   };
 
-  const deleteUser: AuthContextValue["deleteUser"] = (id) => {
-    const list = loadUsers();
+  const deleteUser: AuthContextValue["deleteUser"] = async (id) => {
+    const list = users.length ? users : await fetchUsers();
     const target = list.find((u) => u.id === id);
-    if (target?.isAdmin) {
-      const admins = list.filter((u) => u.isAdmin);
-      if (admins.length <= 1) throw new Error("Não é possível excluir o único administrador.");
+    if (target?.isAdmin && list.filter((u) => u.isAdmin).length <= 1) {
+      throw new Error("Não é possível excluir o único administrador.");
     }
-    const next = list.filter((u) => u.id !== id);
-    persistUsers(next);
-    setUsers(next);
+    const { error } = await table().delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    setUsers((prev) => prev.filter((u) => u.id !== id));
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, users, createUser, updateUser, deleteUser, refresh }}
+      value={{ user, loading, login, logout, users, createUser, updateUser, deleteUser, refresh }}
     >
       {children}
     </AuthContext.Provider>
@@ -206,17 +216,9 @@ export function useAuth() {
   return ctx;
 }
 
-export function isAuthenticated() {
+export function hasSessionPointer() {
   if (typeof window === "undefined") return false;
-  return !!localStorage.getItem(SESSION_KEY);
+  return !!localStorage.getItem(SESSION_ID_KEY);
 }
 
-export function getSessionUser(): SessionUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as SessionUser) : null;
-  } catch {
-    return null;
-  }
-}
+export const isAuthenticated = hasSessionPointer;
