@@ -103,15 +103,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-white p-1">
+      <SidebarHeader className="border-b border-sidebar-border/60">
+        <div className="flex items-center gap-2.5 px-1.5 py-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.7)]">
             <img src={logoSumel.url} alt="Sumel" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <img src={logoSumel.url} alt="Sumel" className="h-6 w-auto object-contain" />
-              <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60 truncate mt-0.5">
+              <div className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/55">
                 MARKETING E COMPRAS
               </div>
             </div>
@@ -120,10 +120,15 @@ export function AppSidebar() {
 
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="pt-1">
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Módulos</SidebarGroupLabel>}
+          {!collapsed && (
+            <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
+              Módulos
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
+
             <SidebarMenu>
               {visibleItems.map((item) => {
                 const active = pathname === item.url;
