@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { usernameToEmail } from "@/lib/user-email";
-
+import { assertAdmin } from "@/lib/users.server";
 
 interface UpsertInput {
   id?: string;
@@ -15,13 +15,6 @@ interface UpsertInput {
   readOnly: boolean;
 }
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
-  if (error || !data) throw new Error("Acesso restrito a administradores.");
-}
 
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
