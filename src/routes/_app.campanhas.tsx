@@ -152,20 +152,27 @@ function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
     alternateRowStyles: { fillColor: [247, 249, 251] },
     columnStyles: mesmoPeriodo
       ? {
-          0: { cellWidth: 62, halign: "left" },
+          0: { cellWidth: 62, halign: "center" },
           1: { cellWidth: "auto" },
           2: { cellWidth: 46, halign: "center" },
-          3: { cellWidth: 72, halign: "right", textColor: [120, 128, 140] },
-          4: { cellWidth: 78, halign: "right", fontStyle: "bold", textColor: [200, 16, 46] },
+          3: { cellWidth: 72, halign: "center", textColor: [120, 128, 140] },
+          4: { cellWidth: 78, halign: "center", fontStyle: "bold", textColor: [200, 16, 46] },
         }
       : {
-          0: { cellWidth: 56, halign: "left" },
+          0: { cellWidth: 56, halign: "center" },
           1: { cellWidth: "auto" },
           2: { cellWidth: 40, halign: "center" },
-          3: { cellWidth: 64, halign: "right", textColor: [120, 128, 140] },
-          4: { cellWidth: 70, halign: "right", fontStyle: "bold", textColor: [200, 16, 46] },
+          3: { cellWidth: 64, halign: "center", textColor: [120, 128, 140] },
+          4: { cellWidth: 70, halign: "center", fontStyle: "bold", textColor: [200, 16, 46] },
           5: { cellWidth: 110, halign: "center", fontSize: 8 },
         },
+    didParseCell: (data) => {
+      // Cabeçalho segue o alinhamento da coluna (Código, Clube, De, Por centralizados)
+      if (data.section === "head" && data.column.index !== 1) {
+        data.cell.styles.halign = "center";
+      }
+    },
+
     didDrawPage: () => {
       // Cabeçalho
       doc.setFillColor(11, 31, 58);
