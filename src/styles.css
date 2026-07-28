@@ -5,11 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --color-background: var(--background);
+
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -41,34 +44,38 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.22 0.05 260);
+  --radius: 0.75rem;
+  /* Sumel Clean base #FAFBFC */
+  --background: oklch(0.988 0.002 260);
+  --foreground: oklch(0.234 0.048 258);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.05 260);
+  --card-foreground: oklch(0.234 0.048 258);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.05 260);
+  --popover-foreground: oklch(0.234 0.048 258);
 
   /* Red primary #C8102E */
   --primary: oklch(0.535 0.211 27.5);
+
   --primary-foreground: oklch(1 0 0);
 
   /* Navy accents #0B1F3A */
   --navy: oklch(0.234 0.048 258);
   --navy-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.96 0.01 260);
-  --secondary-foreground: oklch(0.28 0.08 260);
-  --muted: oklch(0.97 0.005 260);
-  --muted-foreground: oklch(0.5 0.03 260);
-  --accent: oklch(0.95 0.02 27);
-  --accent-foreground: oklch(0.55 0.22 27);
+  --secondary: oklch(0.955 0.005 258);
+  --secondary-foreground: oklch(0.28 0.05 258);
+  --muted: oklch(0.965 0.004 258);
+  --muted-foreground: oklch(0.56 0.02 258);
+  --accent: oklch(0.955 0.006 258);
+  --accent-foreground: oklch(0.234 0.048 258);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.92 0.01 260);
-  --input: oklch(0.92 0.01 260);
+  /* Hairline borders #E8ECF1 */
+  --border: oklch(0.936 0.007 254);
+  --input: oklch(0.936 0.007 254);
   --ring: oklch(0.55 0.22 27);
+
 
   /* Sidebar - navy #0B1F3A */
   --sidebar: oklch(0.234 0.048 258);
@@ -126,6 +133,15 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
   }
 }
+
