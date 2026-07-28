@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { syncFornecedores } from "@/lib/fornecedores";
 
 export interface Produto {
   id: string;
@@ -7,6 +8,7 @@ export interface Produto {
   descricao: string;
   preco_venda: number;
   custo: number;
+  fornecedor: string;
   ativo: boolean;
   created_at?: string;
   updated_at?: string;
@@ -35,7 +37,7 @@ export async function listProdutos(
     .select("*", { count: "exact" })
     .order("descricao", { ascending: true });
   const s = search.trim();
-  if (s) q = q.or(`descricao.ilike.%${s}%,gtin.ilike.%${s}%,codigo.ilike.%${s}%`);
+  if (s) q = q.or(`descricao.ilike.%${s}%,gtin.ilike.%${s}%,codigo.ilike.%${s}%,fornecedor.ilike.%${s}%`);
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
   const { data, error, count } = await q.range(from, to);
@@ -87,6 +89,7 @@ export interface ImportRow {
   descricao: string;
   preco_venda: number;
   custo: number;
+  fornecedor: string;
 }
 
 export interface ImportResult {
@@ -96,6 +99,7 @@ export interface ImportResult {
   sem_barras: number;
   erros: number;
   duracao_ms: number;
+  fornecedores_novos?: number;
 }
 
 /**
@@ -113,8 +117,8 @@ export async function importProdutosByCodigo(
   const seen = new Map<string, ImportRow>();
   for (const r of rows) {
     const c = (r.codigo ?? "").trim();
-    if (!c || !/^\d+$/.test(c) || !r.descricao?.trim() || r.preco_venda <= 0) continue;
-    seen.set(c, { ...r, codigo: c });
+    if (!c || !/^\d+$/.test(c) || !r.descricao?.trim()) continue;
+    seen.set(c, { ...r, codigo: c, fornecedor: (r.fornecedor ?? "").trim() });
   }
   const list = Array.from(seen.values());
 
@@ -153,6 +157,14 @@ export async function importProdutosByCodigo(
 
   const sem_barras = list.filter((r) => !r.gtin).length;
 
+  // Alimenta o módulo de fornecedores com os nomes encontrados no arquivo.
+  let fornecedores_novos = 0;
+  try {
+    fornecedores_novos = await syncFornecedores(list.map((r) => r.fornecedor));
+  } catch {
+    fornecedores_novos = 0;
+  }
+
   return {
     processados: total,
     novos,
@@ -160,6 +172,7 @@ export async function importProdutosByCodigo(
     sem_barras,
     erros,
     duracao_ms: Date.now() - started,
+    fornecedores_novos,
   };
 }
 
