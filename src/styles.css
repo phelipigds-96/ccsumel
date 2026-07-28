@@ -44,17 +44,19 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.22 0.05 260);
+  --radius: 0.75rem;
+  /* Sumel Clean base #FAFBFC */
+  --background: oklch(0.988 0.002 260);
+  --foreground: oklch(0.234 0.048 258);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.05 260);
+  --card-foreground: oklch(0.234 0.048 258);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.05 260);
+  --popover-foreground: oklch(0.234 0.048 258);
 
   /* Red primary #C8102E */
   --primary: oklch(0.535 0.211 27.5);
+
   --primary-foreground: oklch(1 0 0);
 
   /* Navy accents #0B1F3A */
