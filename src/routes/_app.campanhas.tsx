@@ -905,33 +905,6 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
 
 const BUCKET = "campanha-materiais";
 
-function MateriaisViewer({ materiais }: { materiais: MaterialApoio[] }) {
-  const openMaterial = async (m: MaterialApoio) => {
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(m.path, 60 * 10);
-    if (error || !data) { toast.error("Não foi possível abrir o arquivo."); return; }
-    window.open(data.signedUrl, "_blank", "noopener");
-  };
-  return (
-    <div className="rounded-xl border bg-card p-4 mb-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Paperclip className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-navy">Anexos da campanha</h3>
-        <span className="text-xs text-muted-foreground">({materiais.length})</span>
-      </div>
-      <ul className="grid gap-1.5 sm:grid-cols-2">
-        {materiais.map((m) => (
-          <li key={m.path} className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
-            {m.tipo.startsWith("image/") ? <ImageIcon className="h-4 w-4 text-navy shrink-0" /> : <FileText className="h-4 w-4 text-primary shrink-0" />}
-            <button type="button" onClick={() => openMaterial(m)} className="flex-1 text-left truncate hover:underline text-navy">
-              {m.nome}
-            </button>
-            <span className="text-xs text-muted-foreground">{(m.tamanho / 1024).toFixed(0)} KB</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 const ACCEPT = "image/jpeg,image/jpg,image/png,application/pdf";
 
 function isImage(tipo: string) { return tipo.startsWith("image/"); }
