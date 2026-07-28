@@ -930,6 +930,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
   const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
   const buscaRef = useRef<HTMLInputElement>(null);
+  const promoRef = useRef<HTMLInputElement>(null);
 
   // Reset campo de busca e foca quando abre uma nova oferta (id muda)
   useEffect(() => {
@@ -961,7 +962,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
         custo,
         precoPromocional: preco,
       });
-      toast.success("Produto carregado. Escolha uma sugestão de desconto.");
+      setTimeout(() => { promoRef.current?.focus(); promoRef.current?.select(); }, 60);
+      toast.success("Produto carregado. Informe o preço promocional ou clique num desconto.");
     } catch (e) { toast.error("Erro na consulta: " + (e as Error).message); }
     finally { setLookingUp(false); }
   };
@@ -1010,18 +1012,6 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
           <Field label="Código interno"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} /></Field>
           <Field label="Código de barras (GTIN)"><Input value={oferta.gtin} onChange={(e) => upd("gtin", e.target.value)} /></Field>
           <Field label="Descrição" className="md:col-span-2"><Input value={oferta.descricao} onChange={(e) => upd("descricao", e.target.value)} /></Field>
-          <Field label="Fornecedor">
-            <Select value={oferta.fornecedor} onValueChange={(v) => upd("fornecedor", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{FORNECEDORES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <Field label="Categoria">
-            <Select value={oferta.categoria} onValueChange={(v) => upd("categoria", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
           <Field label="Preço Atual (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
           <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} readOnly disabled className="bg-muted cursor-not-allowed" /></Field>
 
@@ -1065,6 +1055,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
             <Field label="Preço Promocional (R$) — ou informe manualmente">
               <Input
+                ref={promoRef}
                 type="number" step="0.01"
                 value={oferta.precoPromocional}
                 onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)}
@@ -1101,9 +1092,6 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
               </div>
             )}
           </Field>
-          <Field label="Corredor"><Input value={oferta.corredor} onChange={(e) => upd("corredor", e.target.value)} placeholder="A1" /></Field>
-          <Field label="Estoque"><Input type="number" value={oferta.estoque} onChange={(e) => upd("estoque", parseInt(e.target.value) || 0)} /></Field>
-          <Field label="Margem (%)"><Input type="number" step="0.1" value={oferta.margem} onChange={(e) => upd("margem", parseFloat(e.target.value) || 0)} /></Field>
           <Field label="Status">
             <Select value={oferta.status} onValueChange={(v) => upd("status", v as Status)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
