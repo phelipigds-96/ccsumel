@@ -193,12 +193,14 @@ interface ListProps {
 
 function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListProps) {
   const { user } = useAuth();
-  const readOnly = !!user?.readOnly;
+  // Somente administradores podem criar/editar/excluir campanhas e ofertas.
+  const readOnly = !user?.isAdmin || !!user?.readOnly;
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Campanha | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [quickView, setQuickView] = useState<Campanha | null>(null);
 
   const countByCampanha = useMemo(() => {
     const m = new Map<string, number>();
