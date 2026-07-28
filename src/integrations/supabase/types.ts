@@ -14,6 +14,169 @@ export type Database = {
   }
   public: {
     Tables: {
+      acertos: {
+        Row: {
+          created_at: string
+          oferta_id: string
+          quantidade_vendida: number
+          registrado_em: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          oferta_id: string
+          quantidade_vendida?: number
+          registrado_em?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          oferta_id?: string
+          quantidade_vendida?: number
+          registrado_em?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acertos_oferta_id_fkey"
+            columns: ["oferta_id"]
+            isOneToOne: true
+            referencedRelation: "ofertas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campanhas: {
+        Row: {
+          clube_sumel: boolean
+          created_at: string
+          data_final: string | null
+          data_inicial: string | null
+          descricao: string
+          filiais: Json
+          id: string
+          materiais: Json
+          nome: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clube_sumel?: boolean
+          created_at?: string
+          data_final?: string | null
+          data_inicial?: string | null
+          descricao?: string
+          filiais?: Json
+          id?: string
+          materiais?: Json
+          nome: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clube_sumel?: boolean
+          created_at?: string
+          data_final?: string | null
+          data_inicial?: string | null
+          descricao?: string
+          filiais?: Json
+          id?: string
+          materiais?: Json
+          nome?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ofertas: {
+        Row: {
+          campanha_id: string
+          categoria: string
+          clube_sumel: boolean
+          codigo: string
+          corredor: string
+          created_at: string
+          custo: number
+          data_final: string | null
+          data_inicial: string | null
+          descricao: string
+          estoque: number
+          filiais: Json
+          fornecedor: string
+          gtin: string
+          id: string
+          margem: number
+          preco_normal: number
+          preco_promocional: number
+          sellout_fornecedor: string
+          sellout_obs: string
+          sellout_tem_verba: boolean
+          sellout_valor: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          campanha_id: string
+          categoria?: string
+          clube_sumel?: boolean
+          codigo?: string
+          corredor?: string
+          created_at?: string
+          custo?: number
+          data_final?: string | null
+          data_inicial?: string | null
+          descricao?: string
+          estoque?: number
+          filiais?: Json
+          fornecedor?: string
+          gtin?: string
+          id?: string
+          margem?: number
+          preco_normal?: number
+          preco_promocional?: number
+          sellout_fornecedor?: string
+          sellout_obs?: string
+          sellout_tem_verba?: boolean
+          sellout_valor?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          campanha_id?: string
+          categoria?: string
+          clube_sumel?: boolean
+          codigo?: string
+          corredor?: string
+          created_at?: string
+          custo?: number
+          data_final?: string | null
+          data_inicial?: string | null
+          descricao?: string
+          estoque?: number
+          filiais?: Json
+          fornecedor?: string
+          gtin?: string
+          id?: string
+          margem?: number
+          preco_normal?: number
+          preco_promocional?: number
+          sellout_fornecedor?: string
+          sellout_obs?: string
+          sellout_tem_verba?: boolean
+          sellout_valor?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ofertas_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "campanhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto_importacoes: {
         Row: {
           arquivo: string | null
