@@ -104,10 +104,15 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border/60">
-        <div className="flex items-center gap-2.5 px-1.5 py-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.7)]">
+        <div className={`flex items-center py-3 ${collapsed ? "justify-center gap-0 px-0" : "gap-2.5 px-1.5"}`}>
+          <div
+            className={`grid shrink-0 place-items-center rounded-xl bg-white p-1 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.7)] ${
+              collapsed ? "h-8 w-8" : "h-9 w-9"
+            }`}
+          >
             <img src={logoSumel.url} alt="Sumel" className="h-full w-full object-contain" />
           </div>
+
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
