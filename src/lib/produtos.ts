@@ -37,7 +37,7 @@ export async function listProdutos(
     .select("*", { count: "exact" })
     .order("descricao", { ascending: true });
   const s = search.trim();
-  if (s) q = q.or(`descricao.ilike.%${s}%,gtin.ilike.%${s}%,codigo.ilike.%${s}%`);
+  if (s) q = q.or(`descricao.ilike.%${s}%,gtin.ilike.%${s}%,codigo.ilike.%${s}%,fornecedor.ilike.%${s}%`);
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
   const { data, error, count } = await q.range(from, to);
