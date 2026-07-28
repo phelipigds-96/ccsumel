@@ -88,6 +88,33 @@ export type Database = {
         }
         Relationships: []
       }
+      fornecedores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          observacoes: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          observacoes?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          observacoes?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ofertas: {
         Row: {
           campanha_id: string
@@ -258,6 +285,7 @@ export type Database = {
           created_at: string
           custo: number
           descricao: string
+          fornecedor: string
           gtin: string | null
           id: string
           preco_venda: number
@@ -269,6 +297,7 @@ export type Database = {
           created_at?: string
           custo?: number
           descricao: string
+          fornecedor?: string
           gtin?: string | null
           id?: string
           preco_venda?: number
@@ -280,6 +309,7 @@ export type Database = {
           created_at?: string
           custo?: number
           descricao?: string
+          fornecedor?: string
           gtin?: string | null
           id?: string
           preco_venda?: number
