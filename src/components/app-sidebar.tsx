@@ -103,15 +103,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-white p-1">
+      <SidebarHeader className="border-b border-sidebar-border/60">
+        <div className="flex items-center gap-2.5 px-1.5 py-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.7)]">
             <img src={logoSumel.url} alt="Sumel" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <img src={logoSumel.url} alt="Sumel" className="h-6 w-auto object-contain" />
-              <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60 truncate mt-0.5">
+              <div className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/55">
                 MARKETING E COMPRAS
               </div>
             </div>
@@ -120,11 +120,16 @@ export function AppSidebar() {
 
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="pt-1">
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Módulos</SidebarGroupLabel>}
+          {!collapsed && (
+            <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
+              Módulos
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
-            <SidebarMenu>
+
+            <SidebarMenu className="gap-0.5">
               {visibleItems.map((item) => {
                 const active = pathname === item.url;
                 const hasChildren = !!item.children?.length;
@@ -133,12 +138,13 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={item.url}>
                     <div className="flex items-center">
-                      <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="flex-1">
-                        <Link to={item.url} onClick={handleNavigate} className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          {!collapsed && <span className="truncate">{item.title}</span>}
+                      <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="h-9 flex-1 rounded-lg">
+                        <Link to={item.url} onClick={handleNavigate} className="flex items-center gap-2.5">
+                          <item.icon className={`h-4 w-4 shrink-0 ${active ? "" : "text-sidebar-foreground/60"}`} />
+                          {!collapsed && <span className="truncate text-[13px]">{item.title}</span>}
                         </Link>
                       </SidebarMenuButton>
+
                       {hasChildren && !collapsed && (
                         <button
                           type="button"
@@ -182,21 +188,25 @@ export function AppSidebar() {
       </SidebarContent>
 
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="border-t border-sidebar-border/60">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout} tooltip="Sair">
-              <LogOut className="h-4 w-4 shrink-0" />
+            <SidebarMenuButton onClick={logout} tooltip="Sair" className="h-11 rounded-lg">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-sidebar-accent text-[11px] font-bold uppercase text-sidebar-accent-foreground">
+                {(user?.name ?? user?.username ?? "?").charAt(0)}
+              </span>
               {!collapsed && (
                 <div className="flex min-w-0 flex-col items-start">
                   <span className="truncate text-xs font-semibold">{user?.name ?? "Sair"}</span>
                   <span className="truncate text-[10px] text-sidebar-foreground/60">Sair</span>
                 </div>
               )}
+              {!collapsed && <LogOut className="ml-auto h-4 w-4 shrink-0 text-sidebar-foreground/60" />}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
     </Sidebar>
   );
 }

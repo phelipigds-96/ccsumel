@@ -92,7 +92,43 @@
     radial-gradient(1000px 700px at 85% 85%, oklch(0.45 0.16 20 / 0.45) 0%, transparent 55%),
     linear-gradient(140deg, oklch(0.18 0.045 258) 0%, oklch(0.234 0.048 258) 45%, oklch(0.30 0.10 20) 100%);
   --shadow-auth: 0 30px 80px -20px oklch(0.1 0.04 258 / 0.65);
+
+  /* Sidebar / header polish */
+  --gradient-sidebar: linear-gradient(175deg, oklch(0.26 0.055 258) 0%, oklch(0.21 0.045 258) 55%, oklch(0.185 0.05 262) 100%);
+  --gradient-sidebar-active: linear-gradient(100deg, oklch(0.535 0.211 27.5 / 0.95) 0%, oklch(0.45 0.17 22 / 0.85) 100%);
+  --shadow-sidebar-active: 0 8px 20px -10px oklch(0.535 0.211 27.5 / 0.9);
+  --gradient-header: linear-gradient(90deg, oklch(1 0 0 / 0.9) 0%, oklch(0.99 0.004 258 / 0.85) 100%);
 }
+
+[data-sidebar="sidebar"] {
+  background-image: var(--gradient-sidebar);
+  border-right: 1px solid oklch(1 0 0 / 0.07);
+}
+
+[data-sidebar="menu-button"],
+[data-sidebar="menu-sub-button"] {
+  transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+[data-sidebar="menu-button"][data-active="true"] {
+  background-image: var(--gradient-sidebar-active);
+  box-shadow: var(--shadow-sidebar-active);
+  color: var(--sidebar-primary-foreground);
+  font-weight: 600;
+}
+
+[data-sidebar="menu-sub-button"][data-active="true"] {
+  background-color: oklch(1 0 0 / 0.08);
+  color: var(--sidebar-primary-foreground);
+  box-shadow: inset 2px 0 0 0 var(--sidebar-primary);
+}
+
+[data-sidebar="menu-button"]:not([data-active="true"]):hover {
+  background-color: oklch(1 0 0 / 0.07);
+  transform: translateX(2px);
+}
+
+
 
 .dark {
   --background: oklch(0.16 0.03 260);
