@@ -18,14 +18,14 @@ import {
   saveImportHistorico, getLastImport,
   type Produto, type ImportRow, type ImportResult, type ImportacaoHistorico,
 } from "@/lib/produtos";
-import { parseSysmoTxt } from "@/lib/sysmo-txt-parser";
+import { parseProdutosCsv } from "@/lib/produtos-csv-parser";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/catalogo-de-produtos")({
   head: () => ({
     meta: [
       { title: "Catálogo de Produtos — Central de Campanhas Sumel" },
-      { name: "description", content: "Catálogo central de produtos importados do ERP Sysmo S1." },
+      { name: "description", content: "Catálogo central de produtos importados do ERP via CSV." },
       { property: "og:title", content: "Catálogo de Produtos" },
       { property: "og:description", content: "Base de produtos para a Central de Ofertas." },
       { property: "og:type", content: "website" },
@@ -103,7 +103,7 @@ function CatalogoProdutos() {
       }
       let rows: ImportRow[] = [];
       try {
-        rows = parseSysmoTxt(text).rows;
+        rows = parseProdutosCsv(text).rows;
       } catch (err) {
         const preview = text.split(/\r?\n/).filter((l) => l.trim()).slice(0, 5).join(" | ");
         throw new Error(`${(err as Error).message} Primeiras linhas: ${preview.slice(0, 300)}`);
@@ -158,13 +158,13 @@ function CatalogoProdutos() {
     <div>
       <PageHeader
         title="Catálogo de Produtos"
-        description="Base central de produtos, alimentada pelo ERP Sysmo S1 via arquivo TXT."
+        description="Base central de produtos, alimentada pelo ERP via arquivo CSV (código, código de barras, descrição, preço de venda, fornecedor, custo)."
         actions={
           <>
             <input
               ref={fileRef}
               type="file"
-              accept=".txt,text/plain"
+              accept=".csv,text/csv,text/plain"
               hidden
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -260,6 +260,7 @@ function CatalogoProdutos() {
                 <TableHead>Código</TableHead>
                 <TableHead>Código de Barras</TableHead>
                 <TableHead>Descrição</TableHead>
+                <TableHead>Fornecedor</TableHead>
                 <TableHead className="text-right">Preço Atual</TableHead>
                 <TableHead className="text-right">Custo</TableHead>
                 <TableHead>Última Atualização</TableHead>
@@ -269,15 +270,15 @@ function CatalogoProdutos() {
             <TableBody>
               {loading && produtos.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               )}
               {!loading && produtos.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    Nenhum produto cadastrado. Importe um arquivo TXT do Sysmo S1.
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    Nenhum produto cadastrado. Importe um arquivo CSV do ERP.
                   </TableCell>
                 </TableRow>
               )}
@@ -286,6 +287,7 @@ function CatalogoProdutos() {
                   <TableCell className="font-mono text-xs">{p.codigo ?? "—"}</TableCell>
                   <TableCell className="font-mono text-xs">{p.gtin ?? "—"}</TableCell>
                   <TableCell>{p.descricao}</TableCell>
+                  <TableCell className="text-xs">{p.fornecedor?.trim() || "—"}</TableCell>
                   <TableCell className="text-right">{brl(Number(p.preco_venda) || 0)}</TableCell>
                   <TableCell className="text-right">{brl(Number(p.custo) || 0)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
@@ -353,6 +355,7 @@ function CatalogoProdutos() {
               <Stat label="Novos produtos" value={result.novos} />
               <Stat label="Produtos atualizados" value={result.atualizados} />
               <Stat label="Sem código de barras" value={result.sem_barras} />
+              <Stat label="Fornecedores novos" value={result.fornecedores_novos ?? 0} />
               <Stat label="Erros encontrados" value={result.erros} />
               <Stat label="Tempo (segundos)" value={(result.duracao_ms / 1000).toFixed(1)} />
             </div>
