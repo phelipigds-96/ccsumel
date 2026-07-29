@@ -1160,8 +1160,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
               </div>
             )}
           </Field>
-          <Field label="Status">
-            <Select value={oferta.status} onValueChange={(v) => upd("status", v as Status)}>
+          <Field label="Status (definido pela campanha)">
+            <Select value={oferta.status} disabled onValueChange={(v) => upd("status", v as Status)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
