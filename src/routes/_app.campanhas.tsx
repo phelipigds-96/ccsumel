@@ -547,8 +547,6 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                 {isVisible("codigo") && <TableHead>Código</TableHead>}
                 {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
                 {isVisible("descricao") && <TableHead>Descrição</TableHead>}
-                {isVisible("fornecedor") && <TableHead>Fornecedor</TableHead>}
-                {isVisible("categoria") && <TableHead>Categoria</TableHead>}
                 {isVisible("precoNormal") && <TableHead className="text-right">Normal</TableHead>}
                 {isVisible("precoPromocional") && <TableHead className="text-right">Promo</TableHead>}
                 {isVisible("clubeSumel") && <TableHead className="text-center">Clube</TableHead>}
