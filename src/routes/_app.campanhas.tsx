@@ -85,6 +85,7 @@ const statusVariant: Record<Status, string> = {
 import {
   brl, fmtDate, printCampanhaPDF, MateriaisViewer, CampanhaQuickView,
 } from "@/components/campanha-quick-view";
+import { CresceVendasDialog } from "@/components/crescevendas-export";
 
 
 
