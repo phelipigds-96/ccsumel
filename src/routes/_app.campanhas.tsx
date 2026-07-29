@@ -573,8 +573,6 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   {isVisible("codigo") && <TableCell className="font-mono text-xs">{o.codigo}</TableCell>}
                   {isVisible("gtin") && <TableCell className="font-mono text-xs">{o.gtin}</TableCell>}
                   {isVisible("descricao") && <TableCell className="font-medium max-w-[240px] truncate">{o.descricao}</TableCell>}
-                  {isVisible("fornecedor") && <TableCell>{o.fornecedor}</TableCell>}
-                  {isVisible("categoria") && <TableCell>{o.categoria}</TableCell>}
                   {isVisible("precoNormal") && <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>}
                   {isVisible("precoPromocional") && <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>}
                   {isVisible("clubeSumel") && (
