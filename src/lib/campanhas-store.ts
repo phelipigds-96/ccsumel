@@ -248,7 +248,7 @@ export const campanhasStore = {
     const next = updater(prev);
     state = { ...state, campanhas: next };
     emit();
-    void syncCampanhas(prev, next);
+    void syncCampanhas(prev, next).then(() => alinharStatusOfertas());
   },
   setOfertas: (updater: (prev: Oferta[]) => Oferta[]) => {
     const prev = state.ofertas;
