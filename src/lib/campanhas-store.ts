@@ -256,12 +256,17 @@ export const todayIso = () => {
   return `${y}-${m}-${day}`;
 };
 
-/** Classify a campaign as "encerrada", "futura" or "ativa" based on status and dates. */
-export function categoriaCampanha(c: Campanha): "encerrada" | "futura" | "ativa" {
+/** Classify a campaign based on the draft flag and its dates. */
+export function categoriaCampanha(c: Campanha): "rascunho" | "encerrada" | "futura" | "ativa" {
   const hoje = todayIso();
-  if (c.status === "Encerrada") return "encerrada";
+  if (c.status === "Rascunho") return "rascunho";
   if (c.dataFinal && c.dataFinal < hoje) return "encerrada";
-  if (c.status === "Programada") return "futura";
   if (c.dataInicial && c.dataInicial > hoje) return "futura";
   return "ativa";
+}
+
+/** Status derived from the campaign dates (or "Rascunho" when marked as draft). */
+export function statusCampanha(c: Campanha): Status {
+  const cat = categoriaCampanha(c);
+  return cat === "rascunho" ? "Rascunho" : cat === "encerrada" ? "Encerrada" : cat === "futura" ? "Programada" : "Ativa";
 }

@@ -53,6 +53,7 @@ import {
   useCampanhasStore,
   campanhasStore,
   categoriaCampanha,
+  statusCampanha,
 } from "@/lib/campanhas-store";
 
 const CATEGORIAS = ["Bebidas", "Mercearia", "Higiene", "Limpeza", "Frios", "Padaria", "Hortifruti"];
@@ -69,7 +70,7 @@ const emptyOferta = (campanha: Campanha): Oferta => ({
   fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
   precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: campanha.clubeSumel ?? false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
-  filiais: [...(campanha.filiais ?? [])], corredor: "", estoque: 0, margem: 0, status: campanha.status,
+  filiais: [...(campanha.filiais ?? [])], corredor: "", estoque: 0, margem: 0, status: statusCampanha(campanha),
   selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
 });
 
@@ -173,7 +174,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
     return campanhas
       .filter(c => {
         if (q && !c.nome.toLowerCase().includes(q) && !c.descricao.toLowerCase().includes(q)) return false;
-        if (fStatus !== "todos" && c.status !== fStatus) return false;
+        if (fStatus !== "todos" && statusCampanha(c) !== fStatus) return false;
         return true;
       })
       .slice()
@@ -182,6 +183,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
 
   const futuras = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "futura"), [filtered]);
   const ativas = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "ativa"), [filtered]);
+  const rascunhos = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "rascunho"), [filtered]);
 
   const openNew = () => { setEditing(emptyCampanha()); setDialogOpen(true); };
   const openEdit = (c: Campanha) => { setEditing({ ...c }); setDialogOpen(true); };
@@ -212,7 +214,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         )}
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-semibold text-navy leading-tight">{c.nome}</h3>
-          <Badge variant="outline" className={statusVariant[c.status]}>{c.status}</Badge>
+          <Badge variant="outline" className={statusVariant[statusCampanha(c)]}>{statusCampanha(c)}</Badge>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5rem]">{c.descricao || "Sem descrição."}</p>
         <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
@@ -311,6 +313,21 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
               </div>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {ativas.map((c) => renderCard(c))}
+              </div>
+            </section>
+          )}
+
+          {rascunhos.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-navy">
+                  Rascunhos
+                </h2>
+                <span className="text-xs text-muted-foreground">({rascunhos.length})</span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {rascunhos.map((c) => renderCard(c))}
               </div>
             </section>
           )}
@@ -446,7 +463,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         description={`Vigência ${fmtDate(campanha.dataInicial)} → ${fmtDate(campanha.dataFinal)}  •  ${campanha.descricao || "Ofertas desta campanha."}`}
         actions={
           <>
-            <Badge variant="outline" className={`${statusVariant[campanha.status]} mr-1`}>{campanha.status}</Badge>
+            <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>
             <Button variant="outline" onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</Button>
             {!readOnly && (
               <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
@@ -658,10 +675,23 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
             <Field label="Data Final"><Input type="date" value={campanha.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
           </div>
           <Field label="Status">
-            <Select value={campanha.status} onValueChange={(v) => upd("status", v as Status)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
+            <div className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-primary"
+                  checked={campanha.status === "Rascunho"}
+                  onChange={(e) => upd("status", (e.target.checked ? "Rascunho" : statusCampanha({ ...campanha, status: "Ativa" })) as Status)}
+                />
+                Manter como rascunho
+              </label>
+              <Badge variant="outline" className={statusVariant[statusCampanha(campanha)]}>
+                {statusCampanha(campanha)}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                O status é definido automaticamente pelas datas da campanha.
+              </span>
+            </div>
           </Field>
 
           <Field label="Filiais participantes (selecione uma ou mais)">
