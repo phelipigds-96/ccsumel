@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
-  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered,
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered, Share2,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -239,9 +239,25 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
           </div>
           <div className="flex items-center gap-1">
             <Button size="icon" variant="ghost" title="Ver produtos e anexos" onClick={() => setQuickView(c)}><Eye className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" title="Exportar para CresceVendas" onClick={() => setCvCampanha(c)}><FileDown className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" title="Exportar descrição e preço atual" onClick={() => setDpCampanha(c)}><ListOrdered className="h-4 w-4" /></Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" title="Exportar"><Share2 className="h-4 w-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Exportar</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}>
+                  <Printer className="mr-2 h-4 w-4" />Imprimir PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCvCampanha(c)}>
+                  <FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDpCampanha(c)}>
+                  <ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {!readOnly && (
               <>
                 <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
@@ -491,9 +507,18 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         actions={
           <>
             <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>
-            <Button variant="outline" onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</Button>
-            <Button variant="outline" onClick={() => setCvOpen(true)}><FileDown className="mr-2 h-4 w-4" />CresceVendas</Button>
-            <Button variant="outline" onClick={() => setDpOpen(true)}><ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline"><Share2 className="mr-2 h-4 w-4" />Exportar</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Exportar campanha</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCvOpen(true)}><FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDpOpen(true)}><ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {!readOnly && (
               <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
             )}
