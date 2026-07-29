@@ -471,6 +471,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   };
 
   const [cvOpen, setCvOpen] = useState(false);
+  const [dpOpen, setDpOpen] = useState(false);
 
   const printPDF = () => {
     printCampanhaPDF(campanha, filtered);
