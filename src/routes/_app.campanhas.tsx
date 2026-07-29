@@ -575,6 +575,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
               ) : filtered.map((o) => (
                 <TableRow key={o.id}>
                   {isVisible("codigo") && <TableCell className="font-mono text-xs">{o.codigo}</TableCell>}
+                  {isVisible("gtin") && <TableCell className="font-mono text-xs">{o.gtin}</TableCell>}
                   {isVisible("descricao") && <TableCell className="font-medium max-w-[240px] truncate">{o.descricao}</TableCell>}
                   {isVisible("fornecedor") && <TableCell>{o.fornecedor}</TableCell>}
                   {isVisible("categoria") && <TableCell>{o.categoria}</TableCell>}
