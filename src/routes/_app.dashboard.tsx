@@ -58,7 +58,7 @@ function DashboardPage() {
   const [quickView, setQuickView] = useState<Campanha | null>(null);
 
   const campanhas: CampanhaDash[] = useMemo(() => {
-    return rawCampanhas.map((c) => {
+    return rawCampanhas.filter((c) => categoriaCampanha(c) !== "rascunho").map((c) => {
       const cat = categoriaCampanha(c);
       const status: CampanhaDash["status"] =
         cat === "ativa" ? "Ativa" : cat === "futura" ? "Programada" : "Encerrada";
