@@ -487,6 +487,10 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         }
       />
 
+      <CresceVendasDialog campanha={campanha} ofertas={filtered} open={cvOpen} onOpenChange={setCvOpen} />
+
+
+
       {/* Resumo Sell Out da campanha */}
       <div className="grid gap-3 md:grid-cols-3 mb-4">
         <div className="rounded-xl border bg-card p-4">
