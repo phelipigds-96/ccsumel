@@ -507,9 +507,18 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         actions={
           <>
             <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>
-            <Button variant="outline" onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</Button>
-            <Button variant="outline" onClick={() => setCvOpen(true)}><FileDown className="mr-2 h-4 w-4" />CresceVendas</Button>
-            <Button variant="outline" onClick={() => setDpOpen(true)}><ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline"><Share2 className="mr-2 h-4 w-4" />Exportar</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Exportar campanha</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCvOpen(true)}><FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDpOpen(true)}><ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {!readOnly && (
               <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
             )}
