@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
-  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye,
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -85,6 +85,7 @@ const statusVariant: Record<Status, string> = {
 import {
   brl, fmtDate, printCampanhaPDF, MateriaisViewer, CampanhaQuickView,
 } from "@/components/campanha-quick-view";
+import { CresceVendasDialog } from "@/components/crescevendas-export";
 
 
 
@@ -162,6 +163,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const [editing, setEditing] = useState<Campanha | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [quickView, setQuickView] = useState<Campanha | null>(null);
+  const [cvCampanha, setCvCampanha] = useState<Campanha | null>(null);
 
   const countByCampanha = useMemo(() => {
     const m = new Map<string, number>();
@@ -236,6 +238,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
           <div className="flex items-center gap-1">
             <Button size="icon" variant="ghost" title="Ver produtos e anexos" onClick={() => setQuickView(c)}><Eye className="h-4 w-4" /></Button>
             <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" title="Exportar para CresceVendas" onClick={() => setCvCampanha(c)}><FileDown className="h-4 w-4" /></Button>
             {!readOnly && (
               <>
                 <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
@@ -344,6 +347,15 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         onAbrir={(id) => { setQuickView(null); onOpen(id); }}
       />
 
+      {cvCampanha && (
+        <CresceVendasDialog
+          campanha={cvCampanha}
+          ofertas={ofertas.filter((o) => o.campanhaId === cvCampanha.id)}
+          open={!!cvCampanha}
+          onOpenChange={(v) => { if (!v) setCvCampanha(null); }}
+        />
+      )}
+
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -446,6 +458,8 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     }
   };
 
+  const [cvOpen, setCvOpen] = useState(false);
+
   const printPDF = () => {
     printCampanhaPDF(campanha, filtered);
     toast.success("PDF aberto em nova aba.");
@@ -465,12 +479,17 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           <>
             <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>
             <Button variant="outline" onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</Button>
+            <Button variant="outline" onClick={() => setCvOpen(true)}><FileDown className="mr-2 h-4 w-4" />CresceVendas</Button>
             {!readOnly && (
               <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
             )}
           </>
         }
       />
+
+      <CresceVendasDialog campanha={campanha} ofertas={filtered} open={cvOpen} onOpenChange={setCvOpen} />
+
+
 
       {/* Resumo Sell Out da campanha */}
       <div className="grid gap-3 md:grid-cols-3 mb-4">
