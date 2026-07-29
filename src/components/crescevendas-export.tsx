@@ -13,17 +13,18 @@ import {
 } from "@/components/ui/select";
 import type { Campanha, Oferta } from "@/lib/campanhas-store";
 
-/** Extrai todos os códigos de barras informados no campo "cresce vendas". */
+/** Códigos de barras da oferta: prioriza o campo "códigos de barras cresce vendas". */
 function codigosDaOferta(o: Oferta): string[] {
   const extras = (o.gtinsCresceVendas || "")
-    .split(/[^0-9]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length >= 8);
+    .split(/[;,\s\n\r\t|]+/)
+    .map((s) => s.replace(/\D/g, ""))
+    .filter((s) => s.length > 0);
   if (extras.length) return Array.from(new Set(extras));
   const principal = (o.gtin || "").replace(/\D/g, "");
   if (principal) return [principal];
   return o.codigo ? [String(o.codigo).trim()] : [];
 }
+
 
 const fmtNum = (n: number, decimal: "," | ".") =>
   n.toFixed(2).replace(".", decimal);
