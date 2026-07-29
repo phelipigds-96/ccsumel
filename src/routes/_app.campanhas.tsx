@@ -165,6 +165,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [quickView, setQuickView] = useState<Campanha | null>(null);
   const [cvCampanha, setCvCampanha] = useState<Campanha | null>(null);
+  const [dpCampanha, setDpCampanha] = useState<Campanha | null>(null);
 
   const countByCampanha = useMemo(() => {
     const m = new Map<string, number>();
