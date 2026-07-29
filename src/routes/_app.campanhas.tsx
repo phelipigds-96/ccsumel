@@ -547,6 +547,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             <TableHeader>
               <TableRow className="bg-navy/5">
                 {isVisible("codigo") && <TableHead>Código</TableHead>}
+                {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
                 {isVisible("descricao") && <TableHead>Descrição</TableHead>}
                 {isVisible("fornecedor") && <TableHead>Fornecedor</TableHead>}
                 {isVisible("categoria") && <TableHead>Categoria</TableHead>}
