@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
-  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown,
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -86,6 +86,7 @@ import {
   brl, fmtDate, printCampanhaPDF, MateriaisViewer, CampanhaQuickView,
 } from "@/components/campanha-quick-view";
 import { CresceVendasDialog } from "@/components/crescevendas-export";
+import { DescricaoPrecoDialog } from "@/components/descricao-preco-export";
 
 
 
@@ -164,6 +165,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [quickView, setQuickView] = useState<Campanha | null>(null);
   const [cvCampanha, setCvCampanha] = useState<Campanha | null>(null);
+  const [dpCampanha, setDpCampanha] = useState<Campanha | null>(null);
 
   const countByCampanha = useMemo(() => {
     const m = new Map<string, number>();
@@ -239,6 +241,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
             <Button size="icon" variant="ghost" title="Ver produtos e anexos" onClick={() => setQuickView(c)}><Eye className="h-4 w-4" /></Button>
             <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
             <Button size="icon" variant="ghost" title="Exportar para CresceVendas" onClick={() => setCvCampanha(c)}><FileDown className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" title="Exportar descrição e preço atual" onClick={() => setDpCampanha(c)}><ListOrdered className="h-4 w-4" /></Button>
             {!readOnly && (
               <>
                 <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
@@ -356,6 +359,15 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         />
       )}
 
+      {dpCampanha && (
+        <DescricaoPrecoDialog
+          campanha={dpCampanha}
+          ofertas={ofertas.filter((o) => o.campanhaId === dpCampanha.id)}
+          open={!!dpCampanha}
+          onOpenChange={(v) => { if (!v) setDpCampanha(null); }}
+        />
+      )}
+
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -459,6 +471,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   };
 
   const [cvOpen, setCvOpen] = useState(false);
+  const [dpOpen, setDpOpen] = useState(false);
 
   const printPDF = () => {
     printCampanhaPDF(campanha, filtered);
@@ -480,6 +493,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>
             <Button variant="outline" onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</Button>
             <Button variant="outline" onClick={() => setCvOpen(true)}><FileDown className="mr-2 h-4 w-4" />CresceVendas</Button>
+            <Button variant="outline" onClick={() => setDpOpen(true)}><ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço</Button>
             {!readOnly && (
               <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
             )}
@@ -488,6 +502,8 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
       />
 
       <CresceVendasDialog campanha={campanha} ofertas={filtered} open={cvOpen} onOpenChange={setCvOpen} />
+      <DescricaoPrecoDialog campanha={campanha} ofertas={filtered} open={dpOpen} onOpenChange={setDpOpen} />
+
 
 
 
