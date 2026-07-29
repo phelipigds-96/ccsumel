@@ -373,8 +373,6 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     { key: "codigo", label: "Código" },
     { key: "gtin", label: "Código de barras" },
     { key: "descricao", label: "Descrição" },
-    { key: "fornecedor", label: "Fornecedor" },
-    { key: "categoria", label: "Categoria" },
     { key: "precoNormal", label: "Preço Normal" },
     { key: "precoPromocional", label: "Preço Promo" },
     { key: "clubeSumel", label: "Clube" },
@@ -549,8 +547,6 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                 {isVisible("codigo") && <TableHead>Código</TableHead>}
                 {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
                 {isVisible("descricao") && <TableHead>Descrição</TableHead>}
-                {isVisible("fornecedor") && <TableHead>Fornecedor</TableHead>}
-                {isVisible("categoria") && <TableHead>Categoria</TableHead>}
                 {isVisible("precoNormal") && <TableHead className="text-right">Normal</TableHead>}
                 {isVisible("precoPromocional") && <TableHead className="text-right">Promo</TableHead>}
                 {isVisible("clubeSumel") && <TableHead className="text-center">Clube</TableHead>}
@@ -577,8 +573,6 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   {isVisible("codigo") && <TableCell className="font-mono text-xs">{o.codigo}</TableCell>}
                   {isVisible("gtin") && <TableCell className="font-mono text-xs">{o.gtin}</TableCell>}
                   {isVisible("descricao") && <TableCell className="font-medium max-w-[240px] truncate">{o.descricao}</TableCell>}
-                  {isVisible("fornecedor") && <TableCell>{o.fornecedor}</TableCell>}
-                  {isVisible("categoria") && <TableCell>{o.categoria}</TableCell>}
                   {isVisible("precoNormal") && <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>}
                   {isVisible("precoPromocional") && <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>}
                   {isVisible("clubeSumel") && (
