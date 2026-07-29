@@ -585,11 +585,17 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
       </div>
 
 
-      <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+        <div className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
+          <h2 className="text-sm font-semibold tracking-tight text-navy">Produtos em oferta</h2>
+          <span className="rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+            {filtered.length} de {ofertas.length}
+          </span>
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-navy/5">
+              <TableRow className="border-border/70 bg-navy/[0.04] hover:bg-navy/[0.04] [&>th]:h-10 [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
                 {isVisible("codigo") && <TableHead>Código</TableHead>}
                 {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
                 {isVisible("descricao") && <TableHead>Descrição</TableHead>}
@@ -609,18 +615,35 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={visibleCount} className="text-center py-10 text-muted-foreground">
-                    Nenhuma oferta cadastrada nesta campanha ainda.
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={visibleCount} className="py-14 text-center">
+                    <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent">
+                      <Tag className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="mt-3 text-sm font-medium text-foreground">Nenhuma oferta encontrada</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Cadastre produtos nesta campanha ou ajuste os filtros.</p>
                   </TableCell>
                 </TableRow>
-              ) : filtered.map((o) => (
-                <TableRow key={o.id}>
-                  {isVisible("codigo") && <TableCell className="font-mono text-xs">{o.codigo}</TableCell>}
-                  {isVisible("gtin") && <TableCell className="font-mono text-xs">{o.gtin}</TableCell>}
-                  {isVisible("descricao") && <TableCell className="font-medium max-w-[240px] truncate">{o.descricao}</TableCell>}
-                  {isVisible("precoNormal") && <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>}
-                  {isVisible("precoPromocional") && <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>}
+              ) : filtered.map((o) => {
+                const desconto = o.precoNormal > 0 && o.precoPromocional > 0
+                  ? Math.round((1 - o.precoPromocional / o.precoNormal) * 100)
+                  : 0;
+                return (
+                <TableRow key={o.id} className="group border-border/60 transition-colors hover:bg-accent/60">
+                  {isVisible("codigo") && <TableCell className="font-mono text-xs text-muted-foreground">{o.codigo}</TableCell>}
+                  {isVisible("gtin") && <TableCell className="font-mono text-xs text-muted-foreground">{o.gtin}</TableCell>}
+                  {isVisible("descricao") && <TableCell className="max-w-[260px] truncate font-medium text-navy">{o.descricao}</TableCell>}
+                  {isVisible("precoNormal") && <TableCell className="text-right text-muted-foreground line-through tabular-nums">{brl(o.precoNormal)}</TableCell>}
+                  {isVisible("precoPromocional") && (
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        {desconto > 0 && (
+                          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">-{desconto}%</span>
+                        )}
+                        <span className="font-semibold tabular-nums text-primary">{brl(o.precoPromocional)}</span>
+                      </div>
+                    </TableCell>
+                  )}
                   {isVisible("clubeSumel") && (
                     <TableCell className="text-center">
                       {o.clubeSumel ? <Badge className="bg-primary/10 text-primary border-primary/20"><Tag className="h-3 w-3 mr-1" />Sim</Badge> : <span className="text-muted-foreground text-xs">Não</span>}
@@ -630,34 +653,36 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                     <TableCell className="text-right">
                       {o.selloutTemVerba ? (
                         <div className="flex flex-col items-end leading-tight">
-                          <span className="font-semibold text-navy">{brl(o.selloutValor)}</span>
+                          <span className="font-semibold tabular-nums text-navy">{brl(o.selloutValor)}</span>
                           {o.selloutFornecedor && <span className="text-[10px] text-muted-foreground">{o.selloutFornecedor}</span>}
                         </div>
                       ) : <span className="text-muted-foreground text-xs">—</span>}
                     </TableCell>
                   )}
-                  {isVisible("dataInicial") && <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>}
-                  {isVisible("dataFinal") && <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>}
-                  {isVisible("filiais") && <TableCell className="text-xs">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>}
-                  {isVisible("corredor") && <TableCell className="text-xs">{o.corredor}</TableCell>}
-                  {isVisible("estoque") && <TableCell className="text-right">{o.estoque}</TableCell>}
-                  {isVisible("margem") && <TableCell className="text-right">{o.margem.toFixed(1)}%</TableCell>}
+                  {isVisible("dataInicial") && <TableCell className="text-xs text-muted-foreground">{fmtDate(o.dataInicial)}</TableCell>}
+                  {isVisible("dataFinal") && <TableCell className="text-xs text-muted-foreground">{fmtDate(o.dataFinal)}</TableCell>}
+                  {isVisible("filiais") && <TableCell className="text-xs text-muted-foreground">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>}
+                  {isVisible("corredor") && <TableCell className="text-xs text-muted-foreground">{o.corredor}</TableCell>}
+                  {isVisible("estoque") && <TableCell className="text-right tabular-nums">{o.estoque}</TableCell>}
+                  {isVisible("margem") && <TableCell className="text-right tabular-nums">{o.margem.toFixed(1)}%</TableCell>}
                   {isVisible("status") && <TableCell><Badge variant="outline" className={statusVariant[o.status]}>{o.status}</Badge></TableCell>}
                   <TableCell className="text-right whitespace-nowrap">
                     {readOnly ? (
                       <span className="text-xs text-muted-foreground">—</span>
                     ) : (
-                      <>
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      </>
+                      <div className="inline-flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-navy/10" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-destructive/10" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>
+
       </div>
 
 
