@@ -371,6 +371,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
   const COLUMNS: { key: string; label: string }[] = [
     { key: "codigo", label: "Código" },
+    { key: "gtin", label: "Código de barras" },
     { key: "descricao", label: "Descrição" },
     { key: "fornecedor", label: "Fornecedor" },
     { key: "categoria", label: "Categoria" },
@@ -546,6 +547,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             <TableHeader>
               <TableRow className="bg-navy/5">
                 {isVisible("codigo") && <TableHead>Código</TableHead>}
+                {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
                 {isVisible("descricao") && <TableHead>Descrição</TableHead>}
                 {isVisible("fornecedor") && <TableHead>Fornecedor</TableHead>}
                 {isVisible("categoria") && <TableHead>Categoria</TableHead>}
@@ -573,6 +575,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
               ) : filtered.map((o) => (
                 <TableRow key={o.id}>
                   {isVisible("codigo") && <TableCell className="font-mono text-xs">{o.codigo}</TableCell>}
+                  {isVisible("gtin") && <TableCell className="font-mono text-xs">{o.gtin}</TableCell>}
                   {isVisible("descricao") && <TableCell className="font-medium max-w-[240px] truncate">{o.descricao}</TableCell>}
                   {isVisible("fornecedor") && <TableCell>{o.fornecedor}</TableCell>}
                   {isVisible("categoria") && <TableCell>{o.categoria}</TableCell>}
