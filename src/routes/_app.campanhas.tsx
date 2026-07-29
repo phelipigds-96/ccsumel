@@ -241,6 +241,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
             <Button size="icon" variant="ghost" title="Ver produtos e anexos" onClick={() => setQuickView(c)}><Eye className="h-4 w-4" /></Button>
             <Button size="icon" variant="ghost" title="Imprimir PDF" onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}><Printer className="h-4 w-4" /></Button>
             <Button size="icon" variant="ghost" title="Exportar para CresceVendas" onClick={() => setCvCampanha(c)}><FileDown className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" title="Exportar descrição e preço atual" onClick={() => setDpCampanha(c)}><ListOrdered className="h-4 w-4" /></Button>
             {!readOnly && (
               <>
                 <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
