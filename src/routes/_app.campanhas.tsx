@@ -1049,7 +1049,19 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
                 onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)}
               />
             </Field>
+
+            <div className="mt-4">
+              <Field label="Códigos de barras cresce vendas">
+                <Textarea
+                  value={oferta.gtinsCresceVendas}
+                  onChange={(e) => upd("gtinsCresceVendas", e.target.value)}
+                  placeholder="Informe um código de barras por linha (ou separados por vírgula) para variações do produto"
+                  rows={3}
+                />
+              </Field>
+            </div>
           </div>
+
 
           <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
           <Field label="Data Final"><Input type="date" value={oferta.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
