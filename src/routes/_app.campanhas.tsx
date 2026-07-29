@@ -493,20 +493,29 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
       {/* Resumo Sell Out da campanha */}
       <div className="grid gap-3 md:grid-cols-3 mb-4">
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign className="h-4 w-4 text-primary" /> Verba Sell Out — Total</div>
-          <div className="text-2xl font-bold text-navy mt-1">{brl(selloutStats.total)}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">A cobrar dos fornecedores</div>
+        <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+          <span className="absolute inset-y-0 left-0 w-1 bg-primary" />
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <DollarSign className="h-4 w-4 text-primary" /> Verba Sell Out
+          </div>
+          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{brl(selloutStats.total)}</div>
+          <div className="mt-1 text-xs text-muted-foreground">A cobrar dos fornecedores</div>
         </div>
-        <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">Ofertas com verba</div>
-          <div className="text-2xl font-bold text-navy mt-1">{selloutStats.qtd}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">de {ofertas.length} oferta(s)</div>
+        <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+          <span className="absolute inset-y-0 left-0 w-1 bg-navy/30" />
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Tag className="h-4 w-4 text-navy" /> Ofertas com verba
+          </div>
+          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{selloutStats.qtd}</div>
+          <div className="mt-1 text-xs text-muted-foreground">de {ofertas.length} oferta(s) na campanha</div>
         </div>
-        <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">Anexos da campanha</div>
-          <div className="text-2xl font-bold text-navy mt-1 flex items-center gap-2"><Paperclip className="h-5 w-5 text-primary" />{campanha.materiais.length}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">Materiais de apoio para as lojas</div>
+        <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+          <span className="absolute inset-y-0 left-0 w-1 bg-navy/30" />
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Paperclip className="h-4 w-4 text-primary" /> Anexos da campanha
+          </div>
+          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{campanha.materiais.length}</div>
+          <div className="mt-1 text-xs text-muted-foreground">Materiais de apoio para as lojas</div>
         </div>
       </div>
 
@@ -514,27 +523,27 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         <MateriaisViewer materiais={campanha.materiais} />
       )}
 
-      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_170px_170px_150px_170px_140px]">
+      <div className="mb-4 rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm backdrop-blur grid gap-2 md:grid-cols-[1fr_170px_170px_150px_170px_140px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-full border-border/70 bg-background" />
         </div>
         <Select value={fCategoria} onValueChange={setFCategoria}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas categorias</SelectItem>
             {CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos status</SelectItem>
             {STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={fClube} onValueChange={setFClube}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Clube: Todos</SelectItem>
             <SelectItem value="sim">Somente Clube</SelectItem>
@@ -542,7 +551,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           </SelectContent>
         </Select>
         <Select value={fSellout} onValueChange={setFSellout}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Sell Out: Todos</SelectItem>
             <SelectItem value="com">Com verba</SelectItem>
@@ -551,7 +560,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         </Select>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="justify-start">
+            <Button variant="outline" className="justify-start rounded-full border-border/70 text-xs">
               <Columns3 className="h-4 w-4 mr-2" /> Colunas
             </Button>
           </DropdownMenuTrigger>
@@ -574,6 +583,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
 
       <div className="rounded-xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
