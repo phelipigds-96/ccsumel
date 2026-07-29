@@ -206,72 +206,99 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
       <div
         key={c.id}
         className={
-          opts.destaque
-            ? "group rounded-xl border-2 border-navy/40 bg-gradient-to-br from-navy/5 to-transparent p-5 hover:border-navy hover:shadow-md transition relative"
-            : "group rounded-xl border bg-card p-5 hover:border-primary/40 hover:shadow-md transition"
+          "group relative flex flex-col overflow-hidden rounded-2xl border bg-card transition " +
+          (opts.destaque
+            ? "border-navy/30 shadow-[0_1px_2px_rgba(11,31,58,0.06)] hover:border-navy/60 hover:shadow-lg"
+            : "hover:border-primary/30 hover:shadow-lg")
         }
       >
-        {opts.destaque && (
-          <span className="absolute -top-2 left-4 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-navy text-white rounded">
-            Programada
-          </span>
-        )}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-navy leading-tight">{c.nome}</h3>
-          <Badge variant="outline" className={statusVariant[statusCampanha(c)]}>{statusCampanha(c)}</Badge>
-        </div>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5rem]">{c.descricao || "Sem descrição."}</p>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-          <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}</span>
-        </div>
-        <div className="flex items-center justify-between border-t pt-3">
-          <div className="flex items-center gap-3 text-sm">
+        <span
+          className={
+            "absolute inset-x-0 top-0 h-0.5 " + (opts.destaque ? "bg-navy" : "bg-primary/70")
+          }
+        />
+        <div className="flex flex-1 flex-col p-5">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <h3 className="min-w-0 truncate font-semibold leading-tight text-navy">{c.nome}</h3>
+            <Badge variant="outline" className={`${statusVariant[statusCampanha(c)]} shrink-0`}>
+              {statusCampanha(c)}
+            </Badge>
+          </div>
+
+          <p className="mb-4 line-clamp-2 min-h-[2.5rem] text-sm text-muted-foreground">
+            {c.descricao || "Sem descrição."}
+          </p>
+
+          <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <Package className="h-4 w-4 text-primary" />
-              <strong>{count}</strong> <span className="text-muted-foreground">oferta{count === 1 ? "" : "s"}</span>
+              <Calendar className="h-3.5 w-3.5" />
+              {fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Package className="h-3.5 w-3.5 text-primary" />
+              <strong className="text-foreground">{count}</strong> produto{count === 1 ? "" : "s"} em oferta
             </span>
             {c.materiais.length > 0 && (
-              <span className="flex items-center gap-1.5 text-navy" title="Materiais de apoio">
-                <Paperclip className="h-4 w-4" />
-                <strong>{c.materiais.length}</strong>
+              <span className="flex items-center gap-1.5" title="Materiais de apoio">
+                <Paperclip className="h-3.5 w-3.5" />
+                <strong className="text-foreground">{c.materiais.length}</strong> anexo{c.materiais.length === 1 ? "" : "s"}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1">
-            <Button size="icon" variant="ghost" title="Ver produtos e anexos" onClick={() => setQuickView(c)}><Eye className="h-4 w-4" /></Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost" title="Exportar"><Share2 className="h-4 w-4" /></Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Exportar</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { printCampanhaPDF(c, ofertas.filter(o => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}>
-                  <Printer className="mr-2 h-4 w-4" />Imprimir PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCvCampanha(c)}>
-                  <FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDpCampanha(c)}>
-                  <ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
 
-            {!readOnly && (
-              <>
-                <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" title="Excluir" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-              </>
-            )}
-            <Button size="sm" onClick={() => onOpen(c.id)} className="bg-primary hover:bg-primary/90">
-              Abrir <ChevronRight className="h-4 w-4 ml-1" />
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+            <div className="flex items-center gap-0.5">
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Ver produtos e anexos" onClick={() => setQuickView(c)}>
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Imprimir listagem de produtos"
+                onClick={() => { printCampanhaPDF(c, ofertas.filter((o) => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}
+              >
+                <Printer className="h-4 w-4" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Compartilhar / exportar">
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel>Exportar</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setCvCampanha(c)}>
+                    <FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDpCampanha(c)}>
+                    <ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {!readOnly && (
+                <>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Editar" onClick={() => openEdit(c)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive" title="Excluir" onClick={() => setDeleteId(c.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
+
+            <Button size="sm" variant="outline" onClick={() => onOpen(c.id)} className="h-8 shrink-0 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground">
+              Abrir <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
     );
   };
+
 
   return (
     <div>
