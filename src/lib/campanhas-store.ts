@@ -167,7 +167,38 @@ export async function carregarCampanhas() {
     carregando: false,
   };
   emit();
+  void alinharStatusOfertas();
 }
+
+/**
+ * Mantém o status das ofertas igual ao status (derivado das datas) da campanha.
+ * Persiste no banco apenas as ofertas que estiverem divergentes.
+ */
+async function alinharStatusOfertas() {
+  const statusPorCampanha = new Map(state.campanhas.map((c) => [c.id, statusCampanha(c)]));
+  const divergentes = state.ofertas.filter((o) => {
+    const s = statusPorCampanha.get(o.campanhaId);
+    return s && o.status !== s;
+  });
+  if (!divergentes.length) return;
+
+  const next = state.ofertas.map((o) => {
+    const s = statusPorCampanha.get(o.campanhaId);
+    return s && o.status !== s ? { ...o, status: s } : o;
+  });
+  state = { ...state, ofertas: next };
+  emit();
+
+  const porStatus = new Map<Status, string[]>();
+  for (const o of divergentes) {
+    const s = statusPorCampanha.get(o.campanhaId)!;
+    porStatus.set(s, [...(porStatus.get(s) ?? []), o.id]);
+  }
+  for (const [s, ids] of porStatus) {
+    await supabase.from("ofertas" as any).update({ status: s }).in("id", ids);
+  }
+}
+
 
 function ensureLoaded() {
   if (carregado || typeof window === "undefined") return;
@@ -217,7 +248,7 @@ export const campanhasStore = {
     const next = updater(prev);
     state = { ...state, campanhas: next };
     emit();
-    void syncCampanhas(prev, next);
+    void syncCampanhas(prev, next).then(() => alinharStatusOfertas());
   },
   setOfertas: (updater: (prev: Oferta[]) => Oferta[]) => {
     const prev = state.ofertas;
