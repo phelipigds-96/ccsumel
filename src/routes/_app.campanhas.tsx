@@ -827,6 +827,22 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
   const [lookingUp, setLookingUp] = useState(false);
   const buscaRef = useRef<HTMLInputElement>(null);
   const promoRef = useRef<HTMLInputElement>(null);
+  const { campanhas: todasCampanhas, ofertas: todasOfertas } = useCampanhasStore();
+
+  const historico = useMemo(() => {
+    if (!oferta) return [];
+    const cod = (oferta.codigo || "").trim().toLowerCase();
+    const gtin = (oferta.gtin || "").trim();
+    if (!cod && !gtin) return [];
+    const mapa = new Map(todasCampanhas.map(c => [c.id, c]));
+    return todasOfertas
+      .filter(o => o.id !== oferta.id
+        && ((cod && (o.codigo || "").trim().toLowerCase() === cod) || (gtin && (o.gtin || "").trim() === gtin)))
+      .map(o => ({ o, c: mapa.get(o.campanhaId) }))
+      .filter(x => !!x.c)
+      .sort((a, b) => (b.c!.dataInicial || "").localeCompare(a.c!.dataInicial || ""));
+  }, [oferta?.id, oferta?.codigo, oferta?.gtin, todasOfertas, todasCampanhas]);
+
 
   // Reset campo de busca e foca quando abre uma nova oferta (id muda)
   useEffect(() => {
