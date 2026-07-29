@@ -359,6 +359,15 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         />
       )}
 
+      {dpCampanha && (
+        <DescricaoPrecoDialog
+          campanha={dpCampanha}
+          ofertas={ofertas.filter((o) => o.campanhaId === dpCampanha.id)}
+          open={!!dpCampanha}
+          onOpenChange={(v) => { if (!v) setDpCampanha(null); }}
+        />
+      )}
+
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
