@@ -347,6 +347,15 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         onAbrir={(id) => { setQuickView(null); onOpen(id); }}
       />
 
+      {cvCampanha && (
+        <CresceVendasDialog
+          campanha={cvCampanha}
+          ofertas={ofertas.filter((o) => o.campanhaId === cvCampanha.id)}
+          open={!!cvCampanha}
+          onOpenChange={(v) => { if (!v) setCvCampanha(null); }}
+        />
+      )}
+
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
