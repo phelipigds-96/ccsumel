@@ -373,8 +373,6 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     { key: "codigo", label: "Código" },
     { key: "gtin", label: "Código de barras" },
     { key: "descricao", label: "Descrição" },
-    { key: "fornecedor", label: "Fornecedor" },
-    { key: "categoria", label: "Categoria" },
     { key: "precoNormal", label: "Preço Normal" },
     { key: "precoPromocional", label: "Preço Promo" },
     { key: "clubeSumel", label: "Clube" },
