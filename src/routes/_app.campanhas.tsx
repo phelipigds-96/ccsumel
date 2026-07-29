@@ -493,20 +493,29 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
       {/* Resumo Sell Out da campanha */}
       <div className="grid gap-3 md:grid-cols-3 mb-4">
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign className="h-4 w-4 text-primary" /> Verba Sell Out — Total</div>
-          <div className="text-2xl font-bold text-navy mt-1">{brl(selloutStats.total)}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">A cobrar dos fornecedores</div>
+        <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+          <span className="absolute inset-y-0 left-0 w-1 bg-primary" />
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <DollarSign className="h-4 w-4 text-primary" /> Verba Sell Out
+          </div>
+          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{brl(selloutStats.total)}</div>
+          <div className="mt-1 text-xs text-muted-foreground">A cobrar dos fornecedores</div>
         </div>
-        <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">Ofertas com verba</div>
-          <div className="text-2xl font-bold text-navy mt-1">{selloutStats.qtd}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">de {ofertas.length} oferta(s)</div>
+        <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+          <span className="absolute inset-y-0 left-0 w-1 bg-navy/30" />
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Tag className="h-4 w-4 text-navy" /> Ofertas com verba
+          </div>
+          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{selloutStats.qtd}</div>
+          <div className="mt-1 text-xs text-muted-foreground">de {ofertas.length} oferta(s) na campanha</div>
         </div>
-        <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">Anexos da campanha</div>
-          <div className="text-2xl font-bold text-navy mt-1 flex items-center gap-2"><Paperclip className="h-5 w-5 text-primary" />{campanha.materiais.length}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">Materiais de apoio para as lojas</div>
+        <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+          <span className="absolute inset-y-0 left-0 w-1 bg-navy/30" />
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Paperclip className="h-4 w-4 text-primary" /> Anexos da campanha
+          </div>
+          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{campanha.materiais.length}</div>
+          <div className="mt-1 text-xs text-muted-foreground">Materiais de apoio para as lojas</div>
         </div>
       </div>
 
@@ -514,27 +523,27 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         <MateriaisViewer materiais={campanha.materiais} />
       )}
 
-      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_170px_170px_150px_170px_140px]">
+      <div className="mb-4 rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm backdrop-blur grid gap-2 md:grid-cols-[1fr_170px_170px_150px_170px_140px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-full border-border/70 bg-background" />
         </div>
         <Select value={fCategoria} onValueChange={setFCategoria}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas categorias</SelectItem>
             {CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos status</SelectItem>
             {STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={fClube} onValueChange={setFClube}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Clube: Todos</SelectItem>
             <SelectItem value="sim">Somente Clube</SelectItem>
@@ -542,7 +551,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           </SelectContent>
         </Select>
         <Select value={fSellout} onValueChange={setFSellout}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Sell Out: Todos</SelectItem>
             <SelectItem value="com">Com verba</SelectItem>
@@ -551,7 +560,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         </Select>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="justify-start">
+            <Button variant="outline" className="justify-start rounded-full border-border/70 text-xs">
               <Columns3 className="h-4 w-4 mr-2" /> Colunas
             </Button>
           </DropdownMenuTrigger>
@@ -575,11 +584,18 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         </DropdownMenu>
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
+
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+        <div className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
+          <h2 className="text-sm font-semibold tracking-tight text-navy">Produtos em oferta</h2>
+          <span className="rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+            {filtered.length} de {ofertas.length}
+          </span>
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-navy/5">
+              <TableRow className="border-border/70 bg-navy/[0.04] hover:bg-navy/[0.04] [&>th]:h-10 [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
                 {isVisible("codigo") && <TableHead>Código</TableHead>}
                 {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
                 {isVisible("descricao") && <TableHead>Descrição</TableHead>}
@@ -599,18 +615,35 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={visibleCount} className="text-center py-10 text-muted-foreground">
-                    Nenhuma oferta cadastrada nesta campanha ainda.
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={visibleCount} className="py-14 text-center">
+                    <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent">
+                      <Tag className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="mt-3 text-sm font-medium text-foreground">Nenhuma oferta encontrada</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Cadastre produtos nesta campanha ou ajuste os filtros.</p>
                   </TableCell>
                 </TableRow>
-              ) : filtered.map((o) => (
-                <TableRow key={o.id}>
-                  {isVisible("codigo") && <TableCell className="font-mono text-xs">{o.codigo}</TableCell>}
-                  {isVisible("gtin") && <TableCell className="font-mono text-xs">{o.gtin}</TableCell>}
-                  {isVisible("descricao") && <TableCell className="font-medium max-w-[240px] truncate">{o.descricao}</TableCell>}
-                  {isVisible("precoNormal") && <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>}
-                  {isVisible("precoPromocional") && <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>}
+              ) : filtered.map((o) => {
+                const desconto = o.precoNormal > 0 && o.precoPromocional > 0
+                  ? Math.round((1 - o.precoPromocional / o.precoNormal) * 100)
+                  : 0;
+                return (
+                <TableRow key={o.id} className="group border-border/60 transition-colors hover:bg-accent/60">
+                  {isVisible("codigo") && <TableCell className="font-mono text-xs text-muted-foreground">{o.codigo}</TableCell>}
+                  {isVisible("gtin") && <TableCell className="font-mono text-xs text-muted-foreground">{o.gtin}</TableCell>}
+                  {isVisible("descricao") && <TableCell className="max-w-[260px] truncate font-medium text-navy">{o.descricao}</TableCell>}
+                  {isVisible("precoNormal") && <TableCell className="text-right text-muted-foreground line-through tabular-nums">{brl(o.precoNormal)}</TableCell>}
+                  {isVisible("precoPromocional") && (
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        {desconto > 0 && (
+                          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">-{desconto}%</span>
+                        )}
+                        <span className="font-semibold tabular-nums text-primary">{brl(o.precoPromocional)}</span>
+                      </div>
+                    </TableCell>
+                  )}
                   {isVisible("clubeSumel") && (
                     <TableCell className="text-center">
                       {o.clubeSumel ? <Badge className="bg-primary/10 text-primary border-primary/20"><Tag className="h-3 w-3 mr-1" />Sim</Badge> : <span className="text-muted-foreground text-xs">Não</span>}
@@ -620,34 +653,36 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                     <TableCell className="text-right">
                       {o.selloutTemVerba ? (
                         <div className="flex flex-col items-end leading-tight">
-                          <span className="font-semibold text-navy">{brl(o.selloutValor)}</span>
+                          <span className="font-semibold tabular-nums text-navy">{brl(o.selloutValor)}</span>
                           {o.selloutFornecedor && <span className="text-[10px] text-muted-foreground">{o.selloutFornecedor}</span>}
                         </div>
                       ) : <span className="text-muted-foreground text-xs">—</span>}
                     </TableCell>
                   )}
-                  {isVisible("dataInicial") && <TableCell className="text-xs">{fmtDate(o.dataInicial)}</TableCell>}
-                  {isVisible("dataFinal") && <TableCell className="text-xs">{fmtDate(o.dataFinal)}</TableCell>}
-                  {isVisible("filiais") && <TableCell className="text-xs">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>}
-                  {isVisible("corredor") && <TableCell className="text-xs">{o.corredor}</TableCell>}
-                  {isVisible("estoque") && <TableCell className="text-right">{o.estoque}</TableCell>}
-                  {isVisible("margem") && <TableCell className="text-right">{o.margem.toFixed(1)}%</TableCell>}
+                  {isVisible("dataInicial") && <TableCell className="text-xs text-muted-foreground">{fmtDate(o.dataInicial)}</TableCell>}
+                  {isVisible("dataFinal") && <TableCell className="text-xs text-muted-foreground">{fmtDate(o.dataFinal)}</TableCell>}
+                  {isVisible("filiais") && <TableCell className="text-xs text-muted-foreground">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>}
+                  {isVisible("corredor") && <TableCell className="text-xs text-muted-foreground">{o.corredor}</TableCell>}
+                  {isVisible("estoque") && <TableCell className="text-right tabular-nums">{o.estoque}</TableCell>}
+                  {isVisible("margem") && <TableCell className="text-right tabular-nums">{o.margem.toFixed(1)}%</TableCell>}
                   {isVisible("status") && <TableCell><Badge variant="outline" className={statusVariant[o.status]}>{o.status}</Badge></TableCell>}
                   <TableCell className="text-right whitespace-nowrap">
                     {readOnly ? (
                       <span className="text-xs text-muted-foreground">—</span>
                     ) : (
-                      <>
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      </>
+                      <div className="inline-flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-navy/10" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-destructive/10" onClick={() => setDeleteId(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>
+
       </div>
 
 
