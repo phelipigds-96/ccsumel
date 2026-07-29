@@ -920,6 +920,28 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
           </div>
         </div>
 
+        {historico.length > 0 && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 mb-1">
+            <div className="text-sm font-semibold text-amber-900">
+              Este produto já participou de {historico.length} campanha{historico.length > 1 ? "s" : ""}
+            </div>
+            <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
+              {historico.map(({ o, c }) => (
+                <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-card px-2.5 py-1.5 text-xs">
+                  <span className="font-medium text-navy">{c!.nome}</span>
+                  <span className="text-muted-foreground">{fmtDate(c!.dataInicial)} → {fmtDate(c!.dataFinal)}</span>
+                  <span className="text-muted-foreground">
+                    De <span className="line-through">{brl(o.precoNormal)}</span>{" "}
+                    por <span className="font-semibold text-primary">{brl(o.precoPromocional)}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+
+
         <div className="grid gap-4 py-2 md:grid-cols-2">
           <Field label="Código interno"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} /></Field>
           <Field label="Código de barras (GTIN)"><Input value={oferta.gtin} onChange={(e) => upd("gtin", e.target.value)} /></Field>
