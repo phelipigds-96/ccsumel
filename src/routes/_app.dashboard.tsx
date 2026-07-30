@@ -240,7 +240,7 @@ function DashboardPage() {
                 );
               },
             }}
-            className="pointer-events-auto rounded-xl border p-4 [--cell-size:2.6rem]"
+            className="pointer-events-auto w-full max-w-full rounded-xl border p-2 [--cell-size:min(2.4rem,11vw)] sm:p-4 sm:[--cell-size:2.6rem]"
           />
 
           <div className="min-w-0">
