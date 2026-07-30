@@ -21,7 +21,7 @@ function AppLayout() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className="min-w-0">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-border/70 bg-background/70 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sm:px-6">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <div className="h-6 w-px bg-border" />
@@ -41,7 +41,7 @@ function AppLayout() {
             </div>
           </header>
 
-          <main className="flex-1 p-6">
+          <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">
             <Outlet />
           </main>
         </SidebarInset>

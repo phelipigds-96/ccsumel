@@ -142,7 +142,7 @@ function DashboardPage() {
     : [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Cabeçalho */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -164,8 +164,9 @@ function DashboardPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-6 sm:grid-cols-3">
-        <Panel className="p-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6">
+        <Panel className="p-4 sm:p-6">
+
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Campanhas ativas
           </p>
@@ -175,7 +176,7 @@ function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel className="p-6">
+        <Panel className="p-4 sm:p-6">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Campanhas programadas
           </p>
@@ -185,7 +186,8 @@ function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel className="p-6">
+        <Panel className="col-span-2 p-4 sm:col-span-1 sm:p-6">
+
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Ofertas ativas
           </p>
@@ -198,7 +200,7 @@ function DashboardPage() {
 
       {/* Calendário em destaque */}
       <Panel className="overflow-hidden">
-        <div className="flex items-center justify-between border-b p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b p-4 sm:p-6">
           <h3 className="font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
@@ -209,7 +211,8 @@ function DashboardPage() {
             </span>
           </div>
         </div>
-        <div className="grid gap-8 p-6 lg:grid-cols-[auto_1fr]">
+        <div className="grid gap-6 p-3 sm:gap-8 sm:p-6 lg:grid-cols-[auto_1fr]">
+
           <Calendar
             mode="single"
             locale={ptBR}
@@ -237,7 +240,7 @@ function DashboardPage() {
                 );
               },
             }}
-            className="pointer-events-auto rounded-xl border p-4 [--cell-size:2.6rem]"
+            className="pointer-events-auto w-full max-w-full rounded-xl border p-2 [--cell-size:min(2.4rem,11vw)] sm:p-4 sm:[--cell-size:2.6rem]"
           />
 
           <div className="min-w-0">
