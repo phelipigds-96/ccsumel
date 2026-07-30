@@ -200,7 +200,7 @@ function DashboardPage() {
 
       {/* Calendário em destaque */}
       <Panel className="overflow-hidden">
-        <div className="flex items-center justify-between border-b p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b p-4 sm:p-6">
           <h3 className="font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
@@ -211,7 +211,8 @@ function DashboardPage() {
             </span>
           </div>
         </div>
-        <div className="grid gap-8 p-6 lg:grid-cols-[auto_1fr]">
+        <div className="grid gap-6 p-3 sm:gap-8 sm:p-6 lg:grid-cols-[auto_1fr]">
+
           <Calendar
             mode="single"
             locale={ptBR}
