@@ -176,7 +176,7 @@ function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel className="p-6">
+        <Panel className="p-4 sm:p-6">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Campanhas programadas
           </p>
@@ -186,7 +186,8 @@ function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel className="p-6">
+        <Panel className="col-span-2 p-4 sm:col-span-1 sm:p-6">
+
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Ofertas ativas
           </p>
