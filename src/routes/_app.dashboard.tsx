@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, FileText, ArrowRight, Eye } from "lucide-react";
+import { Plus, ArrowRight, Eye, Megaphone, CalendarClock, Tags, CalendarDays } from "lucide-react";
 import { useCampanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView } from "@/components/campanha-quick-view";
 import { Button } from "@/components/ui/button";
