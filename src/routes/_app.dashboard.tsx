@@ -46,7 +46,7 @@ const STATUS_PILL: Record<CampanhaDash["status"], string> = {
 
 function Panel({ className = "", children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={`rounded-2xl border bg-card shadow-[0_1px_2px_rgba(11,31,58,0.04)] ${className}`}>
+    <div className={`rounded-2xl border bg-card shadow-[0_1px_2px_rgba(11,31,58,0.05)] ${className}`}>
       {children}
     </div>
   );
@@ -294,7 +294,7 @@ function DashboardPage() {
       {/* Campanhas ativas e futuras em destaque */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel>
-          <div className="flex items-center justify-between border-b p-5">
+          <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-primary" />
               <h3 className="font-display text-sm font-semibold text-navy">Campanhas ativas</h3>
@@ -331,7 +331,7 @@ function DashboardPage() {
         </Panel>
 
         <Panel>
-          <div className="flex items-center justify-between border-b p-5">
+          <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-navy" />
               <h3 className="font-display text-sm font-semibold text-navy">Próximas campanhas</h3>
