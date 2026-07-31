@@ -9,10 +9,10 @@ import logoAsset from "@/assets/logo-sumel.png.asset.json";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Entrar — SGMC" },
-      { name: "description", content: "Acesse o SGMC — Sistema de Gestão de Marketing Comercial." },
-      { property: "og:title", content: "Entrar — SGMC" },
-      { property: "og:description", content: "Acesse o SGMC." },
+      { title: "Central de Campanhas Sumel" },
+      { name: "description", content: "Acesse a Central de Campanhas Sumel — gestão de campanhas, ofertas e verbas." },
+      { property: "og:title", content: "Central de Campanhas Sumel" },
+      { property: "og:description", content: "Acesse a Central de Campanhas Sumel." },
     ],
   }),
   component: LoginPage,
