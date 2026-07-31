@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, FileText, ArrowRight, Eye } from "lucide-react";
+import { Plus, ArrowRight, Eye, Megaphone, CalendarClock, Tags, CalendarDays } from "lucide-react";
 import { useCampanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView } from "@/components/campanha-quick-view";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,7 @@ const STATUS_PILL: Record<CampanhaDash["status"], string> = {
 
 function Panel({ className = "", children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={`rounded-2xl border bg-card shadow-[0_1px_2px_rgba(11,31,58,0.04)] ${className}`}>
+    <div className={`rounded-2xl border bg-card shadow-[0_1px_2px_rgba(11,31,58,0.05)] ${className}`}>
       {children}
     </div>
   );
@@ -141,21 +141,29 @@ function DashboardPage() {
       )
     : [];
 
+  const kpis = [
+    { label: "Campanhas ativas", valor: ativas.length, sub: "em andamento", icon: Megaphone, tone: "primary" as const },
+    { label: "Campanhas programadas", valor: proximas.length, sub: "a iniciar", icon: CalendarClock, tone: "navy" as const },
+    { label: "Ofertas ativas", valor: produtosEmOferta, sub: "produtos", icon: Tags, tone: "navy" as const },
+  ];
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Cabeçalho */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-navy sm:text-3xl">Painel de Controle</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Bem-vindo à Central de Campanhas Sumel.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="hidden rounded-lg sm:inline-flex">
-            <FileText className="mr-2 h-4 w-4" /> Exportar
-          </Button>
-          <Button asChild className="rounded-lg">
+      <div className="relative overflow-hidden rounded-3xl border bg-navy px-5 py-7 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(11,31,58,0.7)] sm:px-8 sm:py-9">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:flex-wrap sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-foreground/60">
+              {format(hoje, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+            </p>
+            <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Painel de Controle</h1>
+            <p className="mt-1 text-sm text-primary-foreground/70">
+              Bem-vindo à Central de Campanhas Sumel.
+            </p>
+          </div>
+          <Button asChild className="shrink-0 rounded-full shadow-lg">
             <Link to="/campanhas">
               <Plus className="mr-2 h-4 w-4" /> Nova campanha
             </Link>
@@ -165,43 +173,45 @@ function DashboardPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6">
-        <Panel className="p-4 sm:p-6">
-
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Campanhas ativas
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-3xl font-bold text-navy">{ativas.length}</span>
-            <span className="text-xs font-medium text-muted-foreground">em andamento</span>
-          </div>
-        </Panel>
-
-        <Panel className="p-4 sm:p-6">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Campanhas programadas
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-3xl font-bold text-navy">{proximas.length}</span>
-            <span className="text-xs font-medium text-muted-foreground">a iniciar</span>
-          </div>
-        </Panel>
-
-        <Panel className="col-span-2 p-4 sm:col-span-1 sm:p-6">
-
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Ofertas ativas
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-3xl font-bold text-navy">{produtosEmOferta}</span>
-            <span className="text-xs font-medium text-muted-foreground">produtos</span>
-          </div>
-        </Panel>
+        {kpis.map((k, i) => (
+          <Panel
+            key={k.label}
+            className={`group relative overflow-hidden p-4 transition-shadow hover:shadow-[0_12px_30px_-18px_rgba(11,31,58,0.45)] sm:p-6 ${
+              i === 2 ? "col-span-2 sm:col-span-1" : ""
+            }`}
+          >
+            <span
+              className={`absolute inset-x-0 top-0 h-1 ${k.tone === "primary" ? "bg-primary" : "bg-navy"}`}
+            />
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {k.label}
+              </p>
+              <span
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
+                  k.tone === "primary" ? "bg-primary/10 text-primary" : "bg-navy/10 text-navy"
+                }`}
+              >
+                <k.icon className="h-4 w-4" />
+              </span>
+            </div>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="font-display text-3xl font-bold tabular-nums text-navy sm:text-4xl">{k.valor}</span>
+              <span className="text-xs font-medium text-muted-foreground">{k.sub}</span>
+            </div>
+          </Panel>
+        ))}
       </div>
 
       {/* Calendário em destaque */}
       <Panel className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b p-4 sm:p-6">
-          <h3 className="font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-secondary/30 p-4 sm:p-6">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-navy/10 text-navy">
+              <CalendarDays className="h-4 w-4" />
+            </span>
+            <h3 className="truncate font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
+          </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-primary" /> Ativas
@@ -284,7 +294,7 @@ function DashboardPage() {
       {/* Campanhas ativas e futuras em destaque */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel>
-          <div className="flex items-center justify-between border-b p-5">
+          <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-primary" />
               <h3 className="font-display text-sm font-semibold text-navy">Campanhas ativas</h3>
@@ -321,7 +331,7 @@ function DashboardPage() {
         </Panel>
 
         <Panel>
-          <div className="flex items-center justify-between border-b p-5">
+          <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-navy" />
               <h3 className="font-display text-sm font-semibold text-navy">Próximas campanhas</h3>
