@@ -8,12 +8,12 @@ export const Route = createFileRoute("/")({
       { title: "Central de Campanhas Sumel" },
       {
         name: "description",
-        content: "Gestão de campanhas, ofertas e verbas cooperadas da Sumel.",
+        content: "Gestão de campanhas, ofertas e verbas.",
       },
       { property: "og:title", content: "Central de Campanhas Sumel" },
       {
         property: "og:description",
-        content: "Gestão de campanhas, ofertas e verbas cooperadas da Sumel.",
+        content: "Gestão de campanhas, ofertas e verbas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
