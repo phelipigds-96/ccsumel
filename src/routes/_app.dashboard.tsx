@@ -205,8 +205,13 @@ function DashboardPage() {
 
       {/* Calendário em destaque */}
       <Panel className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b p-4 sm:p-6">
-          <h3 className="font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-secondary/30 p-4 sm:p-6">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-navy/10 text-navy">
+              <CalendarDays className="h-4 w-4" />
+            </span>
+            <h3 className="truncate font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
+          </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-primary" /> Ativas
