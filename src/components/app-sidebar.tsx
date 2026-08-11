@@ -48,14 +48,7 @@ const items: Item[] = [
   { title: "Campanhas", url: "/campanhas", icon: Megaphone },
   { title: "Campanhas Encerradas", url: "/campanhas-encerradas", icon: Archive },
   { title: "Verbas Cooperadas", url: "/verbas-cooperadas", icon: Wallet },
-  {
-    title: "Sell Out",
-    url: "/sell-out",
-    icon: ShoppingCart,
-    children: [
-      { title: "Acertos", url: "/sell-out/acertos", icon: Calculator },
-    ],
-  },
+  { title: "Sell Out", url: "/sell-out/acertos", icon: ShoppingCart },
   { title: "Pontas de Gôndola", url: "/pontas-de-gondola", icon: PackageOpen },
   { title: "Fornecedores", url: "/fornecedores", icon: Truck },
   { title: "Catálogo de Produtos", url: "/catalogo-de-produtos", icon: Package },
