@@ -160,9 +160,9 @@ export async function carregarCampanhas() {
     acertos[a.oferta_id] = {
       quantidadeVendida: Number(a.quantidade_vendida ?? 0),
       registradoEm: a.registrado_em ?? new Date().toISOString(),
+      baixado: Boolean(a.baixado),
+      baixadoEm: a.baixado_em ?? null,
     };
-  }
-  state = {
     campanhas: ((camps ?? []) as any[]).map(toCampanha),
     ofertas: ((ofs ?? []) as any[]).map(toOferta),
     acertos,
