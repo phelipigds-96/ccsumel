@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2 } from "lucide-react";
+import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2, FileText } from "lucide-react";
+import { gerarRelatorioSelloutPDF } from "@/components/sellout-report-generator";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
