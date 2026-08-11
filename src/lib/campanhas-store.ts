@@ -163,6 +163,8 @@ export async function carregarCampanhas() {
       baixado: Boolean(a.baixado),
       baixadoEm: a.baixado_em ?? null,
     };
+  }
+  state = {
     campanhas: ((camps ?? []) as any[]).map(toCampanha),
     ofertas: ((ofs ?? []) as any[]).map(toOferta),
     acertos,
