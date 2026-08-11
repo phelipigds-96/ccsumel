@@ -490,6 +490,15 @@ Central de Campanhas Sumel`;
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => imprimirRelatorio(grupo)}
+                        className="gap-2"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Relatório PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => copiarFornecedor(grupo)}
                         className="gap-2"
                       >
