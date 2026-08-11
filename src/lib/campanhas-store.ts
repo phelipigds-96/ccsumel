@@ -51,6 +51,8 @@ export interface Oferta {
 export interface Acerto {
   quantidadeVendida: number;
   registradoEm: string;
+  baixado: boolean;
+  baixadoEm: string | null;
 }
 
 type State = { campanhas: Campanha[]; ofertas: Oferta[]; acertos: Record<string, Acerto>; carregando: boolean };
