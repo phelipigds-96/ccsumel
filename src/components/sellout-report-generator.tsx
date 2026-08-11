@@ -22,13 +22,9 @@ export function gerarRelatorioSelloutPDF({ fornecedor, itens, acertos }: Sellout
   const fmtData = (iso: string | null) => {
     if (!iso) return "—";
     try {
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) {
-         const parts = iso.split("-");
-         if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-         return iso;
-      }
-      return d.toLocaleDateString("pt-BR");
+      const parts = iso.split("T")[0].split("-");
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return iso;
     } catch {
       return iso || "—";
     }
