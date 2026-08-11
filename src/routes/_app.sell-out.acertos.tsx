@@ -241,6 +241,14 @@ Central de Campanhas Sumel`;
     }
   };
 
+  const imprimirRelatorio = (grupo: (typeof resumoPorFornecedor)[number]) => {
+    gerarRelatorioSelloutPDF({
+      fornecedor: grupo.fornecedor,
+      itens: grupo.itens,
+      acertos,
+    });
+  };
+
   const copiarFornecedor = async (grupo: (typeof resumoPorFornecedor)[number]) => {
     const blocos = grupo.itens
       .map((it) => {
