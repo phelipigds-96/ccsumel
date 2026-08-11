@@ -51,6 +51,8 @@ export interface Oferta {
 export interface Acerto {
   quantidadeVendida: number;
   registradoEm: string;
+  baixado: boolean;
+  baixadoEm: string | null;
 }
 
 type State = { campanhas: Campanha[]; ofertas: Oferta[]; acertos: Record<string, Acerto>; carregando: boolean };
@@ -158,6 +160,8 @@ export async function carregarCampanhas() {
     acertos[a.oferta_id] = {
       quantidadeVendida: Number(a.quantidade_vendida ?? 0),
       registradoEm: a.registrado_em ?? new Date().toISOString(),
+      baixado: Boolean(a.baixado),
+      baixadoEm: a.baixado_em ?? null,
     };
   }
   state = {
@@ -259,15 +263,44 @@ export const campanhasStore = {
   },
   setAcerto: (ofertaId: string, quantidadeVendida: number) => {
     const registradoEm = new Date().toISOString();
+    const anterior = state.acertos[ofertaId];
+    const baixado = anterior?.baixado ?? false;
+    const baixadoEm = anterior?.baixadoEm ?? null;
     state = {
       ...state,
-      acertos: { ...state.acertos, [ofertaId]: { quantidadeVendida, registradoEm } },
+      acertos: {
+        ...state.acertos,
+        [ofertaId]: { quantidadeVendida, registradoEm, baixado, baixadoEm },
+      },
     };
     emit();
     void supabase.from("acertos" as any).upsert({
       oferta_id: ofertaId,
       quantidade_vendida: quantidadeVendida,
       registrado_em: registradoEm,
+      baixado,
+      baixado_em: baixadoEm,
+    });
+  },
+  setBaixaAcerto: (ofertaId: string, baixado: boolean) => {
+    const anterior = state.acertos[ofertaId];
+    const quantidadeVendida = anterior?.quantidadeVendida ?? 0;
+    const registradoEm = anterior?.registradoEm ?? new Date().toISOString();
+    const baixadoEm = baixado ? new Date().toISOString() : null;
+    state = {
+      ...state,
+      acertos: {
+        ...state.acertos,
+        [ofertaId]: { quantidadeVendida, registradoEm, baixado, baixadoEm },
+      },
+    };
+    emit();
+    void supabase.from("acertos" as any).upsert({
+      oferta_id: ofertaId,
+      quantidade_vendida: quantidadeVendida,
+      registrado_em: registradoEm,
+      baixado,
+      baixado_em: baixadoEm,
     });
   },
 };

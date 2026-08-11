@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,7 @@ function AcertosSellOut() {
   const [sortKey, setSortKey] = useState<SortKey>("total-desc");
   const [quantidades, setQuantidades] = useState<Record<string, string>>({});
   const [fornecedoresAbertos, setFornecedoresAbertos] = useState<Record<string, boolean>>({});
+  const [aba, setAba] = useState<"pendentes" | "historico">("pendentes");
 
   const campanhaById = useMemo(() => {
     const m = new Map<string, Campanha>();
@@ -85,7 +86,9 @@ function AcertosSellOut() {
         const ultima = anteriores[0];
         const ultimaCampanha = ultima ? campanhaById.get(ultima.campanhaId) : undefined;
         const ultimaQtd = ultima ? acertos[ultima.id]?.quantidadeVendida ?? 0 : 0;
-        return { oferta: o, campanha, ultima, ultimaCampanha, ultimaQtd };
+        const baixado = acertos[o.id]?.baixado ?? false;
+        const baixadoEm = acertos[o.id]?.baixadoEm ?? null;
+        return { oferta: o, campanha, ultima, ultimaCampanha, ultimaQtd, baixado, baixadoEm };
       });
   }, [ofertas, acertos, campanhaById]);
 
@@ -105,6 +108,17 @@ function AcertosSellOut() {
     toast.success("Acerto salvo", { description: `Quantidade registrada: ${qtd}` });
   };
 
+  const darBaixa = (id: string) => {
+    campanhasStore.setAcerto(id, getQtd(id));
+    campanhasStore.setBaixaAcerto(id, true);
+    toast.success("Baixa registrada", { description: "O produto foi movido para o histórico de acertos." });
+  };
+
+  const reabrir = (id: string) => {
+    campanhasStore.setBaixaAcerto(id, false);
+    toast.success("Acerto reaberto", { description: "O produto voltou para os pendentes." });
+  };
+
   const fornecedoresDisponiveis = useMemo(() => {
     const s = new Set<string>();
     ofertasSellOut.forEach(({ oferta }) => {
@@ -115,7 +129,8 @@ function AcertosSellOut() {
 
   const filtradas = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    let list = ofertasSellOut.filter(({ oferta, campanha }) => {
+    let list = ofertasSellOut.filter(({ oferta, campanha, baixado }) => {
+      if (aba === "pendentes" ? baixado : !baixado) return false;
       const forn = oferta.selloutFornecedor || oferta.fornecedor || "—";
       if (fornecedorFiltro !== "__todos" && forn !== fornecedorFiltro) return false;
       if (!q) return true;
@@ -153,7 +168,7 @@ function AcertosSellOut() {
     });
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ofertasSellOut, busca, fornecedorFiltro, sortKey, quantidades, acertos]);
+  }, [ofertasSellOut, busca, fornecedorFiltro, sortKey, quantidades, acertos, aba]);
 
   const totalGeral = filtradas.reduce((acc, { oferta }) => {
     return acc + getQtd(oferta.id) * (oferta.selloutValor || 0);
@@ -265,8 +280,8 @@ Central de Campanhas Sumel`;
       <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card>
           <CardContent className="p-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Produtos com verba</div>
-            <div className="mt-1 text-2xl font-bold text-navy">{ofertasSellOut.length}</div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">{aba === "pendentes" ? "Pendentes de acerto" : "Acertos realizados"}</div>
+            <div className="mt-1 text-2xl font-bold text-navy">{ofertasSellOut.filter((o) => (aba === "pendentes" ? !o.baixado : o.baixado)).length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -281,6 +296,21 @@ Central de Campanhas Sumel`;
             <div className="mt-1 text-2xl font-bold text-navy">{resumoPorFornecedor.length}</div>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mb-4 inline-flex rounded-lg border bg-card p-1">
+        {(["pendentes", "historico"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setAba(k)}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              aba === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {k === "pendentes" ? "Sell out pendentes" : "Histórico de acertos"}
+          </button>
+        ))}
       </div>
 
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
@@ -337,7 +367,7 @@ Central de Campanhas Sumel`;
             {filtradas.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">
-                  Nenhum produto encontrado com os filtros atuais.
+                  {aba === "pendentes" ? "Nenhum sell out pendente com os filtros atuais." : "Nenhum acerto no histórico ainda."}
                 </TableCell>
               </TableRow>
             )}
@@ -392,15 +422,28 @@ Central de Campanhas Sumel`;
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copiarTexto(item)}
-                      className="gap-2"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Copiar
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copiarTexto(item)}
+                        className="gap-2"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copiar
+                      </Button>
+                      {aba === "pendentes" ? (
+                        <Button size="sm" onClick={() => darBaixa(oferta.id)} className="gap-2">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Dar baixa
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" onClick={() => reabrir(oferta.id)} className="gap-2">
+                          <Undo2 className="h-3.5 w-3.5" />
+                          Reabrir
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );

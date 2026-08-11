@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       acertos: {
         Row: {
+          baixado: boolean
+          baixado_em: string | null
           created_at: string
           oferta_id: string
           quantidade_vendida: number
@@ -23,6 +25,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          baixado?: boolean
+          baixado_em?: string | null
           created_at?: string
           oferta_id: string
           quantidade_vendida?: number
@@ -30,6 +34,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          baixado?: boolean
+          baixado_em?: string | null
           created_at?: string
           oferta_id?: string
           quantidade_vendida?: number
