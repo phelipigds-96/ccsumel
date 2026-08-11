@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2 } from "lucide-react";
+import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2, FileText } from "lucide-react";
+import { gerarRelatorioSelloutPDF } from "@/components/sellout-report-generator";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -238,6 +239,14 @@ Central de Campanhas Sumel`;
     } catch {
       toast.error("Não foi possível copiar. Tente novamente.");
     }
+  };
+
+  const imprimirRelatorio = (grupo: (typeof resumoPorFornecedor)[number]) => {
+    gerarRelatorioSelloutPDF({
+      fornecedor: grupo.fornecedor,
+      itens: grupo.itens,
+      acertos,
+    });
   };
 
   const copiarFornecedor = async (grupo: (typeof resumoPorFornecedor)[number]) => {
@@ -478,6 +487,15 @@ Central de Campanhas Sumel`;
                     </button>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-bold text-primary">{brl(grupo.total)}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => imprimirRelatorio(grupo)}
+                        className="gap-2"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Relatório PDF
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
