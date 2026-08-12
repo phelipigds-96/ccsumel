@@ -105,7 +105,7 @@ export function AppSidebar() {
               collapsed ? "h-8 w-8" : "h-9 w-9"
             }`}
           >
-            <img src={logoSumel.url} alt="Sumel" className="h-full w-full object-contain" key={logoSumel.url} />
+            <img src={getPublicUrl(logoSumel.url)} alt="Sumel" className="h-full w-full object-contain" key={logoSumel.url} />
           </div>
 
           {!collapsed && (
