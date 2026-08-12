@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import logoSumel from "@/assets/logo-sumel.png.asset.json";
+import { useLocation } from "@tanstack/react-router";
 
 import {
   LayoutDashboard,
@@ -61,7 +62,7 @@ const items: Item[] = [
 export function AppSidebar() {
   const { state, setOpen, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname } = useLocation();
   const { user, logout } = useAuth();
 
   const allowed = new Set(user?.permissions ?? []);
@@ -103,7 +104,7 @@ export function AppSidebar() {
               collapsed ? "h-8 w-8" : "h-9 w-9"
             }`}
           >
-            <img src={logoSumel.url} alt="Sumel" className="h-full w-full object-contain" />
+            <img src={logoSumel.url} alt="Sumel" className="h-full w-full object-contain" key={logoSumel.url} />
           </div>
 
           {!collapsed && (
