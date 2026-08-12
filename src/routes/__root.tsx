@@ -12,8 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
-import { getPublicUrl } from "../lib/asset-url";
-import logoAsset from "../assets/logo-sumel.png.asset.json";
+import logoAsset from "../assets/logo-sumel.png";
 
 function NotFoundComponent() {
   return (
@@ -92,7 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Gestão de campanhas, ofertas e verbas." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c1e7a553-e1da-4696-8771-7f53fa1269bb/id-preview-bf516877--8be30b95-8c3e-4e92-be4e-8939519a563c.lovable.app-1785425490987.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c1e7a553-e1da-4696-8771-7f53fa1269bb/id-preview-bf516877--8be30b95-8c3e-4e92-be4e-8939519a563c.lovable.app-1785425490987.png" },
-      { rel: "icon", href: getPublicUrl(logoAsset.url) },
+      { rel: "icon", href: logoAsset },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },

@@ -1,8 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import logoSumel from "@/assets/logo-sumel.png.asset.json";
+import logoSumel from "@/assets/logo-sumel.png";
 import { useLocation } from "@tanstack/react-router";
-import { getPublicUrl } from "@/lib/asset-url";
 
 import {
   LayoutDashboard,
@@ -105,7 +104,7 @@ export function AppSidebar() {
               collapsed ? "h-8 w-8" : "h-9 w-9"
             }`}
           >
-            <img src={getPublicUrl(logoSumel.url)} alt="Sumel" className="h-full w-full object-contain" key={logoSumel.url} />
+            <img src={logoSumel} alt="Sumel" className="h-full w-full object-contain" />
           </div>
 
           {!collapsed && (
