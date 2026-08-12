@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logoAsset from "@/assets/logo-sumel.png.asset.json";
+import { getPublicUrl } from "@/lib/asset-url";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
