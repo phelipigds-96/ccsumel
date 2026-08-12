@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import logoSumel from "@/assets/logo-sumel.png.asset.json";
 import { useLocation } from "@tanstack/react-router";
+import { getPublicUrl } from "@/lib/asset-url";
 
 import {
   LayoutDashboard,
