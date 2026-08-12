@@ -10,8 +10,9 @@ export function getPublicUrl(pathOrUrl: string): string {
   // If it's already an absolute URL (http/https), return it
   if (pathOrUrl.startsWith("http")) return pathOrUrl;
   
-  // If it's a Lovable asset path (starts with /__l5e/), return it as is
-  // These are usually proxied correctly in preview, but might need help in production
+  // Lovable asset paths (/__l5e/) are internal to the platform and should be avoided 
+  // in independent deploys. If they appear, we return them as is, but project 
+  // assets should use standard imports.
   if (pathOrUrl.startsWith("/__l5e/")) return pathOrUrl;
 
   // Otherwise, assume it's a Supabase storage path and get the public URL
