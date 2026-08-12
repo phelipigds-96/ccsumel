@@ -12,8 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
-import { getPublicUrl } from "../lib/asset-url";
-import logoAsset from "../assets/logo-sumel.png.asset.json";
+import logoAsset from "../assets/logo-sumel.png";
 
 function NotFoundComponent() {
   return (
