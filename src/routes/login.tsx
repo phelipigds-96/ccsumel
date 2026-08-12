@@ -58,7 +58,7 @@ function LoginPage() {
           style={{ boxShadow: "var(--shadow-auth)" }}>
           <div className="flex justify-center">
             <div className="rounded-xl bg-background px-6 py-4 shadow-sm">
-              <img src={logoAsset.url} alt="Sumel" className="h-14 w-auto" />
+              <img src={logoAsset.url} alt="Sumel" className="h-14 w-auto" key={logoAsset.url} />
             </div>
           </div>
 
