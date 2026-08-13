@@ -46,8 +46,8 @@ import {
 export const Route = createFileRoute("/_app/usuarios")({
   head: () => ({
     meta: [
-      { title: "Usuários — Central de Campanhas" },
-      { name: "description", content: "Gerencie usuários, permissões e acessos aos módulos do sistema." },
+      { title: "Usuários — Central de Campanhas Sumel" },
+      { name: "description", content: "Gerencie usuários, permissões e acessos aos módulos da Central Sumel." },
       { property: "og:title", content: "Usuários — Central de Campanhas" },
       { property: "og:description", content: "Cadastro e permissões dos usuários internos." },
     ],
