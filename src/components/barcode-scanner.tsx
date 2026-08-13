@@ -59,16 +59,19 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const [isScanning, setIsScanning] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const [hasTorch, setHasTorch] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const lastResultRef = useRef<{ code: string; count: number }>({ code: "", count: 0 });
   const regionId = "barcode-scanner-region";
 
   const stopScanner = async () => {
     if (scannerRef.current) {
       try {
+        setTorchOn(false);
         if (scannerRef.current.isScanning) {
           await scannerRef.current.stop();
         }
-        // Always try to clear the region and reset
         scannerRef.current.clear();
         setIsScanning(false);
       } catch (err) {
@@ -77,12 +80,31 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     }
   };
 
+  const toggleTorch = async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        const newState = !torchOn;
+        // html5-qrcode doesn't expose torch directly in all versions easily, 
+        // but we can try to apply it to the track
+        const track = scannerRef.current.getRunningTrack();
+        if (track && track.applyConstraints) {
+          await track.applyConstraints({
+            advanced: [{ torch: newState } as any]
+          });
+          setTorchOn(newState);
+        }
+      } catch (err) {
+        console.error("Erro ao alternar lanterna:", err);
+      }
+    }
+  };
+
   const startScanner = async () => {
     setError(null);
     setIsDone(false);
+    lastResultRef.current = { code: "", count: 0 };
     
     try {
-      // Release any existing instances
       await stopScanner();
       
       if (!scannerRef.current) {
@@ -92,10 +114,8 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       const config = {
         fps: 30,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          // Reduzimos o qrbox para focar melhor em códigos de barras menores/densos
           const boxWidth = Math.floor(viewfinderWidth * 0.85);
-          const boxHeight = Math.floor(viewfinderHeight * 0.3);
+          const boxHeight = Math.floor(viewfinderHeight * 0.35);
           return { width: boxWidth, height: boxHeight };
         },
         aspectRatio: 1.0,
@@ -115,37 +135,58 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
           Html5QrcodeSupportedFormats.ITF,
         ],
       };
 
       setIsScanning(true);
-
-      // Add a small delay to ensure previous instances are fully released by the OS
       await new Promise(resolve => setTimeout(resolve, 300));
 
       await scannerRef.current.start(
         { facingMode: "environment" },
         config,
         (decodedText) => {
-          onResult(decodedText);
-          setIsDone(true);
-          stopScanner();
-          toast.success("Código identificado: " + decodedText);
-          setTimeout(() => onOpenChange(false), 800);
+          // Multi-frame validation: code must be the same for 3 consecutive frames
+          if (decodedText === lastResultRef.current.code) {
+            lastResultRef.current.count++;
+          } else {
+            lastResultRef.current.code = decodedText;
+            lastResultRef.current.count = 1;
+          }
+
+          if (lastResultRef.current.count >= 3) {
+            // Final validation of check digit
+            if (validateBarcode(decodedText)) {
+              onResult(decodedText);
+              setIsDone(true);
+              stopScanner();
+              toast.success("Código identificado: " + decodedText);
+              setTimeout(() => onOpenChange(false), 800);
+            } else {
+              // Reset if check digit fails
+              lastResultRef.current = { code: "", count: 0 };
+            }
+          }
         },
         () => {
-          // Silenciosamente ignorar erros de "não encontrado" durante a varredura
+          // Ignore scanning errors
         }
       );
+
+      // Check for torch support
+      const track = scannerRef.current.getRunningTrack();
+      if (track) {
+        const capabilities = track.getCapabilities() as any;
+        setHasTorch(!!capabilities.torch);
+      }
+
     } catch (err: any) {
       console.error("Erro ao iniciar o scanner:", err);
       setIsScanning(false);
       if (err.toString().includes("Permission denied")) {
         setError("Acesso à câmera negado. Por favor, permita o acesso nas configurações do seu navegador.");
       } else {
-        setError("Não foi possível acessar a câmera. Verifique se outro app está usando a câmera.");
+        setError("Não foi possível acessar a câmera. Tente ajustar a iluminação ou fechar outros apps.");
       }
     }
   };
@@ -206,19 +247,45 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           )}
 
           {isScanning && !isDone && (
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-[85%] h-[30%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+              <div className="w-[85%] h-[35%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_15px_rgba(200,16,46,0.8)] animate-scan" />
                 
+                {/* LINHA DE LEITURA visual */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-[90%] h-[1px] bg-red-500/50" />
+                </div>
+
                 {/* Cantoneiras */}
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-sm" />
-                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary rounded-tr-sm" />
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary rounded-bl-sm" />
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-sm" />
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-sm" />
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-sm" />
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-sm" />
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-sm" />
               </div>
-              <p className="absolute bottom-10 left-0 w-full text-center text-white text-[10px] font-bold uppercase tracking-widest drop-shadow-md">
-                Posicione o código de barras no centro
-              </p>
+
+              <div className="mt-8 flex flex-col items-center gap-1 text-white text-center">
+                <p className="text-sm font-bold uppercase tracking-wider drop-shadow-lg">
+                  Posicione o código dentro da área
+                </p>
+                <p className="text-[10px] opacity-80 uppercase tracking-widest">
+                  Mantenha o celular estável
+                </p>
+              </div>
+
+              {hasTorch && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-6 pointer-events-auto bg-black/50 border-white/20 text-white hover:bg-white/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleTorch();
+                  }}
+                >
+                  {torchOn ? <ZapOff className="mr-2 h-4 w-4" /> : <Zap className="mr-2 h-4 w-4" />}
+                  {torchOn ? "Desligar Lanterna" : "Ligar Lanterna"}
+                </Button>
+              )}
             </div>
           )}
 
