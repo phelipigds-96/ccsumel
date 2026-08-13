@@ -167,10 +167,10 @@ function BancoDeOportunidades() {
   };
 
   const statusIcons: Record<OportunidadeStatus, any> = {
-    'Disponível': <Clock className="h-4 w-4 text-amber-500" />,
-    'Reservada': <Tag className="h-4 w-4 text-blue-500" />,
-    'Utilizada': <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
-    'Arquivada': <Archive className="h-4 w-4 text-slate-500" />,
+    'Disponível': <Clock className="h-3 w-3 text-amber-500" />,
+    'Reservada': <Tag className="h-3 w-3 text-blue-500" />,
+    'Utilizada': <CheckCircle2 className="h-3 w-3 text-emerald-500" />,
+    'Arquivada': <Archive className="h-3 w-3 text-slate-500" />,
   };
 
   const prioridadeVariant: Record<OportunidadePrioridade, string> = {
