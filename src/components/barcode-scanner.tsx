@@ -52,13 +52,22 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       }
 
       const config = {
-        fps: 25,
+        fps: 30,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
           const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const boxSize = Math.floor(minEdge * 0.7);
-          return { width: boxSize, height: Math.floor(boxSize * 0.6) };
+          // Reduzimos o qrbox para focar melhor em códigos de barras menores/densos
+          const boxWidth = Math.floor(viewfinderWidth * 0.85);
+          const boxHeight = Math.floor(viewfinderHeight * 0.3);
+          return { width: boxWidth, height: boxHeight };
         },
         aspectRatio: 1.0,
+        disableFlip: false,
+        videoConstraints: {
+          facingMode: "environment",
+          focusMode: "continuous",
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 },
+        },
         experimentalFeatures: {
           useBarCodeDetectorIfSupported: true
         },
@@ -69,6 +78,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.ITF,
         ],
       };
 
@@ -78,9 +88,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       await new Promise(resolve => setTimeout(resolve, 300));
 
       await scannerRef.current.start(
-        { 
-          facingMode: "environment",
-        },
+        { facingMode: "environment" },
         config,
         (decodedText) => {
           onResult(decodedText);
@@ -161,14 +169,14 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
           {isScanning && !isDone && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-[70%] h-[42%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
+              <div className="w-[85%] h-[30%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_15px_rgba(200,16,46,0.8)] animate-scan" />
                 
                 {/* Cantoneiras */}
-                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary rounded-tl-sm" />
-                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary rounded-tr-sm" />
-                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary rounded-bl-sm" />
-                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary rounded-br-sm" />
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-sm" />
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary rounded-tr-sm" />
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary rounded-bl-sm" />
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-sm" />
               </div>
               <p className="absolute bottom-10 left-0 w-full text-center text-white text-[10px] font-bold uppercase tracking-widest drop-shadow-md">
                 Posicione o código de barras no centro
