@@ -140,34 +140,32 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     try {
       await stopScanner();
       
-      if (!codeReaderRef.current) {
-        const hints = new Map();
-        // Durante diagnóstico, podemos expandir, mas por padrão mantemos os solicitados
-        const formats = [
-          BarcodeFormat.EAN_13,
-          BarcodeFormat.EAN_8,
-          BarcodeFormat.UPC_A,
-          BarcodeFormat.UPC_E,
-          BarcodeFormat.CODE_128,
-          BarcodeFormat.ITF,
-          BarcodeFormat.QR_CODE
-        ];
-        hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
-        hints.set(DecodeHintType.ASSUME_GS1, true);
-        hints.set(DecodeHintType.TRY_HARDER, true);
+      const hints = new Map();
+      const formats = [
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.ITF,
+        BarcodeFormat.QR_CODE
+      ];
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+      hints.set(DecodeHintType.ASSUME_GS1, true);
+      hints.set(DecodeHintType.TRY_HARDER, true);
 
-        // Resetar o leitor com configurações de diagnóstico se necessário
-        if (diagnosticMode) {
-          const diagHints = new Map();
-          // Não filtrar formatos em modo diag para ver o que ele detecta
-          diagHints.set(DecodeHintType.TRY_HARDER, true);
-          diagHints.set(DecodeHintType.ASSUME_GS1, true);
-          codeReaderRef.current = new BrowserMultiFormatReader(diagHints);
-        }
+      codeReaderRef.current = new BrowserMultiFormatReader(hints);
 
-        const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
+      // Resetar o leitor com configurações de diagnóstico se necessário
+      if (diagnosticMode) {
+        const diagHints = new Map();
+        diagHints.set(DecodeHintType.TRY_HARDER, true);
+        diagHints.set(DecodeHintType.ASSUME_GS1, true);
+        codeReaderRef.current = new BrowserMultiFormatReader(diagHints);
+      }
+
+      const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
       
-      // Priorizar câmera traseira
       let selectedDeviceId = videoInputDevices[0]?.deviceId;
       const backCamera = videoInputDevices.find(device => 
         device.label.toLowerCase().includes('back') || 
@@ -178,14 +176,12 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       if (backCamera) {
         selectedDeviceId = backCamera.deviceId;
       } else if (videoInputDevices.length > 1) {
-        // Se não encontrar pelo nome, tenta a última da lista (geralmente a traseira principal)
         selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
       }
 
       videoDeviceIdRef.current = selectedDeviceId;
       setIsScanning(true);
 
-      // Constraints para alta performance e foco
       const constraints: MediaStreamConstraints = {
         video: {
           deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
@@ -218,8 +214,6 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
             if (result) {
               const decodedText = result.getText();
               
-              // Durante diagnóstico ou teste inicial, aceitamos o primeiro frame válido
-              // Para uso real, mantemos 2 frames para evitar falsos positivos
               if (decodedText === lastResultRef.current.code) {
                 lastResultRef.current.count++;
               } else {
@@ -227,7 +221,6 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
                 lastResultRef.current.count = 1;
               }
 
-              // Se estiver em modo diagnóstico, 1 frame basta para o log
               const threshold = diagnosticMode ? 1 : 2;
 
               if (lastResultRef.current.count >= threshold) {
@@ -245,7 +238,6 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           }
         );
 
-        // Acessar a track para lanterna e capabilities
         const stream = videoRef.current.srcObject as MediaStream;
         if (stream) {
           const track = stream.getVideoTracks()[0];
@@ -255,7 +247,6 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
             const capabilities = track.getCapabilities() as any;
             setHasTorch(!!capabilities.torch);
             
-            // Tentar aplicar foco contínuo se suportado
             if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
               await track.applyConstraints({
                 advanced: [{ focusMode: 'continuous' } as any]
@@ -281,7 +272,6 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (open) {
-      // Pequeno delay para garantir que o elemento DOM está pronto e o Dialog terminou a transição
       timer = setTimeout(startScanner, 600);
     }
 
@@ -289,7 +279,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       if (timer) clearTimeout(timer);
       stopScanner();
     };
-  }, [open]);
+  }, [open, diagnosticMode]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -359,12 +349,10 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
               <div className="w-[85%] h-[35%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_15px_rgba(200,16,46,0.8)] animate-scan" />
                 
-                {/* LINHA DE LEITURA visual */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-[90%] h-[1px] bg-red-500/50" />
                 </div>
 
-                {/* Cantoneiras */}
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-sm" />
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-sm" />
                 <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-sm" />
