@@ -64,6 +64,8 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const [diagnosticMode, setDiagnosticMode] = useState(false);
   const [diagInfo, setDiagInfo] = useState<any>(null);
   const [lastFrame, setLastFrame] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [maxZoom, setMaxZoom] = useState(1);
   
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -95,6 +97,41 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
         setTorchOn(newState);
       } catch (err) {
         console.error("Erro ao alternar lanterna:", err);
+      }
+    }
+  };
+
+  const handleZoomChange = async (newZoom: number) => {
+    if (videoTrackRef.current) {
+      try {
+        await videoTrackRef.current.applyConstraints({
+          advanced: [{ zoom: newZoom } as any]
+        });
+        setZoom(newZoom);
+      } catch (err) {
+        console.error("Erro ao aplicar zoom:", err);
+      }
+    }
+  };
+
+  const requestFocus = async () => {
+    if (videoTrackRef.current) {
+      try {
+        const capabilities = videoTrackRef.current.getCapabilities() as any;
+        if (capabilities.focusMode) {
+          // Tentar continuous primeiro se suportado, senão single-shot
+          const mode = capabilities.focusMode.includes('continuous') ? 'continuous' : 
+                       capabilities.focusMode.includes('single-shot') ? 'single-shot' : null;
+          
+          if (mode) {
+            await videoTrackRef.current.applyConstraints({
+              advanced: [{ focusMode: mode } as any]
+            });
+            toast.info(`Foco solicitado (${mode})`);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao solicitar foco:", err);
       }
     }
   };
@@ -201,12 +238,18 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
               const video = videoRef.current;
               const stream = video.srcObject as MediaStream;
               const track = stream?.getVideoTracks()[0];
-              const settings = track?.getSettings();
+              const settings = track?.getSettings() as any;
+              
+              const capabilities = track?.getCapabilities() as any;
               
               setDiagInfo({
                 res: `${video.videoWidth}x${video.videoHeight}`,
                 label: track?.label || 'N/A',
                 facing: settings?.facingMode || 'unknown',
+                focusMode: settings?.focusMode || 'N/A',
+                focusCapabilities: capabilities?.focusMode?.join(', ') || 'none',
+                zoomCapabilities: capabilities?.zoom ? `${capabilities.zoom.min}-${capabilities.zoom.max}` : 'none',
+                torch: capabilities?.torch ? 'Yes' : 'No',
                 deviceId: settings?.deviceId?.slice(0, 8) + '...'
               });
             }
@@ -247,6 +290,11 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
             const capabilities = track.getCapabilities() as any;
             setHasTorch(!!capabilities.torch);
             
+            if (capabilities.zoom) {
+              setMaxZoom(capabilities.zoom.max);
+              setZoom(capabilities.zoom.min);
+            }
+
             if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
               await track.applyConstraints({
                 advanced: [{ focusMode: 'continuous' } as any]
@@ -315,10 +363,13 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           />
           
           {diagnosticMode && diagInfo && (
-            <div className="absolute top-2 left-2 bg-black/70 text-[10px] text-white p-2 rounded z-50 font-mono pointer-events-none">
+            <div className="absolute top-2 left-2 bg-black/70 text-[9px] text-white p-2 rounded z-50 font-mono pointer-events-none max-w-[200px]">
               <p>Res: {diagInfo.res}</p>
               <p>Cam: {diagInfo.label}</p>
               <p>Facing: {diagInfo.facing}</p>
+              <p>Focus: {diagInfo.focusMode} ({diagInfo.focusCapabilities})</p>
+              <p>Zoom: {diagInfo.zoomCapabilities}</p>
+              <p>Torch: {diagInfo.torch}</p>
               <p>Result: {diagInfo.lastFrameResult || '...'}</p>
             </div>
           )}
@@ -345,7 +396,13 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           )}
 
           {isScanning && !isDone && (
-            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+            <div 
+              className="absolute inset-0 pointer-events-auto flex flex-col items-center justify-center cursor-crosshair"
+              onClick={(e) => {
+                e.stopPropagation();
+                requestFocus();
+              }}
+            >
               <div className="w-[85%] h-[35%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_15px_rgba(200,16,46,0.8)] animate-scan" />
                 
@@ -359,27 +416,55 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-sm" />
               </div>
 
-              <div className="mt-8 flex flex-col items-center gap-1 text-white text-center">
+              <div className="mt-8 flex flex-col items-center gap-1 text-white text-center pointer-events-none">
                 <p className="text-sm font-bold uppercase tracking-wider drop-shadow-lg">
                   Posicione o código dentro da área
                 </p>
                 <p className="text-[10px] opacity-80 uppercase tracking-widest">
-                  Mantenha o celular estável
+                  🎯 Toque para focar
                 </p>
               </div>
 
               {diagnosticMode && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="mt-4 pointer-events-auto"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    captureDiagnosticFrame();
-                  }}
-                >
-                  📸 Capturar Frame
-                </Button>
+                <div className="mt-4 flex gap-2 pointer-events-auto">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      captureDiagnosticFrame();
+                    }}
+                  >
+                    📸 Frame
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      requestFocus();
+                    }}
+                  >
+                    🎯 Testar Foco
+                  </Button>
+                </div>
+              )}
+
+              {maxZoom > 1 && (
+                <div className="mt-4 flex items-center gap-4 bg-black/50 px-4 py-2 rounded-full pointer-events-auto border border-white/20">
+                  <span className="text-white text-xs font-mono">Zoom</span>
+                  <input 
+                    type="range" 
+                    min="1" 
+                    max={maxZoom} 
+                    step="0.1" 
+                    value={zoom} 
+                    onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <span className="text-white text-xs font-mono">{zoom.toFixed(1)}x</span>
+                </div>
               )}
 
               {hasTorch && (
