@@ -466,6 +466,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [editing, setEditing] = useState<Oferta | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [oportunidadesOpen, setOportunidadesOpen] = useState(false);
 
   const COLUMNS: { key: string; label: string }[] = [
     { key: "codigo", label: "Código" },
