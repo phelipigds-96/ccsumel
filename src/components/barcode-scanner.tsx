@@ -101,6 +101,41 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     }
   };
 
+  const handleZoomChange = async (newZoom: number) => {
+    if (videoTrackRef.current) {
+      try {
+        await videoTrackRef.current.applyConstraints({
+          advanced: [{ zoom: newZoom } as any]
+        });
+        setZoom(newZoom);
+      } catch (err) {
+        console.error("Erro ao aplicar zoom:", err);
+      }
+    }
+  };
+
+  const requestFocus = async () => {
+    if (videoTrackRef.current) {
+      try {
+        const capabilities = videoTrackRef.current.getCapabilities() as any;
+        if (capabilities.focusMode) {
+          // Tentar continuous primeiro se suportado, senão single-shot
+          const mode = capabilities.focusMode.includes('continuous') ? 'continuous' : 
+                       capabilities.focusMode.includes('single-shot') ? 'single-shot' : null;
+          
+          if (mode) {
+            await videoTrackRef.current.applyConstraints({
+              advanced: [{ focusMode: mode } as any]
+            });
+            toast.info(`Foco solicitado (${mode})`);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao solicitar foco:", err);
+      }
+    }
+  };
+
   const captureDiagnosticFrame = async () => {
     if (!videoRef.current) return;
     
