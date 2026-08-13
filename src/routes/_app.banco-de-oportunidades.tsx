@@ -399,8 +399,8 @@ function BancoDeOportunidades() {
       {/* DIALOG DE CADASTRO/EDIÇÃO */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[95vh] overflow-y-auto p-0">
-          <div className="p-6">
           <form onSubmit={handleSave}>
+            <div className="p-6">
             <DialogHeader>
               <DialogTitle>{editing?.id ? 'Editar Oportunidade' : 'Nova Oportunidade'}</DialogTitle>
               <DialogDescription>
@@ -540,7 +540,7 @@ function BancoDeOportunidades() {
                 {submitting ? 'Salvando...' : 'Salvar Oportunidade'}
               </Button>
             </DialogFooter>
-          </div>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
