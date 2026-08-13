@@ -88,8 +88,10 @@ function BancoDeOportunidades() {
       porLoja: {} as Record<string, number>
     };
     oportunidades.forEach(o => {
-      if (o.status === 'Disponível') s.disponiveis++;
-      if (o.prioridade === 'Alta') s.alta++;
+      if (o.status === 'Disponível') {
+        s.disponiveis++;
+        if (o.prioridade === 'Alta') s.alta++;
+      }
       if (o.status === 'Reservada') s.reservadas++;
       if (o.status === 'Utilizada') s.utilizadas++;
       s.porLoja[o.loja] = (s.porLoja[o.loja] ?? 0) + 1;
