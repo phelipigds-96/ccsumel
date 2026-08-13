@@ -1139,7 +1139,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
 
 
-        <div className="grid gap-4 py-2 md:grid-cols-2">
+        <div className="grid gap-4 py-2 grid-cols-1 md:grid-cols-2">
           <Field label="Código interno"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} /></Field>
           <Field label="Código de barras (GTIN)"><Input value={oferta.gtin} onChange={(e) => upd("gtin", e.target.value)} /></Field>
           <Field label="Descrição" className="md:col-span-2"><Input value={oferta.descricao} onChange={(e) => upd("descricao", e.target.value)} /></Field>
@@ -1206,8 +1206,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
           </div>
 
 
-          <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
-          <Field label="Data Final"><Input type="date" value={oferta.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
+          <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} className="w-full" /></Field>
+          <Field label="Data Final"><Input type="date" value={oferta.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} className="w-full" /></Field>
           <Field label="Filiais (herdadas da campanha — desmarque para excluir alguma)" className="md:col-span-2">
             {filiaisPermitidas.length === 0 ? (
               <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
@@ -1297,7 +1297,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
 function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`grid gap-1.5 ${className}`}>
+    <div className={`grid gap-1.5 w-full ${className}`}>
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
     </div>

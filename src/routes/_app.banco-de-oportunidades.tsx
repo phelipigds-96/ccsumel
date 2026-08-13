@@ -407,7 +407,7 @@ function BancoDeOportunidades() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>Identificar Produto (GTIN/Código)</Label>
                   <div className="flex gap-2">
@@ -452,7 +452,7 @@ function BancoDeOportunidades() {
 
               {editing?.descricao && (
                 <>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Loja</Label>
                       <Select value={editing.loja} onValueChange={(v) => setEditing({...editing, loja: v})}>
@@ -477,7 +477,7 @@ function BancoDeOportunidades() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Motivo da Oportunidade</Label>
                       <Select value={editing.motivo} onValueChange={(v) => setEditing({...editing, motivo: v as any})}>
@@ -495,7 +495,7 @@ function BancoDeOportunidades() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Validade (Opcional)</Label>
                       <Input 
