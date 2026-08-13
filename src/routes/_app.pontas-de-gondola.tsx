@@ -4,10 +4,10 @@ import { PageHeader, EmptyModule } from "@/components/page-header";
 export const Route = createFileRoute("/_app/pontas-de-gondola")({
   head: () => ({
     meta: [
-      { title: "Pontas de Gôndola — SGMC" },
-      { name: "description", content: "Gestão de pontas de gôndola." },
-      { property: "og:title", content: "Pontas de Gôndola — SGMC" },
-      { property: "og:description", content: "Gestão de pontas de gôndola." },
+      { title: "Pontas de Gôndola — Central de Campanhas Sumel" },
+      { name: "description", content: "Gestão de pontas de gôndola na Central de Campanhas Sumel." },
+      { property: "og:title", content: "Pontas de Gôndola — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Gestão de pontas de gôndola na Central de Campanhas Sumel." },
     ],
   }),
   component: () => (
