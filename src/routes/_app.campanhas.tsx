@@ -840,7 +840,8 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto p-0">
+        <div className="p-6">
         <DialogHeader>
           <DialogTitle>{campanha.nome ? "Editar Campanha" : "Nova Campanha"}</DialogTitle>
           <DialogDescription>Defina o período, o status e os materiais de apoio da campanha.</DialogDescription>
@@ -909,6 +910,7 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={onSave} className="bg-primary hover:bg-primary/90">Salvar</Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -1045,8 +1047,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
       .filter(o => o.id !== oferta.id
         && ((cod && (o.codigo || "").trim().toLowerCase() === cod) || (gtin && (o.gtin || "").trim() === gtin)))
       .map(o => ({ o, c: mapa.get(o.campanhaId) }))
-      .filter(x => !!x.c)
-      .sort((a, b) => (b.c!.dataInicial || "").localeCompare(a.c!.dataInicial || ""));
+      .filter((x): x is { o: Oferta; c: Campanha } => !!x.c)
+      .sort((a, b) => (b.c.dataInicial || "").localeCompare(a.c.dataInicial || ""));
   }, [oferta?.id, oferta?.codigo, oferta?.gtin, todasOfertas, todasCampanhas]);
 
 
