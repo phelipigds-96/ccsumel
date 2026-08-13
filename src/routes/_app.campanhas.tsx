@@ -1103,7 +1103,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto p-0">
+        <div className="p-6">
         <DialogHeader>
           <DialogTitle>{oferta.codigo ? "Editar Oferta" : "Nova Oferta"}</DialogTitle>
           <DialogDescription>Informe o código interno ou de barras para preencher automaticamente.</DialogDescription>
