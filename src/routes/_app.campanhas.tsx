@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
-  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered, Share2, Target, 
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered, Share2, Target, Camera
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -91,6 +91,7 @@ import {
   listOportunidades, updateOportunidadeStatus, 
   type Oportunidade, type OportunidadePrioridade, type OportunidadeStatus 
 } from "@/lib/oportunidades";
+import { BarcodeScanner } from "@/components/barcode-scanner";
 
 
 
@@ -1002,6 +1003,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 }) {
   const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const buscaRef = useRef<HTMLInputElement>(null);
   const promoRef = useRef<HTMLInputElement>(null);
   const { campanhas: todasCampanhas, ofertas: todasOfertas } = useCampanhasStore();
@@ -1091,11 +1093,29 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
               placeholder="Bipe o código de barras ou digite o código interno e pressione Enter"
               inputMode="numeric"
             />
+            <Button 
+              type="button" 
+              variant="secondary" 
+              size="icon" 
+              onClick={() => setScannerOpen(true)}
+              title="Ler código de barras"
+            >
+              <Camera className="h-4 w-4" />
+            </Button>
             <Button type="button" onClick={() => lookupProduto()} disabled={lookingUp} className="bg-primary hover:bg-primary/90">
               {lookingUp ? "Buscando..." : "Buscar"}
             </Button>
           </div>
         </div>
+
+        <BarcodeScanner 
+          open={scannerOpen}
+          onOpenChange={setScannerOpen}
+          onResult={(code) => {
+            setBusca(code);
+            lookupProduto(code);
+          }}
+        />
 
         {historico.length > 0 && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 mb-1">

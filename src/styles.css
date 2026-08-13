@@ -2,6 +2,15 @@
 @source "../src";
 @import "tw-animate-css";
 
+@utility scan {
+  animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(150px); }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
