@@ -114,8 +114,17 @@ function CentralDeOfertas() {
       return exists ? prev.map((p) => (p.id === o.id ? o : p)) : [o, ...prev];
     });
 
-  const deleteOferta = (id: string) =>
+  const deleteOferta = async (id: string) => {
+    const o = ofertas.find(off => off.id === id);
+    if (o) {
+      // Se era de uma oportunidade, volta para Disponível
+      const { data } = await supabase.from('oportunidades' as any).select('id').eq('gtin', o.gtin).eq('campanha_id', o.campanhaId).maybeSingle();
+      if (data) {
+        await updateOportunidadeStatus(data.id, 'Disponível', null);
+      }
+    }
     campanhasStore.setOfertas((prev) => prev.filter((p) => p.id !== id));
+  };
 
   const saveCampanha = (c: Campanha) =>
     campanhasStore.setCampanhas((prev) => {
