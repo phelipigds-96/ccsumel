@@ -222,7 +222,7 @@ function BancoDeOportunidades() {
         )}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-amber-50/30 border-amber-100">
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-xs font-medium uppercase text-amber-600">Disponíveis</CardTitle>
@@ -268,7 +268,7 @@ function BancoDeOportunidades() {
       </div>
 
       <div className="rounded-xl border bg-card p-4">
-        <div className="flex flex-col md:flex-row gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -278,9 +278,9 @@ function BancoDeOportunidades() {
               className="pl-9" 
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+          <div className="flex flex-wrap gap-2 pb-1 sm:pb-0">
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todas">Todos Status</SelectItem>
                 <SelectItem value="Disponível">Disponível</SelectItem>
@@ -290,7 +290,7 @@ function BancoDeOportunidades() {
               </SelectContent>
             </Select>
             <Select value={filterPrioridade} onValueChange={setFilterPrioridade}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Prioridade" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todas">Todas Prioridades</SelectItem>
                 <SelectItem value="Alta">Alta</SelectItem>
@@ -299,7 +299,7 @@ function BancoDeOportunidades() {
               </SelectContent>
             </Select>
             <Select value={filterLoja} onValueChange={setFilterLoja}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Loja" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Loja" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todas">Todas Lojas</SelectItem>
                 {LOJAS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}

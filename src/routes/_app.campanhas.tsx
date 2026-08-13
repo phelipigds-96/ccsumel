@@ -330,7 +330,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         }
       />
 
-      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 md:grid-cols-[1fr_200px]">
+      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 sm:grid-cols-[1fr_200px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar campanha..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -361,7 +361,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                 </h2>
                 <span className="text-xs text-muted-foreground">({futuras.length})</span>
               </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {futuras.map((c) => renderCard(c, { destaque: true }))}
               </div>
             </section>
@@ -376,7 +376,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                 </h2>
                 <span className="text-xs text-muted-foreground">({ativas.length})</span>
               </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {ativas.map((c) => renderCard(c))}
               </div>
             </section>
@@ -391,7 +391,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                 </h2>
                 <span className="text-xs text-muted-foreground">({rascunhos.length})</span>
               </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {rascunhos.map((c) => renderCard(c))}
               </div>
             </section>

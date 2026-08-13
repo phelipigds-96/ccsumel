@@ -22,7 +22,7 @@ function AppLayout() {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
         <SidebarInset className="min-w-0">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-border/70 bg-background/70 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sm:px-6">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-2 border-b border-border/70 bg-background/70 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sm:gap-3 sm:px-6">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <div className="h-6 w-px bg-border" />
             <div className="flex min-w-0 items-center gap-2">
@@ -31,11 +31,11 @@ function AppLayout() {
                 Central de campanhas Sumel
               </span>
             </div>
-            <div className="ml-auto flex shrink-0 items-center gap-2 rounded-full border border-border/70 bg-card/70 py-1 pl-1 pr-3 shadow-sm">
+            <div className="ml-auto flex shrink-0 items-center gap-2 rounded-full border border-border/70 bg-card/70 py-1 pl-1 pr-2 shadow-sm sm:pr-3">
               <span className="grid h-7 w-7 place-items-center rounded-full bg-navy text-[11px] font-bold uppercase text-navy-foreground">
                 {(user?.name ?? user?.username ?? "?").charAt(0)}
               </span>
-              <span className="max-w-[140px] truncate text-xs font-medium text-muted-foreground">
+              <span className="hidden sm:inline-block max-w-[140px] truncate text-xs font-medium text-muted-foreground">
                 {user?.username}
               </span>
             </div>
