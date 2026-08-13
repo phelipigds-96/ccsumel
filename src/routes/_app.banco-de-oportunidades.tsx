@@ -185,19 +185,29 @@ function BancoDeOportunidades() {
         title="Banco de Oportunidades" 
         description="Gerencie oportunidades comerciais encontradas nas lojas."
         actions={!readOnly && (
-          <Button onClick={() => {
-            setEditing({
-              prioridade: 'Média',
-              motivo: 'Oportunidade comercial',
-              loja: LOJAS[0],
-              data_coleta: new Date().toISOString().split('T')[0],
-              status: 'Disponível',
-              quantidade_aproximada: 0
-            });
-            setDialogOpen(true);
-          }} className="bg-primary hover:bg-primary/90">
-            <Plus className="mr-2 h-4 w-4" /> Nova Oportunidade
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => {
+              // Limpa busca/filtros
+              setSearch("");
+              setFilterStatus("Todas");
+              setFilterPrioridade("Todas");
+            }} className="border-border/70 text-muted-foreground hover:text-navy">
+              <Filter className="mr-2 h-4 w-4" /> Todos
+            </Button>
+            <Button onClick={() => {
+              setEditing({
+                prioridade: 'Média',
+                motivo: 'Oportunidade comercial',
+                loja: LOJAS[0],
+                data_coleta: new Date().toISOString().split('T')[0],
+                status: 'Disponível',
+                quantidade_aproximada: 0
+              });
+              setDialogOpen(true);
+            }} className="bg-primary hover:bg-primary/90">
+              <Plus className="mr-2 h-4 w-4" /> Nova Oportunidade
+            </Button>
+          </div>
         )}
       />
 
