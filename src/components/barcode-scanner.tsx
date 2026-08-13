@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import { Camera, X, Check, RefreshCw, AlertCircle } from "lucide-react";
+import { Camera, X, Check, RefreshCw, AlertCircle, Zap, ZapOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,6 +10,44 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+
+// Check digit validation for EAN-13, EAN-8, UPC-A
+function validateBarcode(code: string): boolean {
+  if (!/^\d+$/.test(code)) return false;
+  
+  // EAN-13
+  if (code.length === 13) {
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+      sum += parseInt(code[i]) * (i % 2 === 0 ? 1 : 3);
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    return checkDigit === parseInt(code[12]);
+  }
+  
+  // EAN-8
+  if (code.length === 8) {
+    let sum = 0;
+    for (let i = 0; i < 7; i++) {
+      sum += parseInt(code[i]) * (i % 2 === 0 ? 3 : 1);
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    return checkDigit === parseInt(code[7]);
+  }
+
+  // UPC-A (12 digits)
+  if (code.length === 12) {
+    let sum = 0;
+    for (let i = 0; i < 11; i++) {
+      sum += parseInt(code[i]) * (i % 2 === 0 ? 3 : 1);
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    return checkDigit === parseInt(code[11]);
+  }
+
+  // Fallback for other formats (CODE_128, etc)
+  return code.length >= 6;
+}
 
 interface BarcodeScannerProps {
   open: boolean;
