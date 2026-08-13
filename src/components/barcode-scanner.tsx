@@ -63,6 +63,11 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
         ],
+        videoConstraints: {
+          facingMode: "environment",
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 }
+        }
       };
 
       setIsScanning(true);
