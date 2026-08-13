@@ -61,10 +61,15 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const [error, setError] = useState<string | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
+  const [diagnosticMode, setDiagnosticMode] = useState(false);
+  const [diagInfo, setDiagInfo] = useState<any>(null);
+  const [lastFrame, setLastFrame] = useState<string | null>(null);
+  
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const lastResultRef = useRef<{ code: string; count: number }>({ code: "", count: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoDeviceIdRef = useRef<string | null>(null);
 
   const stopScanner = async () => {
