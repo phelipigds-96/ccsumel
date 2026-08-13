@@ -438,6 +438,7 @@ interface DetalheProps {
   onBack: () => void;
   onSaveOferta: (o: Oferta) => void;
   onDeleteOferta: (id: string) => void;
+  onAddFromOportunidades?: (oferta: Oferta, oportunidadeId: string) => void;
 }
 
 function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOferta }: DetalheProps) {
