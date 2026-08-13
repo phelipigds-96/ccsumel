@@ -68,7 +68,11 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       setIsScanning(true);
 
       await scannerRef.current.start(
-        { facingMode: "environment" },
+        { 
+          facingMode: "environment",
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 }
+        },
         config,
         (decodedText) => {
           onResult(decodedText);
@@ -94,8 +98,8 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
   useEffect(() => {
     if (open) {
-      // Pequeno delay para garantir que o elemento DOM está pronto
-      const timer = setTimeout(startScanner, 300);
+      // Pequeno delay para garantir que o elemento DOM está pronto e o Dialog terminou a transição
+      const timer = setTimeout(startScanner, 500);
       return () => {
         clearTimeout(timer);
         stopScanner();
@@ -107,7 +111,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-black border-none">
+      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-black border-none z-[100]">
         <DialogHeader className="p-4 bg-navy text-white flex-row items-center justify-between space-y-0">
           <DialogTitle className="text-lg font-medium flex items-center gap-2">
             <Camera className="h-5 w-5" />
@@ -124,7 +128,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
         </DialogHeader>
 
         <div className="relative aspect-square w-full bg-black flex items-center justify-center">
-          <div id={regionId} className="w-full h-full" />
+          <div id={regionId} className="w-full h-full [&>video]:object-cover" />
           
           {!isScanning && !error && !isDone && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white p-6 text-center">
