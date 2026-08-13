@@ -238,7 +238,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
               const video = videoRef.current;
               const stream = video.srcObject as MediaStream;
               const track = stream?.getVideoTracks()[0];
-              const settings = track?.getSettings();
+              const settings = track?.getSettings() as any;
               
               const capabilities = track?.getCapabilities() as any;
               
@@ -290,6 +290,11 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
             const capabilities = track.getCapabilities() as any;
             setHasTorch(!!capabilities.torch);
             
+            if (capabilities.zoom) {
+              setMaxZoom(capabilities.zoom.max);
+              setZoom(capabilities.zoom.min);
+            }
+
             if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
               await track.applyConstraints({
                 advanced: [{ focusMode: 'continuous' } as any]
