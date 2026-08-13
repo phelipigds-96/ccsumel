@@ -99,6 +99,39 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     }
   };
 
+  const captureDiagnosticFrame = async () => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas');
+    }
+    
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    setLastFrame(dataUrl);
+    
+    // Testar ZXing neste frame específico
+    if (codeReaderRef.current) {
+      try {
+        const result = await codeReaderRef.current.decodeFromCanvas(canvas);
+        if (result) {
+          toast.success("ZXing leu o frame: " + result.getText());
+          setDiagInfo((prev: any) => ({ ...prev, lastFrameResult: `Sucesso: ${result.getText()} (${result.getBarcodeFormat()})` }));
+        }
+      } catch (err) {
+        setDiagInfo((prev: any) => ({ ...prev, lastFrameResult: "Não identificado no frame estático" }));
+      }
+    }
+  };
+
   const startScanner = async () => {
     setError(null);
     setIsDone(false);
@@ -109,13 +142,15 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       
       if (!codeReaderRef.current) {
         const hints = new Map();
+        // Durante diagnóstico, podemos expandir, mas por padrão mantemos os solicitados
         const formats = [
           BarcodeFormat.EAN_13,
           BarcodeFormat.EAN_8,
           BarcodeFormat.UPC_A,
           BarcodeFormat.UPC_E,
           BarcodeFormat.CODE_128,
-          BarcodeFormat.ITF
+          BarcodeFormat.ITF,
+          BarcodeFormat.QR_CODE
         ];
         hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
         hints.set(DecodeHintType.ASSUME_GS1, true);
