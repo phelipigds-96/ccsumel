@@ -61,10 +61,15 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const [error, setError] = useState<string | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
+  const [diagnosticMode, setDiagnosticMode] = useState(false);
+  const [diagInfo, setDiagInfo] = useState<any>(null);
+  const [lastFrame, setLastFrame] = useState<string | null>(null);
+  
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const lastResultRef = useRef<{ code: string; count: number }>({ code: "", count: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoDeviceIdRef = useRef<string | null>(null);
 
   const stopScanner = async () => {
@@ -94,6 +99,39 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     }
   };
 
+  const captureDiagnosticFrame = async () => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas');
+    }
+    
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    setLastFrame(dataUrl);
+    
+    // Testar ZXing neste frame específico
+    if (codeReaderRef.current) {
+      try {
+        const result = await codeReaderRef.current.decodeFromImageElement(dataUrl as any);
+        if (result) {
+          toast.success("ZXing leu o frame: " + result.getText());
+          setDiagInfo((prev: any) => ({ ...prev, lastFrameResult: `Sucesso: ${result.getText()} (${result.getBarcodeFormat()})` }));
+        }
+      } catch (err) {
+        setDiagInfo((prev: any) => ({ ...prev, lastFrameResult: "Não identificado no frame estático" }));
+      }
+    }
+  };
+
   const startScanner = async () => {
     setError(null);
     setIsDone(false);
@@ -102,26 +140,32 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     try {
       await stopScanner();
       
-      if (!codeReaderRef.current) {
-        const hints = new Map();
-        const formats = [
-          BarcodeFormat.EAN_13,
-          BarcodeFormat.EAN_8,
-          BarcodeFormat.UPC_A,
-          BarcodeFormat.UPC_E,
-          BarcodeFormat.CODE_128,
-          BarcodeFormat.ITF
-        ];
-        hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
-        hints.set(DecodeHintType.ASSUME_GS1, true);
-        hints.set(DecodeHintType.TRY_HARDER, true);
+      const hints = new Map();
+      const formats = [
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.ITF,
+        BarcodeFormat.QR_CODE
+      ];
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+      hints.set(DecodeHintType.ASSUME_GS1, true);
+      hints.set(DecodeHintType.TRY_HARDER, true);
 
-        codeReaderRef.current = new BrowserMultiFormatReader(hints);
+      codeReaderRef.current = new BrowserMultiFormatReader(hints);
+
+      // Resetar o leitor com configurações de diagnóstico se necessário
+      if (diagnosticMode) {
+        const diagHints = new Map();
+        diagHints.set(DecodeHintType.TRY_HARDER, true);
+        diagHints.set(DecodeHintType.ASSUME_GS1, true);
+        codeReaderRef.current = new BrowserMultiFormatReader(diagHints);
       }
 
       const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
       
-      // Priorizar câmera traseira
       let selectedDeviceId = videoInputDevices[0]?.deviceId;
       const backCamera = videoInputDevices.find(device => 
         device.label.toLowerCase().includes('back') || 
@@ -132,14 +176,12 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       if (backCamera) {
         selectedDeviceId = backCamera.deviceId;
       } else if (videoInputDevices.length > 1) {
-        // Se não encontrar pelo nome, tenta a última da lista (geralmente a traseira principal)
         selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
       }
 
       videoDeviceIdRef.current = selectedDeviceId;
       setIsScanning(true);
 
-      // Constraints para alta performance e foco
       const constraints: MediaStreamConstraints = {
         video: {
           deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
@@ -155,10 +197,23 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           constraints,
           videoRef.current,
           (result, err) => {
+            if (videoRef.current && isScanning && !diagInfo) {
+              const video = videoRef.current;
+              const stream = video.srcObject as MediaStream;
+              const track = stream?.getVideoTracks()[0];
+              const settings = track?.getSettings();
+              
+              setDiagInfo({
+                res: `${video.videoWidth}x${video.videoHeight}`,
+                label: track?.label || 'N/A',
+                facing: settings?.facingMode || 'unknown',
+                deviceId: settings?.deviceId?.slice(0, 8) + '...'
+              });
+            }
+
             if (result) {
               const decodedText = result.getText();
               
-              // Validação multi-frame rápida para ZXing (2 frames idênticos costumam bastar com ZXing)
               if (decodedText === lastResultRef.current.code) {
                 lastResultRef.current.count++;
               } else {
@@ -166,7 +221,9 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
                 lastResultRef.current.count = 1;
               }
 
-              if (lastResultRef.current.count >= 2) {
+              const threshold = diagnosticMode ? 1 : 2;
+
+              if (lastResultRef.current.count >= threshold) {
                 if (validateBarcode(decodedText)) {
                   onResult(decodedText);
                   setIsDone(true);
@@ -181,7 +238,6 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           }
         );
 
-        // Acessar a track para lanterna e capabilities
         const stream = videoRef.current.srcObject as MediaStream;
         if (stream) {
           const track = stream.getVideoTracks()[0];
@@ -191,7 +247,6 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
             const capabilities = track.getCapabilities() as any;
             setHasTorch(!!capabilities.torch);
             
-            // Tentar aplicar foco contínuo se suportado
             if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
               await track.applyConstraints({
                 advanced: [{ focusMode: 'continuous' } as any]
@@ -217,7 +272,6 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (open) {
-      // Pequeno delay para garantir que o elemento DOM está pronto e o Dialog terminou a transição
       timer = setTimeout(startScanner, 600);
     }
 
@@ -225,7 +279,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       if (timer) clearTimeout(timer);
       stopScanner();
     };
-  }, [open]);
+  }, [open, diagnosticMode]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -234,6 +288,14 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           <DialogTitle className="text-lg font-medium flex items-center gap-2">
             <Camera className="h-5 w-5" />
             Leitor de Código
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="ml-2 text-[10px] h-6 px-2 border border-white/20"
+              onClick={() => setDiagnosticMode(!diagnosticMode)}
+            >
+              {diagnosticMode ? "Sair Diag" : "Diag"}
+            </Button>
           </DialogTitle>
           <Button 
             variant="ghost" 
@@ -252,6 +314,15 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
             playsInline
           />
           
+          {diagnosticMode && diagInfo && (
+            <div className="absolute top-2 left-2 bg-black/70 text-[10px] text-white p-2 rounded z-50 font-mono pointer-events-none">
+              <p>Res: {diagInfo.res}</p>
+              <p>Cam: {diagInfo.label}</p>
+              <p>Facing: {diagInfo.facing}</p>
+              <p>Result: {diagInfo.lastFrameResult || '...'}</p>
+            </div>
+          )}
+
           {!isScanning && !error && !isDone && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white p-6 text-center">
               <div className="animate-pulse flex flex-col items-center gap-2">
@@ -278,12 +349,10 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
               <div className="w-[85%] h-[35%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_15px_rgba(200,16,46,0.8)] animate-scan" />
                 
-                {/* LINHA DE LEITURA visual */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-[90%] h-[1px] bg-red-500/50" />
                 </div>
 
-                {/* Cantoneiras */}
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-sm" />
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-sm" />
                 <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-sm" />
@@ -298,6 +367,20 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
                   Mantenha o celular estável
                 </p>
               </div>
+
+              {diagnosticMode && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-4 pointer-events-auto"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    captureDiagnosticFrame();
+                  }}
+                >
+                  📸 Capturar Frame
+                </Button>
+              )}
 
               {hasTorch && (
                 <Button
@@ -318,8 +401,24 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
           {isDone && (
             <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/20 backdrop-blur-sm transition-all animate-in fade-in zoom-in">
-              <div className="bg-white rounded-full p-4 shadow-xl">
-                <Check className="h-12 w-12 text-emerald-600" />
+              <div className="bg-white rounded-full p-4 shadow-xl text-center">
+                <Check className="h-12 w-12 text-emerald-600 mx-auto" />
+                {diagnosticMode && lastResultRef.current.code && (
+                  <p className="mt-2 text-xs font-bold text-emerald-600 font-mono">
+                    {lastResultRef.current.code}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {lastFrame && diagnosticMode && (
+            <div className="absolute inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4">
+              <p className="text-white text-xs mb-2">Frame Capturado (Diagnóstico)</p>
+              <img src={lastFrame} className="max-w-full max-h-[70%] border border-white/20" alt="Diag" />
+              <div className="flex gap-2 mt-4">
+                <Button variant="secondary" onClick={() => setLastFrame(null)}>Fechar</Button>
+                <Button variant="default" onClick={captureDiagnosticFrame}>Nova Captura</Button>
               </div>
             </div>
           )}
