@@ -33,7 +33,8 @@ import {
   listOportunidades, saveOportunidade, deleteOportunidade, 
   type Oportunidade, type OportunidadePrioridade, type OportunidadeMotivo, type OportunidadeStatus 
 } from "@/lib/oportunidades";
-import { useCampanhasStore, brl, fmtDate } from "@/lib/campanhas-store";
+import { useCampanhasStore } from "@/lib/campanhas-store";
+import { brl, fmtDate } from "@/components/campanha-quick-view";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/banco-de-oportunidades")({
