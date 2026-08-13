@@ -94,8 +94,8 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
   useEffect(() => {
     if (open) {
-      // Pequeno delay para garantir que o elemento DOM está pronto
-      const timer = setTimeout(startScanner, 300);
+      // Pequeno delay para garantir que o elemento DOM está pronto e o Dialog terminou a transição
+      const timer = setTimeout(startScanner, 500);
       return () => {
         clearTimeout(timer);
         stopScanner();
@@ -107,7 +107,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-black border-none">
+      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-black border-none z-[100]">
         <DialogHeader className="p-4 bg-navy text-white flex-row items-center justify-between space-y-0">
           <DialogTitle className="text-lg font-medium flex items-center gap-2">
             <Camera className="h-5 w-5" />
