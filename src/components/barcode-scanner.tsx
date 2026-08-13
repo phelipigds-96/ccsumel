@@ -240,10 +240,16 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
               const track = stream?.getVideoTracks()[0];
               const settings = track?.getSettings();
               
+              const capabilities = track?.getCapabilities() as any;
+              
               setDiagInfo({
                 res: `${video.videoWidth}x${video.videoHeight}`,
                 label: track?.label || 'N/A',
                 facing: settings?.facingMode || 'unknown',
+                focusMode: settings?.focusMode || 'N/A',
+                focusCapabilities: capabilities?.focusMode?.join(', ') || 'none',
+                zoomCapabilities: capabilities?.zoom ? `${capabilities.zoom.min}-${capabilities.zoom.max}` : 'none',
+                torch: capabilities?.torch ? 'Yes' : 'No',
                 deviceId: settings?.deviceId?.slice(0, 8) + '...'
               });
             }
