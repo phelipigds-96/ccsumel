@@ -87,6 +87,10 @@ import {
 } from "@/components/campanha-quick-view";
 import { CresceVendasDialog } from "@/components/crescevendas-export";
 import { DescricaoPrecoDialog } from "@/components/descricao-preco-export";
+import { 
+  listOportunidades, updateOportunidadeStatus, 
+  type Oportunidade, type OportunidadePrioridade, type OportunidadeStatus 
+} from "@/lib/oportunidades";
 
 
 
