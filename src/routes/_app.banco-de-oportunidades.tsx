@@ -35,7 +35,7 @@ import {
 } from "@/lib/oportunidades";
 import { useCampanhasStore } from "@/lib/campanhas-store";
 import { brl, fmtDate } from "@/components/campanha-quick-view";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_app/banco-de-oportunidades")({
   component: BancoDeOportunidades,
