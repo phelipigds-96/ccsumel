@@ -64,6 +64,8 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const [diagnosticMode, setDiagnosticMode] = useState(false);
   const [diagInfo, setDiagInfo] = useState<any>(null);
   const [lastFrame, setLastFrame] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [maxZoom, setMaxZoom] = useState(1);
   
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
