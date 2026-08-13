@@ -1318,6 +1318,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={onSave} className="bg-primary hover:bg-primary/90">Salvar</Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
