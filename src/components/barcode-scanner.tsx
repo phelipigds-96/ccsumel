@@ -288,20 +288,34 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           
           try {
             const capabilities = track.getCapabilities() as any;
+            const settings = track.getSettings() as any;
             setHasTorch(!!capabilities.torch);
             
+            let initialZoom = 1;
             if (capabilities.zoom) {
               setMaxZoom(capabilities.zoom.max);
-              setZoom(capabilities.zoom.min);
+              // Definir um zoom inicial moderado (2x) se suportado
+              initialZoom = Math.min(2, capabilities.zoom.max);
+              setZoom(initialZoom);
+            }
+
+            const constraints: any = {
+              advanced: []
+            };
+
+            if (initialZoom > 1) {
+              constraints.advanced.push({ zoom: initialZoom });
             }
 
             if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-              await track.applyConstraints({
-                advanced: [{ focusMode: 'continuous' } as any]
-              });
+              constraints.advanced.push({ focusMode: 'continuous' });
+            }
+
+            if (constraints.advanced.length > 0) {
+              await track.applyConstraints(constraints);
             }
           } catch (e) {
-            console.warn("Capabilities não suportadas neste dispositivo", e);
+            console.warn("Capabilities ou constraints não suportadas", e);
           }
         }
       }
@@ -363,14 +377,18 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           />
           
           {diagnosticMode && diagInfo && (
-            <div className="absolute top-2 left-2 bg-black/70 text-[9px] text-white p-2 rounded z-50 font-mono pointer-events-none max-w-[200px]">
-              <p>Res: {diagInfo.res}</p>
-              <p>Cam: {diagInfo.label}</p>
-              <p>Facing: {diagInfo.facing}</p>
-              <p>Focus: {diagInfo.focusMode} ({diagInfo.focusCapabilities})</p>
-              <p>Zoom: {diagInfo.zoomCapabilities}</p>
-              <p>Torch: {diagInfo.torch}</p>
-              <p>Result: {diagInfo.lastFrameResult || '...'}</p>
+            <div className="absolute top-2 left-2 bg-black/80 text-[10px] text-white p-3 rounded-lg z-50 font-mono pointer-events-none max-w-[220px] border border-white/20 shadow-xl">
+              <p className="font-bold border-b border-white/20 mb-1 pb-1">Diagnóstico</p>
+              <p>Res real: {diagInfo.res}</p>
+              <p>Zoom atual: {zoom.toFixed(1)}x</p>
+              <p>FocusMode: {diagInfo.focusMode}</p>
+              <p>Suportados: {diagInfo.focusCapabilities}</p>
+              <p>Câmera: {diagInfo.label}</p>
+              {diagInfo.focusMode === 'continuous' && (
+                <p className="mt-1 text-yellow-400 leading-tight">
+                  * Autofoco reportado, mas se estiver desfocado, afaste o celular.
+                </p>
+              )}
             </div>
           )}
 
@@ -403,7 +421,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
                 requestFocus();
               }}
             >
-              <div className="w-[85%] h-[35%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
+              <div className="w-[90%] h-[40%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.6)] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_15px_rgba(200,16,46,0.8)] animate-scan" />
                 
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -416,12 +434,15 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-sm" />
               </div>
 
-              <div className="mt-8 flex flex-col items-center gap-1 text-white text-center pointer-events-none">
+              <div className="mt-8 flex flex-col items-center gap-2 text-white text-center pointer-events-none px-4">
                 <p className="text-sm font-bold uppercase tracking-wider drop-shadow-lg">
-                  Posicione o código dentro da área
+                  Mantenha o celular a 30–50 cm do produto
                 </p>
-                <p className="text-[10px] opacity-80 uppercase tracking-widest">
-                  🎯 Toque para focar
+                <p className="text-xs opacity-90 font-medium">
+                  Ajuste o zoom para enquadrar o código
+                </p>
+                <p className="text-[10px] opacity-70 uppercase tracking-widest mt-1">
+                  🎯 Toque para focar se necessário
                 </p>
               </div>
 
