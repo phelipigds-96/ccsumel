@@ -52,13 +52,22 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       }
 
       const config = {
-        fps: 25,
+        fps: 30,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
           const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const boxSize = Math.floor(minEdge * 0.7);
-          return { width: boxSize, height: Math.floor(boxSize * 0.6) };
+          // Reduzimos o qrbox para focar melhor em códigos de barras menores/densos
+          const boxWidth = Math.floor(viewfinderWidth * 0.85);
+          const boxHeight = Math.floor(viewfinderHeight * 0.3);
+          return { width: boxWidth, height: boxHeight };
         },
         aspectRatio: 1.0,
+        disableFlip: false,
+        videoConstraints: {
+          facingMode: "environment",
+          focusMode: "continuous",
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 },
+        },
         experimentalFeatures: {
           useBarCodeDetectorIfSupported: true
         },
@@ -69,6 +78,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.ITF,
         ],
       };
 
