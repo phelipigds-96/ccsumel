@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { 
   Plus, Search, Package, MapPin, Calendar, AlertCircle, 
   ArrowRight, Filter, MoreHorizontal, History, 
   CheckCircle2, Clock, Archive, Tag, Trash2, Pencil,
-  ChevronDown
+  ChevronDown, Camera
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
@@ -36,6 +36,7 @@ import {
 import { useCampanhasStore } from "@/lib/campanhas-store";
 import { brl, fmtDate } from "@/components/campanha-quick-view";
 import { useAuth } from "@/lib/auth";
+import { BarcodeScanner } from "@/components/barcode-scanner";
 
 export const Route = createFileRoute("/_app/banco-de-oportunidades")({
   head: () => ({
@@ -69,6 +70,8 @@ function BancoDeOportunidades() {
   const [editing, setEditing] = useState<Partial<Oportunidade> | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState<Oportunidade | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const lookupInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     try {
@@ -409,6 +412,7 @@ function BancoDeOportunidades() {
                   <Label>Identificar Produto (GTIN/Código)</Label>
                   <div className="flex gap-2">
                     <Input 
+                      ref={lookupInputRef}
                       placeholder="Escanear ou digitar..." 
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -417,7 +421,25 @@ function BancoDeOportunidades() {
                         }
                       }}
                     />
-                    <Button type="button" variant="secondary" size="icon">
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      size="icon"
+                      onClick={() => setScannerOpen(true)}
+                      title="Ler código de barras"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      size="icon"
+                      onClick={() => {
+                        if (lookupInputRef.current) {
+                          handleProductLookup(lookupInputRef.current.value);
+                        }
+                      }}
+                    >
                       <Search className="h-4 w-4" />
                     </Button>
                   </div>
@@ -572,6 +594,17 @@ function BancoDeOportunidades() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BarcodeScanner 
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onResult={(code) => {
+          if (lookupInputRef.current) {
+            lookupInputRef.current.value = code;
+          }
+          handleProductLookup(code);
+        }}
+      />
     </div>
   );
 }
