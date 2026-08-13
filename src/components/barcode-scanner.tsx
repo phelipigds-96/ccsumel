@@ -374,6 +374,20 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
                 </p>
               </div>
 
+              {diagnosticMode && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-4 pointer-events-auto"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    captureDiagnosticFrame();
+                  }}
+                >
+                  📸 Capturar Frame
+                </Button>
+              )}
+
               {hasTorch && (
                 <Button
                   variant="outline"
