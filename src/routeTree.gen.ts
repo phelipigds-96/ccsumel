@@ -23,6 +23,7 @@ import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoe
 import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalogo-de-produtos'
 import { Route as AppCampanhasEncerradasRouteImport } from './routes/_app.campanhas-encerradas'
 import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
+import { Route as AppBancoDeOportunidadesRouteImport } from './routes/_app.banco-de-oportunidades'
 import { Route as AppSellOutIndexRouteImport } from './routes/_app.sell-out.index'
 import { Route as AppSellOutAcertosRouteImport } from './routes/_app.sell-out.acertos'
 
@@ -95,6 +96,11 @@ const AppCampanhasRoute = AppCampanhasRouteImport.update({
   path: '/campanhas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBancoDeOportunidadesRoute = AppBancoDeOportunidadesRouteImport.update({
+  id: '/banco-de-oportunidades',
+  path: '/banco-de-oportunidades',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSellOutIndexRoute = AppSellOutIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -109,6 +115,7 @@ const AppSellOutAcertosRoute = AppSellOutAcertosRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/campanhas': typeof AppCampanhasRoute
   '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/campanhas': typeof AppCampanhasRoute
   '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/_app/campanhas': typeof AppCampanhasRoute
   '/_app/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/_app/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/banco-de-oportunidades'
     | '/campanhas'
     | '/campanhas-encerradas'
     | '/catalogo-de-produtos'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/banco-de-oportunidades'
     | '/campanhas'
     | '/campanhas-encerradas'
     | '/catalogo-de-produtos'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/banco-de-oportunidades'
     | '/_app/campanhas'
     | '/_app/campanhas-encerradas'
     | '/_app/catalogo-de-produtos'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCampanhasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/banco-de-oportunidades': {
+      id: '/_app/banco-de-oportunidades'
+      path: '/banco-de-oportunidades'
+      fullPath: '/banco-de-oportunidades'
+      preLoaderRoute: typeof AppBancoDeOportunidadesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/sell-out/': {
       id: '/_app/sell-out/'
       path: '/'
@@ -350,6 +369,7 @@ const AppSellOutRouteWithChildren = AppSellOutRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppBancoDeOportunidadesRoute: typeof AppBancoDeOportunidadesRoute
   AppCampanhasRoute: typeof AppCampanhasRoute
   AppCampanhasEncerradasRoute: typeof AppCampanhasEncerradasRoute
   AppCatalogoDeProdutosRoute: typeof AppCatalogoDeProdutosRoute
@@ -364,6 +384,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppBancoDeOportunidadesRoute: AppBancoDeOportunidadesRoute,
   AppCampanhasRoute: AppCampanhasRoute,
   AppCampanhasEncerradasRoute: AppCampanhasEncerradasRoute,
   AppCatalogoDeProdutosRoute: AppCatalogoDeProdutosRoute,
