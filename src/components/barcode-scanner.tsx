@@ -25,9 +25,13 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const regionId = "barcode-scanner-region";
 
   const stopScanner = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
+    if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
+        // Always try to clear the region and reset
+        scannerRef.current.clear();
         setIsScanning(false);
       } catch (err) {
         console.error("Erro ao parar o scanner:", err);
@@ -40,6 +44,9 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     setIsDone(false);
     
     try {
+      // Release any existing instances
+      await stopScanner();
+      
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode(regionId);
       }
@@ -67,11 +74,12 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
       setIsScanning(true);
 
+      // Add a small delay to ensure previous instances are fully released by the OS
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       await scannerRef.current.start(
         { 
           facingMode: "environment",
-          width: { min: 640, ideal: 1280, max: 1920 },
-          height: { min: 480, ideal: 720, max: 1080 }
         },
         config,
         (decodedText) => {
@@ -97,16 +105,16 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   };
 
   useEffect(() => {
+    let timer: NodeJS.Timeout;
     if (open) {
       // Pequeno delay para garantir que o elemento DOM está pronto e o Dialog terminou a transição
-      const timer = setTimeout(startScanner, 500);
-      return () => {
-        clearTimeout(timer);
-        stopScanner();
-      };
-    } else {
-      stopScanner();
+      timer = setTimeout(startScanner, 600);
     }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      stopScanner();
+    };
   }, [open]);
 
   return (
