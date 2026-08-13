@@ -1019,8 +1019,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
       if (p && oferta) {
         setOferta({
           ...oferta,
-          codigo: p.codigo,
-          gtin: p.gtin,
+          codigo: p.codigo || "",
+          gtin: p.gtin || "",
           descricao: p.descricao,
           custo: p.custo,
           precoNormal: p.preco_venda,
