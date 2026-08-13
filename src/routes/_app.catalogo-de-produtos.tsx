@@ -26,8 +26,8 @@ export const Route = createFileRoute("/_app/catalogo-de-produtos")({
     meta: [
       { title: "Catálogo de Produtos — Central de Campanhas Sumel" },
       { name: "description", content: "Catálogo central de produtos importados do ERP via CSV." },
-      { property: "og:title", content: "Catálogo de Produtos" },
-      { property: "og:description", content: "Base de produtos para a Central de Ofertas." },
+      { property: "og:title", content: "Catálogo de Produtos — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Base de produtos importados para a Central de Campanhas Sumel." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

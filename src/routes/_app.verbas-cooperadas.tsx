@@ -4,10 +4,10 @@ import { PageHeader, EmptyModule } from "@/components/page-header";
 export const Route = createFileRoute("/_app/verbas-cooperadas")({
   head: () => ({
     meta: [
-      { title: "Verbas Cooperadas — SGMC" },
-      { name: "description", content: "Gestão de verbas cooperadas." },
-      { property: "og:title", content: "Verbas Cooperadas — SGMC" },
-      { property: "og:description", content: "Gestão de verbas cooperadas." },
+      { title: "Verbas Cooperadas — Central de Campanhas Sumel" },
+      { name: "description", content: "Gestão de verbas cooperadas na Central de Campanhas Sumel." },
+      { property: "og:title", content: "Verbas Cooperadas — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Gestão de verbas cooperadas na Central de Campanhas Sumel." },
     ],
   }),
   component: () => (

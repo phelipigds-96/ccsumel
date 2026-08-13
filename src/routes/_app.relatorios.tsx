@@ -4,10 +4,10 @@ import { PageHeader, EmptyModule } from "@/components/page-header";
 export const Route = createFileRoute("/_app/relatorios")({
   head: () => ({
     meta: [
-      { title: "Relatórios — SGMC" },
-      { name: "description", content: "Relatórios gerenciais do SGMC." },
-      { property: "og:title", content: "Relatórios — SGMC" },
-      { property: "og:description", content: "Relatórios gerenciais do SGMC." },
+      { title: "Relatórios — Central de Campanhas Sumel" },
+      { name: "description", content: "Relatórios gerenciais da Central de Campanhas Sumel." },
+      { property: "og:title", content: "Relatórios — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Relatórios gerenciais da Central de Campanhas Sumel." },
     ],
   }),
   component: () => (

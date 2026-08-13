@@ -33,10 +33,10 @@ import {
 export const Route = createFileRoute("/_app/sell-out/acertos")({
   head: () => ({
     meta: [
-      { title: "Acertos de Sell Out — SGMC" },
-      { name: "description", content: "Calcule a verba de sell out a cobrar de cada fornecedor." },
-      { property: "og:title", content: "Acertos de Sell Out — SGMC" },
-      { property: "og:description", content: "Calcule a verba de sell out a cobrar de cada fornecedor." },
+      { title: "Acertos de Sell Out — Central de Campanhas Sumel" },
+      { name: "description", content: "Calcule a verba de sell out a cobrar de cada fornecedor na Central Sumel." },
+      { property: "og:title", content: "Acertos de Sell Out — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Calcule a verba de sell out a cobrar de cada fornecedor na Central Sumel." },
     ],
   }),
   component: AcertosSellOut,

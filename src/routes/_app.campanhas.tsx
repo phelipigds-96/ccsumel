@@ -36,13 +36,13 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/_app/campanhas")({
   head: () => ({
     meta: [
-      { title: "Central de Ofertas — SGMC" },
-      { name: "description", content: "Gerencie campanhas e suas ofertas comerciais no SGMC." },
-      { property: "og:title", content: "Central de Ofertas — SGMC" },
-      { property: "og:description", content: "Gerencie campanhas e ofertas no SGMC." },
+      { title: "Campanhas — Central de Campanhas Sumel" },
+      { name: "description", content: "Gerencie campanhas e suas ofertas comerciais na Central de Campanhas Sumel." },
+      { property: "og:title", content: "Campanhas — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Gerencie campanhas e ofertas na Central de Campanhas Sumel." },
     ],
   }),
-  component: CentralDeOfertas,
+  component: CampanhasModulo,
 });
 
 import {
@@ -96,15 +96,12 @@ import {
 
 
 
-function CentralDeOfertas() {
+function CampanhasModulo() {
   const { campanhas, ofertas } = useCampanhasStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Somente ativas + futuras nesta tela; encerradas ficam no módulo dedicado.
-  const visiveis = useMemo(
-    () => campanhas.filter((c) => categoriaCampanha(c) !== "encerrada"),
-    [campanhas],
-  );
+  // As campanhas são filtradas e ordenadas em CampanhasList
+  const visiveis = campanhas;
 
   const selected = campanhas.find((c) => c.id === selectedId) ?? null;
 
@@ -186,17 +183,22 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
     return m;
   }, [ofertas]);
 
+  const sortedVisiveis = useMemo(() => {
+    return campanhas
+      .filter((c) => categoriaCampanha(c) !== "encerrada")
+      .slice()
+      .sort((a, b) => (b.dataInicial || "").localeCompare(a.dataInicial || ""));
+  }, [campanhas]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return campanhas
+    return sortedVisiveis
       .filter(c => {
         if (q && !c.nome.toLowerCase().includes(q) && !c.descricao.toLowerCase().includes(q)) return false;
         if (fStatus !== "todos" && statusCampanha(c) !== fStatus) return false;
         return true;
-      })
-      .slice()
-      .sort((a, b) => (b.dataInicial || "").localeCompare(a.dataInicial || ""));
-  }, [campanhas, search, fStatus]);
+      });
+  }, [sortedVisiveis, search, fStatus]);
 
   const futuras = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "futura"), [filtered]);
   const ativas = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "ativa"), [filtered]);
@@ -317,7 +319,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
     <div>
       <PageHeader
         title="Campanhas"
-        description="Campanhas ativas e programadas. As encerradas ficam em Campanhas Encerradas."
+        description="Gerencie as campanhas e ofertas da Central Sumel."
         actions={
           !readOnly ? (
             <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
