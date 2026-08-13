@@ -321,7 +321,12 @@ function BancoDeOportunidades() {
                 filtered.map(o => (
                   <TableRow key={o.id} className="group">
                     <TableCell>
-                      <Badge variant="outline" className="flex w-fit items-center gap-1.5 font-medium">
+                      <Badge variant="outline" className={`flex w-fit items-center gap-1.5 font-medium text-[10px] ${
+                        o.status === 'Disponível' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        o.status === 'Reservada' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        o.status === 'Utilizada' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        'bg-slate-50 text-slate-700 border-slate-200'
+                      }`}>
                         {statusIcons[o.status]}
                         {o.status}
                       </Badge>
