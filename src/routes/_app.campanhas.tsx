@@ -584,6 +584,25 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
       <CresceVendasDialog campanha={campanha} ofertas={filtered} open={cvOpen} onOpenChange={setCvOpen} />
       <DescricaoPrecoDialog campanha={campanha} ofertas={filtered} open={dpOpen} onOpenChange={setDpOpen} />
+      <BancoOportunidadesSelectDialog 
+        open={oportunidadesOpen} 
+        onOpenChange={setOportunidadesOpen} 
+        onSelect={(o) => {
+          const novaOferta: Oferta = {
+            ...emptyOferta(campanha),
+            codigo: o.codigo_interno || "",
+            gtin: o.gtin || "",
+            descricao: o.descricao,
+            custo: o.custo,
+            precoNormal: o.preco_venda,
+            precoPromocional: o.preco_venda, // Inicia igual
+          };
+          setEditing(novaOferta);
+          setIsNew(true);
+          setDialogOpen(true);
+          setOportunidadesOpen(false);
+        }}
+      />
 
 
 
