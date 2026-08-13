@@ -71,7 +71,9 @@ function BancoDeOportunidades() {
   const [submitting, setSubmitting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState<Oportunidade | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
-  const lookupInputRef = useRef<HTMLInputElement>(null);
+  const [busca, setBusca] = useState("");
+  const [lookingUp, setLookingUp] = useState(false);
+  const buscaRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     try {
@@ -154,10 +156,12 @@ function BancoDeOportunidades() {
     }
   };
 
-  const handleProductLookup = async (code: string) => {
-    if (!code) return;
+  const handleProductLookup = async (code?: string) => {
+    const term = code || busca;
+    if (!term) return;
+    setLookingUp(true);
     try {
-      const p = await findByCodigoOrGtin(code);
+      const p = await findByCodigoOrGtin(term);
       if (p) {
         setEditing(prev => ({
           ...prev,
@@ -168,12 +172,15 @@ function BancoDeOportunidades() {
           custo: p.custo,
           preco_venda: p.preco_venda,
         }));
+        setBusca("");
         toast.success("Produto encontrado!");
       } else {
         toast.error("Produto não encontrado no catálogo.");
       }
     } catch (error) {
       toast.error("Erro na busca.");
+    } finally {
+      setLookingUp(false);
     }
   };
 
@@ -409,18 +416,22 @@ function BancoDeOportunidades() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label>Identificar Produto (GTIN/Código)</Label>
-                  <div className="flex gap-2">
+                <div className="rounded-lg border bg-navy/5 p-3 mb-1">
+                  <Label className="text-xs text-muted-foreground">Código interno ou código de barras</Label>
+                  <div className="flex gap-2 mt-1.5">
                     <Input 
-                      ref={lookupInputRef}
-                      placeholder="Escanear ou digitar..." 
+                      ref={buscaRef}
+                      autoFocus
+                      value={busca}
+                      onChange={(e) => setBusca(e.target.value)}
+                      placeholder="Bipe o código de barras ou digite o código e pressione Enter" 
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          handleProductLookup(e.currentTarget.value);
+                          handleProductLookup();
                         }
                       }}
+                      inputMode="numeric"
                     />
                     <Button 
                       type="button" 
@@ -433,18 +444,15 @@ function BancoDeOportunidades() {
                     </Button>
                     <Button 
                       type="button" 
-                      variant="secondary" 
-                      size="icon"
-                      onClick={() => {
-                        if (lookupInputRef.current) {
-                          handleProductLookup(lookupInputRef.current.value);
-                        }
-                      }}
+                      onClick={() => handleProductLookup()}
+                      disabled={lookingUp}
+                      className="bg-primary hover:bg-primary/90"
                     >
-                      <Search className="h-4 w-4" />
+                      {lookingUp ? "Buscando..." : "Buscar"}
                     </Button>
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label>Descrição (Auto)</Label>
                   <Input value={editing?.descricao || ""} readOnly className="bg-muted" placeholder="Busque um produto..." />
@@ -530,6 +538,7 @@ function BancoDeOportunidades() {
               open={scannerOpen}
               onOpenChange={setScannerOpen}
               onResult={(result) => {
+                setBusca(result);
                 handleProductLookup(result);
               }}
             />
@@ -606,16 +615,6 @@ function BancoDeOportunidades() {
         </DialogContent>
       </Dialog>
 
-      <BarcodeScanner 
-        open={scannerOpen}
-        onOpenChange={setScannerOpen}
-        onResult={(code) => {
-          if (lookupInputRef.current) {
-            lookupInputRef.current.value = code;
-          }
-          handleProductLookup(code);
-        }}
-      />
     </div>
   );
 }
