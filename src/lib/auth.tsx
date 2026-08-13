@@ -8,6 +8,7 @@ import { adminCreateUser, adminUpdateUser, adminDeleteUser } from "@/lib/users.f
 export const PERMISSIONS: { key: string; label: string }[] = [
   { key: "/dashboard", label: "Dashboard" },
   { key: "/campanhas", label: "Campanhas" },
+  { key: "/banco-de-oportunidades", label: "Banco de Oportunidades" },
   { key: "/campanhas-encerradas", label: "Campanhas Encerradas" },
   { key: "/verbas-cooperadas", label: "Verbas Cooperadas" },
   { key: "/sell-out", label: "Sell Out" },
