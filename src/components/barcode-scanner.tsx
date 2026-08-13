@@ -74,11 +74,12 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
       setIsScanning(true);
 
+      // Add a small delay to ensure previous instances are fully released by the OS
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       await scannerRef.current.start(
         { 
           facingMode: "environment",
-          width: { min: 640, ideal: 1280, max: 1920 },
-          height: { min: 480, ideal: 720, max: 1080 }
         },
         config,
         (decodedText) => {
