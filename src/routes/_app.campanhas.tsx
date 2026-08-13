@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
-  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered, Share2,
+  Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered, Share2, Target, 
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -87,6 +87,10 @@ import {
 } from "@/components/campanha-quick-view";
 import { CresceVendasDialog } from "@/components/crescevendas-export";
 import { DescricaoPrecoDialog } from "@/components/descricao-preco-export";
+import { 
+  listOportunidades, updateOportunidadeStatus, 
+  type Oportunidade, type OportunidadePrioridade, type OportunidadeStatus 
+} from "@/lib/oportunidades";
 
 
 
@@ -110,8 +114,17 @@ function CentralDeOfertas() {
       return exists ? prev.map((p) => (p.id === o.id ? o : p)) : [o, ...prev];
     });
 
-  const deleteOferta = (id: string) =>
+  const deleteOferta = async (id: string) => {
+    const o = ofertas.find(off => off.id === id);
+    if (o) {
+      // Se era de uma oportunidade, volta para Disponível
+      const { data } = await supabase.from('oportunidades' as any).select('id').eq('gtin', o.gtin).eq('campanha_id', o.campanhaId).maybeSingle();
+      if (data && (data as any).id) {
+        await updateOportunidadeStatus((data as any).id, 'Disponível', null);
+      }
+    }
     campanhasStore.setOfertas((prev) => prev.filter((p) => p.id !== id));
+  };
 
   const saveCampanha = (c: Campanha) =>
     campanhasStore.setCampanhas((prev) => {
@@ -438,6 +451,7 @@ interface DetalheProps {
   onBack: () => void;
   onSaveOferta: (o: Oferta) => void;
   onDeleteOferta: (id: string) => void;
+  onAddFromOportunidades?: (oferta: Oferta, oportunidadeId: string) => void;
 }
 
 function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOferta }: DetalheProps) {
@@ -452,6 +466,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [editing, setEditing] = useState<Oferta | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [oportunidadesOpen, setOportunidadesOpen] = useState(false);
 
   const COLUMNS: { key: string; label: string }[] = [
     { key: "codigo", label: "Código" },
@@ -499,9 +514,23 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const openNew = () => { setEditing(emptyOferta(campanha)); setIsNew(true); setDialogOpen(true); };
   const openEdit = (o: Oferta) => { setEditing({ ...o }); setIsNew(false); setDialogOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.codigo.trim() || !editing.descricao.trim()) { toast.error("Preencha código e descrição."); return; }
+    
+    // Se a campanha for Rascunho, e a oferta vier de uma oportunidade, o status da oportunidade deve ser Reservada.
+    // Se a campanha não for Rascunho (Ativa/Programada), o status deve ser Utilizada.
+    // Mas a lógica do sistema diz que "ao finalizar/publicar" vira Utilizada.
+    // Na prática, vamos marcar como Utilizada se o status da campanha for Ativa ou Programada.
+    if (isNew) {
+      const campStatus = statusCampanha(campanha);
+      const isPublicada = campStatus === 'Ativa' || campStatus === 'Programada';
+      const { data: op } = await supabase.from('oportunidades' as any).select('id').eq('gtin', editing.gtin).eq('status', 'Disponível').maybeSingle();
+      if (op && (op as any).id) {
+        await updateOportunidadeStatus((op as any).id, isPublicada ? 'Utilizada' : 'Reservada', campanha.id);
+      }
+    }
+
     onSaveOferta(editing);
     toast.success("Oferta salva.");
     if (isNew) {
@@ -547,7 +576,12 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
               </DropdownMenuContent>
             </DropdownMenu>
             {!readOnly && (
-              <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
+              <>
+                <Button variant="outline" onClick={() => setOportunidadesOpen(true)} className="border-primary/30 text-primary hover:bg-primary/5">
+                  <Target className="mr-2 h-4 w-4" /> Banco de Oportunidades
+                </Button>
+                <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
+              </>
             )}
           </>
         }
@@ -555,6 +589,25 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
       <CresceVendasDialog campanha={campanha} ofertas={filtered} open={cvOpen} onOpenChange={setCvOpen} />
       <DescricaoPrecoDialog campanha={campanha} ofertas={filtered} open={dpOpen} onOpenChange={setDpOpen} />
+      <BancoOportunidadesSelectDialog 
+        open={oportunidadesOpen} 
+        onOpenChange={setOportunidadesOpen} 
+        onSelect={(o) => {
+          const novaOferta: Oferta = {
+            ...emptyOferta(campanha),
+            codigo: o.codigo_interno || "",
+            gtin: o.gtin || "",
+            descricao: o.descricao,
+            custo: o.custo,
+            precoNormal: o.preco_venda,
+            precoPromocional: o.preco_venda, // Inicia igual
+          };
+          setEditing(novaOferta);
+          setIsNew(true);
+          setDialogOpen(true);
+          setOportunidadesOpen(false);
+        }}
+      />
 
 
 
@@ -1226,5 +1279,112 @@ function Field({ label, children, className = "" }: { label: string; children: R
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
     </div>
+  );
+}
+
+function BancoOportunidadesSelectDialog({ 
+  open, 
+  onOpenChange, 
+  onSelect 
+}: { 
+  open: boolean; 
+  onOpenChange: (v: boolean) => void; 
+  onSelect: (o: Oportunidade) => void; 
+}) {
+  const [opts, setOpts] = useState<Oportunidade[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setLoading(true);
+      listOportunidades().then(data => {
+        setOpts(data.filter(o => o.status === 'Disponível'));
+        setLoading(false);
+      });
+    }
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return opts.filter(o => 
+      o.descricao.toLowerCase().includes(q) || 
+      o.gtin?.includes(q) || 
+      o.codigo_interno?.includes(q)
+    );
+  }, [opts, search]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="flex items-center gap-2 text-xl text-navy">
+            <Target className="h-5 w-5 text-primary" /> Selecionar do Banco de Oportunidades
+          </DialogTitle>
+          <DialogDescription>
+            Escolha um item disponível para adicionar a esta campanha.
+          </DialogDescription>
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar por descrição, código ou barras..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 rounded-full border-border/70"
+            />
+          </div>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="text-sm">Carregando oportunidades...</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-center">
+              <Package className="h-10 w-10 mb-2 opacity-20" />
+              <p className="text-sm font-medium">Nenhuma oportunidade disponível</p>
+              <p className="text-xs">Ajuste os filtros ou cadastre novas oportunidades.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {filtered.map(o => (
+                <button
+                  key={o.id}
+                  onClick={() => onSelect(o)}
+                  className="flex items-center justify-between rounded-xl border border-border/70 p-4 text-left transition-all hover:border-primary hover:bg-primary/5 hover:shadow-sm"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-navy">{o.descricao}</span>
+                      <Badge variant="outline" className={`text-[10px] h-4 ${
+                        o.prioridade === 'Alta' ? 'bg-red-50 text-red-600 border-red-200' :
+                        o.prioridade === 'Média' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                        'bg-blue-50 text-blue-600 border-blue-200'
+                      }`}>
+                        {o.prioridade}
+                      </Badge>
+                    </div>
+                    <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="font-mono">{o.gtin || o.codigo_interno}</span>
+                      <span>•</span>
+                      <span>{o.motivo}</span>
+                    </div>
+                  </div>
+                  <div className="text-right ml-4">
+                    <div className="text-sm font-bold text-navy">{brl(o.preco_venda)}</div>
+                    <div className="text-[10px] text-muted-foreground">Custo {brl(o.custo)}</div>
+                    <Button size="sm" variant="ghost" className="mt-2 h-7 rounded-full text-[10px] px-2">
+                      Selecionar <ChevronRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
