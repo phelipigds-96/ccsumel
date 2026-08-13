@@ -407,8 +407,24 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
           {isDone && (
             <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/20 backdrop-blur-sm transition-all animate-in fade-in zoom-in">
-              <div className="bg-white rounded-full p-4 shadow-xl">
-                <Check className="h-12 w-12 text-emerald-600" />
+              <div className="bg-white rounded-full p-4 shadow-xl text-center">
+                <Check className="h-12 w-12 text-emerald-600 mx-auto" />
+                {diagnosticMode && lastResultRef.current.code && (
+                  <p className="mt-2 text-xs font-bold text-emerald-600 font-mono">
+                    {lastResultRef.current.code}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {lastFrame && diagnosticMode && (
+            <div className="absolute inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4">
+              <p className="text-white text-xs mb-2">Frame Capturado (Diagnóstico)</p>
+              <img src={lastFrame} className="max-w-full max-h-[70%] border border-white/20" alt="Diag" />
+              <div className="flex gap-2 mt-4">
+                <Button variant="secondary" onClick={() => setLastFrame(null)}>Fechar</Button>
+                <Button variant="default" onClick={captureDiagnosticFrame}>Nova Captura</Button>
               </div>
             </div>
           )}
