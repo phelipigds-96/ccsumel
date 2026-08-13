@@ -119,8 +119,8 @@ function CentralDeOfertas() {
     if (o) {
       // Se era de uma oportunidade, volta para Disponível
       const { data } = await supabase.from('oportunidades' as any).select('id').eq('gtin', o.gtin).eq('campanha_id', o.campanhaId).maybeSingle();
-      if (data) {
-        await updateOportunidadeStatus(data.id, 'Disponível', null);
+      if (data && (data as any).id) {
+        await updateOportunidadeStatus((data as any).id, 'Disponível', null);
       }
     }
     campanhasStore.setOfertas((prev) => prev.filter((p) => p.id !== id));
