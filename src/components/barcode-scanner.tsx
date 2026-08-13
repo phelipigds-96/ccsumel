@@ -25,9 +25,13 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const regionId = "barcode-scanner-region";
 
   const stopScanner = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
+    if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
+        // Always try to clear the region and reset
+        scannerRef.current.clear();
         setIsScanning(false);
       } catch (err) {
         console.error("Erro ao parar o scanner:", err);
