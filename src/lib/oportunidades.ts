@@ -34,7 +34,7 @@ export async function listOportunidades() {
     .order('data_coleta', { ascending: false });
   
   if (error) throw error;
-  return data as Oportunidade[];
+  return (data || []) as any as Oportunidade[];
 }
 
 export async function saveOportunidade(oportunidade: Partial<Oportunidade>) {
@@ -45,7 +45,7 @@ export async function saveOportunidade(oportunidade: Partial<Oportunidade>) {
     .single();
     
   if (error) throw error;
-  return data as Oportunidade;
+  return data as any as Oportunidade;
 }
 
 export async function deleteOportunidade(id: string) {
