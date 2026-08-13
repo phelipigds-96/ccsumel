@@ -62,6 +62,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const [torchOn, setTorchOn] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const lastResultRef = useRef<{ code: string; count: number }>({ code: "", count: 0 });
   const regionId = "barcode-scanner-region";
 
@@ -69,6 +70,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     if (scannerRef.current) {
       try {
         setTorchOn(false);
+        videoTrackRef.current = null;
         if (scannerRef.current.isScanning) {
           await scannerRef.current.stop();
         }
@@ -81,18 +83,13 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   };
 
   const toggleTorch = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
+    if (videoTrackRef.current) {
       try {
         const newState = !torchOn;
-        // html5-qrcode doesn't expose torch directly in all versions easily, 
-        // but we can try to apply it to the track
-        const track = scannerRef.current.getRunningTrack();
-        if (track && track.applyConstraints) {
-          await track.applyConstraints({
-            advanced: [{ torch: newState } as any]
-          });
-          setTorchOn(newState);
-        }
+        await videoTrackRef.current.applyConstraints({
+          advanced: [{ torch: newState } as any]
+        });
+        setTorchOn(newState);
       } catch (err) {
         console.error("Erro ao alternar lanterna:", err);
       }
