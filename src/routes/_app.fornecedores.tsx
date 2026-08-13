@@ -25,8 +25,8 @@ export const Route = createFileRoute("/_app/fornecedores")({
     meta: [
       { title: "Fornecedores — Central de Campanhas Sumel" },
       { name: "description", content: "Cadastro de fornecedores alimentado pela importação do catálogo de produtos." },
-      { property: "og:title", content: "Fornecedores" },
-      { property: "og:description", content: "Cadastro e gestão de parceiros comerciais." },
+      { property: "og:title", content: "Fornecedores — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Cadastro e gestão de parceiros comerciais da Central Sumel." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
