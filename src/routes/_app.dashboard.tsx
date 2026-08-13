@@ -150,10 +150,10 @@ function DashboardPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Cabeçalho */}
-      <div className="relative overflow-hidden rounded-3xl border bg-navy px-5 py-7 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(11,31,58,0.7)] sm:px-8 sm:py-9">
+      <div className="relative overflow-hidden rounded-3xl border bg-navy px-4 py-6 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(11,31,58,0.7)] sm:px-8 sm:py-9">
         <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:flex-wrap sm:justify-between">
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-foreground/60">
               {format(hoje, "EEEE, dd 'de' MMMM", { locale: ptBR })}
@@ -163,7 +163,7 @@ function DashboardPage() {
               Bem-vindo à Central de Campanhas Sumel.
             </p>
           </div>
-          <Button asChild className="shrink-0 rounded-full shadow-lg">
+          <Button asChild className="w-full sm:w-auto shrink-0 rounded-full shadow-lg">
             <Link to="/campanhas">
               <Plus className="mr-2 h-4 w-4" /> Nova campanha
             </Link>
@@ -250,7 +250,7 @@ function DashboardPage() {
                 );
               },
             }}
-            className="pointer-events-auto w-full max-w-full rounded-xl border p-2 [--cell-size:min(2.4rem,11vw)] sm:p-4 sm:[--cell-size:2.6rem]"
+            className="pointer-events-auto w-full max-w-full rounded-xl border p-2 [--cell-size:min(2.4rem,10vw)] sm:p-4 sm:[--cell-size:2.6rem]"
           />
 
           <div className="min-w-0">

@@ -307,13 +307,13 @@ function CatalogoProdutos() {
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between gap-2 p-3 border-t text-sm">
-          <div className="text-xs text-muted-foreground">
+        <div className="flex flex-col gap-4 p-4 border-t sm:flex-row sm:items-center sm:justify-between text-sm">
+          <div className="text-xs text-muted-foreground order-2 sm:order-1">
             {totalResultados === 0
               ? "0 de 0"
               : `${((page - 1) * pageSize + 1).toLocaleString("pt-BR")}–${Math.min(page * pageSize, totalResultados).toLocaleString("pt-BR")} de ${totalResultados.toLocaleString("pt-BR")}`}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 order-1 sm:order-2">
             <Button
               size="sm"
               variant="outline"

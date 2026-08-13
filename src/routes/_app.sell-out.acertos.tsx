@@ -322,8 +322,8 @@ Central de Campanhas Sumel`;
         ))}
       </div>
 
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
-        <div className="relative flex-1 max-w-md">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar por produto, código, campanha..."
@@ -333,7 +333,7 @@ Central de Campanhas Sumel`;
           />
         </div>
         <Select value={fornecedorFiltro} onValueChange={setFornecedorFiltro}>
-          <SelectTrigger className="md:w-64">
+          <SelectTrigger className="w-full sm:w-64">
             <SelectValue placeholder="Fornecedor" />
           </SelectTrigger>
           <SelectContent>
@@ -344,7 +344,7 @@ Central de Campanhas Sumel`;
           </SelectContent>
         </Select>
         <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-          <SelectTrigger className="md:w-56">
+          <SelectTrigger className="w-full sm:w-56">
             <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
             <SelectValue placeholder="Ordenar" />
           </SelectTrigger>
