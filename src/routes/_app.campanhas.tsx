@@ -576,7 +576,12 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
               </DropdownMenuContent>
             </DropdownMenu>
             {!readOnly && (
-              <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
+              <>
+                <Button variant="outline" onClick={() => setOportunidadesOpen(true)} className="border-primary/30 text-primary hover:bg-primary/5">
+                  <Target className="mr-2 h-4 w-4" /> Banco de Oportunidades
+                </Button>
+                <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
+              </>
             )}
           </>
         }
