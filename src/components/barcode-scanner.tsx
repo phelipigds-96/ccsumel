@@ -195,10 +195,25 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           constraints,
           videoRef.current,
           (result, err) => {
+            if (videoRef.current && isScanning && !diagInfo) {
+              const video = videoRef.current;
+              const stream = video.srcObject as MediaStream;
+              const track = stream?.getVideoTracks()[0];
+              const settings = track?.getSettings();
+              
+              setDiagInfo({
+                res: `${video.videoWidth}x${video.videoHeight}`,
+                label: track?.label || 'N/A',
+                facing: settings?.facingMode || 'unknown',
+                deviceId: settings?.deviceId?.slice(0, 8) + '...'
+              });
+            }
+
             if (result) {
               const decodedText = result.getText();
               
-              // Validação multi-frame rápida para ZXing (2 frames idênticos costumam bastar com ZXing)
+              // Durante diagnóstico ou teste inicial, aceitamos o primeiro frame válido
+              // Para uso real, mantemos 2 frames para evitar falsos positivos
               if (decodedText === lastResultRef.current.code) {
                 lastResultRef.current.count++;
               } else {
@@ -206,7 +221,10 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
                 lastResultRef.current.count = 1;
               }
 
-              if (lastResultRef.current.count >= 2) {
+              // Se estiver em modo diagnóstico, 1 frame basta para o log
+              const threshold = diagnosticMode ? 1 : 2;
+
+              if (lastResultRef.current.count >= threshold) {
                 if (validateBarcode(decodedText)) {
                   onResult(decodedText);
                   setIsDone(true);
