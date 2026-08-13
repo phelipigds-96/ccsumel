@@ -83,7 +83,7 @@ const statusVariant: Record<Status, string> = {
 };
 
 import {
-  brl, fmtDate, printCampanhaPDF, MateriaisViewer, CampanhaQuickView,
+  brl, fmtDate, printCampanhaPDF, MateriaisViewer, CampanhaQuickView, CampanhaDialog,
 } from "@/components/campanha-quick-view";
 import { CresceVendasDialog } from "@/components/crescevendas-export";
 import { DescricaoPrecoDialog } from "@/components/descricao-preco-export";
