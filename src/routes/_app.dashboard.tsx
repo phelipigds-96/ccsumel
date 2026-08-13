@@ -12,10 +12,10 @@ import { ptBR } from "date-fns/locale";
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Central de campanhas Sumel" },
-      { name: "description", content: "Visão consolidada da Central de campanhas Sumel — campanhas, ofertas, verbas e calendário promocional." },
-      { property: "og:title", content: "Dashboard — Central de campanhas Sumel" },
-      { property: "og:description", content: "Painel do Sistema de Gestão de Marketing Comercial." },
+      { title: "Dashboard — Central de Campanhas Sumel" },
+      { name: "description", content: "Visão consolidada da Central de Campanhas Sumel — campanhas, ofertas, verbas e calendário promocional." },
+      { property: "og:title", content: "Dashboard — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Painel do Sistema de Gestão de Marketing Comercial na Central Sumel." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -158,7 +158,7 @@ function DashboardPage() {
             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-foreground/60">
               {format(hoje, "EEEE, dd 'de' MMMM", { locale: ptBR })}
             </p>
-            <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Painel de Controle</h1>
+            <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Dashboard</h1>
             <p className="mt-1 text-sm text-primary-foreground/70">
               Bem-vindo à Central de Campanhas Sumel.
             </p>
