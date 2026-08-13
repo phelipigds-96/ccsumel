@@ -240,18 +240,19 @@ function CatalogoProdutos() {
       )}
 
       <div className="rounded-xl border bg-card">
-        <div className="p-4 border-b flex flex-wrap items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por código, código de barras ou descrição..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="max-w-md flex-1 min-w-[220px]"
-          />
+        <div className="p-4 border-b flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por código, código de barras ou descrição..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="pl-9 w-full"
+            />
+          </div>
           <div className="ml-auto text-xs text-muted-foreground">
             {loading ? "Buscando..." : `${totalResultados.toLocaleString("pt-BR")} resultado(s)`}
           </div>
-
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -307,13 +308,13 @@ function CatalogoProdutos() {
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between gap-2 p-3 border-t text-sm">
-          <div className="text-xs text-muted-foreground">
+        <div className="flex flex-col gap-4 p-4 border-t sm:flex-row sm:items-center sm:justify-between text-sm">
+          <div className="text-xs text-muted-foreground order-2 sm:order-1">
             {totalResultados === 0
               ? "0 de 0"
               : `${((page - 1) * pageSize + 1).toLocaleString("pt-BR")}–${Math.min(page * pageSize, totalResultados).toLocaleString("pt-BR")} de ${totalResultados.toLocaleString("pt-BR")}`}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 order-1 sm:order-2">
             <Button
               size="sm"
               variant="outline"
