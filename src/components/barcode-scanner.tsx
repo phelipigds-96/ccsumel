@@ -318,6 +318,15 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
             playsInline
           />
           
+          {diagnosticMode && diagInfo && (
+            <div className="absolute top-2 left-2 bg-black/70 text-[10px] text-white p-2 rounded z-50 font-mono pointer-events-none">
+              <p>Res: {diagInfo.res}</p>
+              <p>Cam: {diagInfo.label}</p>
+              <p>Facing: {diagInfo.facing}</p>
+              <p>Result: {diagInfo.lastFrameResult || '...'}</p>
+            </div>
+          )}
+
           {!isScanning && !error && !isDone && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white p-6 text-center">
               <div className="animate-pulse flex flex-col items-center gap-2">
