@@ -170,12 +170,18 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
         }
       );
 
-      // Check for torch support
-      const track = scannerRef.current.getRunningTrack();
-      if (track) {
-        const capabilities = track.getCapabilities() as any;
-        setHasTorch(!!capabilities.torch);
-      }
+      // Attempt to get the video track for torch support
+      setTimeout(() => {
+        const videoElement = document.querySelector(`#${regionId} video`) as HTMLVideoElement;
+        if (videoElement && videoElement.srcObject instanceof MediaStream) {
+          const track = videoElement.srcObject.getVideoTracks()[0];
+          if (track) {
+            videoTrackRef.current = track;
+            const capabilities = track.getCapabilities() as any;
+            setHasTorch(!!capabilities.torch);
+          }
+        }
+      }, 1000);
 
     } catch (err: any) {
       console.error("Erro ao iniciar o scanner:", err);
