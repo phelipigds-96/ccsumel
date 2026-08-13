@@ -514,9 +514,23 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const openNew = () => { setEditing(emptyOferta(campanha)); setIsNew(true); setDialogOpen(true); };
   const openEdit = (o: Oferta) => { setEditing({ ...o }); setIsNew(false); setDialogOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.codigo.trim() || !editing.descricao.trim()) { toast.error("Preencha código e descrição."); return; }
+    
+    // Se a campanha for Rascunho, e a oferta vier de uma oportunidade, o status da oportunidade deve ser Reservada.
+    // Se a campanha não for Rascunho (Ativa/Programada), o status deve ser Utilizada.
+    // Mas a lógica do sistema diz que "ao finalizar/publicar" vira Utilizada.
+    // Na prática, vamos marcar como Utilizada se o status da campanha for Ativa ou Programada.
+    if (isNew) {
+      const campStatus = statusCampanha(campanha);
+      const isPublicada = campStatus === 'Ativa' || campStatus === 'Programada';
+      const { data: op } = await supabase.from('oportunidades' as any).select('id').eq('gtin', editing.gtin).eq('status', 'Disponível').maybeSingle();
+      if (op && (op as any).id) {
+        await updateOportunidadeStatus((op as any).id, isPublicada ? 'Utilizada' : 'Reservada', campanha.id);
+      }
+    }
+
     onSaveOferta(editing);
     toast.success("Oferta salva.");
     if (isNew) {
