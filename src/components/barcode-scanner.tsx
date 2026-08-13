@@ -73,7 +73,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       setIsScanning(true);
 
       await scannerRef.current.start(
-        { facingMode: "environment" },
+        undefined, 
         config,
         (decodedText) => {
           onResult(decodedText);
