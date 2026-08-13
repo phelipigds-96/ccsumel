@@ -45,9 +45,16 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       }
 
       const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 150 },
+        fps: 25,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const boxSize = Math.floor(minEdge * 0.7);
+          return { width: boxSize, height: Math.floor(boxSize * 0.6) };
+        },
         aspectRatio: 1.0,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        },
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
@@ -142,11 +149,17 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
 
           {isScanning && !isDone && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-[250px] h-[150px] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]">
-                <div className="absolute top-0 left-0 w-full h-0.5 bg-primary animate-scan" />
+              <div className="w-[70%] h-[42%] border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_15px_rgba(200,16,46,0.8)] animate-scan" />
+                
+                {/* Cantoneiras */}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary rounded-tl-sm" />
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary rounded-tr-sm" />
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary rounded-bl-sm" />
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary rounded-br-sm" />
               </div>
-              <p className="absolute bottom-10 left-0 w-full text-center text-white text-xs font-medium uppercase tracking-widest drop-shadow-md">
-                Posicione o código no centro
+              <p className="absolute bottom-10 left-0 w-full text-center text-white text-[10px] font-bold uppercase tracking-widest drop-shadow-md">
+                Posicione o código de barras no centro
               </p>
             </div>
           )}

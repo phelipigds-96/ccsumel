@@ -1008,6 +1008,33 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
   const promoRef = useRef<HTMLInputElement>(null);
   const { campanhas: todasCampanhas, ofertas: todasOfertas } = useCampanhasStore();
 
+  const handleProductLookup = async (code: string) => {
+    if (!code) return;
+    setLookingUp(true);
+    try {
+      const { findByCodigoOrGtin } = await import("@/lib/produtos");
+      const p = await findByCodigoOrGtin(code);
+      if (p && oferta) {
+        setOferta({
+          ...oferta,
+          codigo: p.codigo,
+          gtin: p.gtin,
+          descricao: p.descricao,
+          custo: p.custo,
+          precoNormal: p.preco_venda,
+        });
+        toast.success("Produto encontrado!");
+        setTimeout(() => promoRef.current?.focus(), 100);
+      } else {
+        toast.error("Produto não encontrado.");
+      }
+    } catch (e) {
+      toast.error("Erro ao buscar produto.");
+    } finally {
+      setLookingUp(false);
+    }
+  };
+
   const historico = useMemo(() => {
     if (!oferta) return [];
     const cod = (oferta.codigo || "").trim().toLowerCase();
