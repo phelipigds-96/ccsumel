@@ -840,7 +840,8 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto p-0">
+        <div className="p-6">
         <DialogHeader>
           <DialogTitle>{campanha.nome ? "Editar Campanha" : "Nova Campanha"}</DialogTitle>
           <DialogDescription>Defina o período, o status e os materiais de apoio da campanha.</DialogDescription>
@@ -909,6 +910,7 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={onSave} className="bg-primary hover:bg-primary/90">Salvar</Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -1008,6 +1010,33 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
   const promoRef = useRef<HTMLInputElement>(null);
   const { campanhas: todasCampanhas, ofertas: todasOfertas } = useCampanhasStore();
 
+  const handleProductLookup = async (code: string) => {
+    if (!code) return;
+    setLookingUp(true);
+    try {
+      const { findByCodigoOrGtin } = await import("@/lib/produtos");
+      const p = await findByCodigoOrGtin(code);
+      if (p && oferta) {
+        setOferta({
+          ...oferta,
+          codigo: p.codigo || "",
+          gtin: p.gtin || "",
+          descricao: p.descricao,
+          custo: p.custo,
+          precoNormal: p.preco_venda,
+        });
+        toast.success("Produto encontrado!");
+        setTimeout(() => promoRef.current?.focus(), 100);
+      } else {
+        toast.error("Produto não encontrado.");
+      }
+    } catch (e) {
+      toast.error("Erro ao buscar produto.");
+    } finally {
+      setLookingUp(false);
+    }
+  };
+
   const historico = useMemo(() => {
     if (!oferta) return [];
     const cod = (oferta.codigo || "").trim().toLowerCase();
@@ -1018,8 +1047,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
       .filter(o => o.id !== oferta.id
         && ((cod && (o.codigo || "").trim().toLowerCase() === cod) || (gtin && (o.gtin || "").trim() === gtin)))
       .map(o => ({ o, c: mapa.get(o.campanhaId) }))
-      .filter(x => !!x.c)
-      .sort((a, b) => (b.c!.dataInicial || "").localeCompare(a.c!.dataInicial || ""));
+      .filter((x): x is { o: Oferta; c: Campanha } => !!x.c)
+      .sort((a, b) => (b.c.dataInicial || "").localeCompare(a.c.dataInicial || ""));
   }, [oferta?.id, oferta?.codigo, oferta?.gtin, todasOfertas, todasCampanhas]);
 
 
@@ -1074,7 +1103,8 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto p-0">
+        <div className="p-6">
         <DialogHeader>
           <DialogTitle>{oferta.codigo ? "Editar Oferta" : "Nova Oferta"}</DialogTitle>
           <DialogDescription>Informe o código interno ou de barras para preencher automaticamente.</DialogDescription>
@@ -1289,6 +1319,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={onSave} className="bg-primary hover:bg-primary/90">Salvar</Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
