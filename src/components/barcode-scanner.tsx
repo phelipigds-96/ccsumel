@@ -156,10 +156,16 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
         hints.set(DecodeHintType.ASSUME_GS1, true);
         hints.set(DecodeHintType.TRY_HARDER, true);
 
-        codeReaderRef.current = new BrowserMultiFormatReader(hints);
-      }
+        // Resetar o leitor com configurações de diagnóstico se necessário
+        if (diagnosticMode) {
+          const diagHints = new Map();
+          // Não filtrar formatos em modo diag para ver o que ele detecta
+          diagHints.set(DecodeHintType.TRY_HARDER, true);
+          diagHints.set(DecodeHintType.ASSUME_GS1, true);
+          codeReaderRef.current = new BrowserMultiFormatReader(diagHints);
+        }
 
-      const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
+        const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
       
       // Priorizar câmera traseira
       let selectedDeviceId = videoInputDevices[0]?.deviceId;
