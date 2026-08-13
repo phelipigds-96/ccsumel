@@ -61,20 +61,18 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   const [error, setError] = useState<string | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const lastResultRef = useRef<{ code: string; count: number }>({ code: "", count: 0 });
-  const regionId = "barcode-scanner-region";
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoDeviceIdRef = useRef<string | null>(null);
 
   const stopScanner = async () => {
-    if (scannerRef.current) {
+    if (codeReaderRef.current) {
       try {
         setTorchOn(false);
         videoTrackRef.current = null;
-        if (scannerRef.current.isScanning) {
-          await scannerRef.current.stop();
-        }
-        scannerRef.current.clear();
+        codeReaderRef.current.reset();
         setIsScanning(false);
       } catch (err) {
         console.error("Erro ao parar o scanner:", err);
@@ -104,87 +102,109 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     try {
       await stopScanner();
       
-      if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode(regionId);
+      if (!codeReaderRef.current) {
+        const hints = new Map();
+        const formats = [
+          BarcodeFormat.EAN_13,
+          BarcodeFormat.EAN_8,
+          BarcodeFormat.UPC_A,
+          BarcodeFormat.UPC_E,
+          BarcodeFormat.CODE_128,
+          BarcodeFormat.ITF
+        ];
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+        hints.set(DecodeHintType.ASSUME_GS1, true);
+        hints.set(DecodeHintType.TRY_HARDER, true);
+
+        codeReaderRef.current = new BrowserMultiFormatReader(hints);
       }
 
-      const config = {
-        fps: 30,
-        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const boxWidth = Math.floor(viewfinderWidth * 0.85);
-          const boxHeight = Math.floor(viewfinderHeight * 0.35);
-          return { width: boxWidth, height: boxHeight };
-        },
-        aspectRatio: 1.0,
-        disableFlip: false,
-        videoConstraints: {
+      const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
+      
+      // Priorizar câmera traseira
+      let selectedDeviceId = videoInputDevices[0]?.deviceId;
+      const backCamera = videoInputDevices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('traseira') ||
+        device.label.toLowerCase().includes('environment')
+      );
+      
+      if (backCamera) {
+        selectedDeviceId = backCamera.deviceId;
+      } else if (videoInputDevices.length > 1) {
+        // Se não encontrar pelo nome, tenta a última da lista (geralmente a traseira principal)
+        selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
+      }
+
+      videoDeviceIdRef.current = selectedDeviceId;
+      setIsScanning(true);
+
+      // Constraints para alta performance e foco
+      const constraints: MediaStreamConstraints = {
+        video: {
+          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
           facingMode: "environment",
-          focusMode: "continuous",
-          width: { min: 640, ideal: 1280, max: 1920 },
-          height: { min: 480, ideal: 720, max: 1080 },
-        },
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true
-        },
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.ITF,
-        ],
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        }
       };
 
-      setIsScanning(true);
-      await new Promise(resolve => setTimeout(resolve, 300));
+      if (videoRef.current) {
+        await codeReaderRef.current.decodeFromConstraints(
+          constraints,
+          videoRef.current,
+          (result, err) => {
+            if (result) {
+              const decodedText = result.getText();
+              
+              // Validação multi-frame rápida para ZXing (2 frames idênticos costumam bastar com ZXing)
+              if (decodedText === lastResultRef.current.code) {
+                lastResultRef.current.count++;
+              } else {
+                lastResultRef.current.code = decodedText;
+                lastResultRef.current.count = 1;
+              }
 
-      await scannerRef.current.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          // Multi-frame validation: code must be the same for 3 consecutive frames
-          if (decodedText === lastResultRef.current.code) {
-            lastResultRef.current.count++;
-          } else {
-            lastResultRef.current.code = decodedText;
-            lastResultRef.current.count = 1;
-          }
-
-          if (lastResultRef.current.count >= 3) {
-            // Final validation of check digit
-            if (validateBarcode(decodedText)) {
-              onResult(decodedText);
-              setIsDone(true);
-              stopScanner();
-              toast.success("Código identificado: " + decodedText);
-              setTimeout(() => onOpenChange(false), 800);
-            } else {
-              // Reset if check digit fails
-              lastResultRef.current = { code: "", count: 0 };
+              if (lastResultRef.current.count >= 2) {
+                if (validateBarcode(decodedText)) {
+                  onResult(decodedText);
+                  setIsDone(true);
+                  stopScanner();
+                  toast.success("Código identificado: " + decodedText);
+                  setTimeout(() => onOpenChange(false), 800);
+                } else {
+                  lastResultRef.current = { code: "", count: 0 };
+                }
+              }
             }
           }
-        },
-        () => {
-          // Ignore scanning errors
-        }
-      );
+        );
 
-      // Attempt to get the video track for torch support
-      setTimeout(() => {
-        const videoElement = document.querySelector(`#${regionId} video`) as HTMLVideoElement;
-        if (videoElement && videoElement.srcObject instanceof MediaStream) {
-          const track = videoElement.srcObject.getVideoTracks()[0];
-          if (track) {
-            videoTrackRef.current = track;
+        // Acessar a track para lanterna e capabilities
+        const stream = videoRef.current.srcObject as MediaStream;
+        if (stream) {
+          const track = stream.getVideoTracks()[0];
+          videoTrackRef.current = track;
+          
+          try {
             const capabilities = track.getCapabilities() as any;
             setHasTorch(!!capabilities.torch);
+            
+            // Tentar aplicar foco contínuo se suportado
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              await track.applyConstraints({
+                advanced: [{ focusMode: 'continuous' } as any]
+              });
+            }
+          } catch (e) {
+            console.warn("Capabilities não suportadas neste dispositivo", e);
           }
         }
-      }, 1000);
+      }
 
     } catch (err: any) {
-      console.error("Erro ao iniciar o scanner:", err);
+      console.error("Erro ao iniciar o scanner ZXing:", err);
       setIsScanning(false);
       if (err.toString().includes("Permission denied")) {
         setError("Acesso à câmera negado. Por favor, permita o acesso nas configurações do seu navegador.");
