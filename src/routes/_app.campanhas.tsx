@@ -183,17 +183,22 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
     return m;
   }, [ofertas]);
 
+  const sortedVisiveis = useMemo(() => {
+    return campanhas
+      .filter((c) => categoriaCampanha(c) !== "encerrada")
+      .slice()
+      .sort((a, b) => (b.dataInicial || "").localeCompare(a.dataInicial || ""));
+  }, [campanhas]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return campanhas
+    return sortedVisiveis
       .filter(c => {
         if (q && !c.nome.toLowerCase().includes(q) && !c.descricao.toLowerCase().includes(q)) return false;
         if (fStatus !== "todos" && statusCampanha(c) !== fStatus) return false;
         return true;
-      })
-      .slice()
-      .sort((a, b) => (b.dataInicial || "").localeCompare(a.dataInicial || ""));
-  }, [campanhas, search, fStatus]);
+      });
+  }, [sortedVisiveis, search, fStatus]);
 
   const futuras = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "futura"), [filtered]);
   const ativas = useMemo(() => filtered.filter((c) => categoriaCampanha(c) === "ativa"), [filtered]);
