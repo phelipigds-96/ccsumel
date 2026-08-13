@@ -121,7 +121,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     // Testar ZXing neste frame específico
     if (codeReaderRef.current) {
       try {
-        const result = await codeReaderRef.current.decodeFromCanvas(canvas);
+        const result = await codeReaderRef.current.decodeFromImageElement(dataUrl as any);
         if (result) {
           toast.success("ZXing leu o frame: " + result.getText());
           setDiagInfo((prev: any) => ({ ...prev, lastFrameResult: `Sucesso: ${result.getText()} (${result.getBarcodeFormat()})` }));
