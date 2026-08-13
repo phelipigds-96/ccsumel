@@ -292,6 +292,14 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           <DialogTitle className="text-lg font-medium flex items-center gap-2">
             <Camera className="h-5 w-5" />
             Leitor de Código
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="ml-2 text-[10px] h-6 px-2 border border-white/20"
+              onClick={() => setDiagnosticMode(!diagnosticMode)}
+            >
+              {diagnosticMode ? "Sair Diag" : "Diag"}
+            </Button>
           </DialogTitle>
           <Button 
             variant="ghost" 
