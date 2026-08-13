@@ -88,7 +88,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
       await new Promise(resolve => setTimeout(resolve, 300));
 
       await scannerRef.current.start(
-        undefined, // Pass undefined to use videoConstraints from config if available or default behavior
+        { facingMode: "environment" },
         config,
         (decodedText) => {
           onResult(decodedText);
