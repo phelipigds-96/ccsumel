@@ -128,7 +128,7 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
         </DialogHeader>
 
         <div className="relative aspect-square w-full bg-black flex items-center justify-center">
-          <div id={regionId} className="w-full h-full" />
+          <div id={regionId} className="w-full h-full [&>video]:object-cover" />
           
           {!isScanning && !error && !isDone && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white p-6 text-center">
