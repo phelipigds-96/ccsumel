@@ -46,8 +46,8 @@ type Item = {
 
 const items: Item[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Banco de Oportunidades", url: "/banco-de-oportunidades", icon: PackageOpen },
   { title: "Campanhas", url: "/campanhas", icon: Megaphone },
+  { title: "Banco de Oportunidades", url: "/banco-de-oportunidades", icon: PackageOpen },
   { title: "Campanhas Encerradas", url: "/campanhas-encerradas", icon: Archive },
   { title: "Verbas Cooperadas", url: "/verbas-cooperadas", icon: Wallet },
   { title: "Sell Out", url: "/sell-out/acertos", icon: ShoppingCart },
