@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } from "@zxing/library";
 import { Camera, X, Check, RefreshCw, AlertCircle, Zap, ZapOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
