@@ -44,6 +44,9 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
     setIsDone(false);
     
     try {
+      // Release any existing instances
+      await stopScanner();
+      
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode(regionId);
       }
