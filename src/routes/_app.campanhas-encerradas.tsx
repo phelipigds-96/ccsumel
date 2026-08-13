@@ -24,10 +24,10 @@ import {
 export const Route = createFileRoute("/_app/campanhas-encerradas")({
   head: () => ({
     meta: [
-      { title: "Campanhas Encerradas — SGMC" },
-      { name: "description", content: "Arquivo de campanhas comerciais já encerradas." },
-      { property: "og:title", content: "Campanhas Encerradas — SGMC" },
-      { property: "og:description", content: "Consulte o histórico de campanhas encerradas." },
+      { title: "Campanhas Encerradas — Central de Campanhas Sumel" },
+      { name: "description", content: "Arquivo de campanhas comerciais já encerradas na Central Sumel." },
+      { property: "og:title", content: "Campanhas Encerradas — Central de Campanhas Sumel" },
+      { property: "og:description", content: "Consulte o histórico de campanhas encerradas da Central Sumel." },
     ],
   }),
   component: CampanhasEncerradas,
@@ -42,7 +42,7 @@ function printPDF(campanha: Campanha, ofertas: Oferta[]) {
   const win = window.open("", "_blank");
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   doc.setFontSize(14); doc.setTextColor(30, 41, 82);
-  doc.text(`SGMC — Campanha (encerrada): ${campanha.nome}`, 40, 40);
+  doc.text(`Central Sumel — Campanha (encerrada): ${campanha.nome}`, 40, 40);
   doc.setFontSize(9); doc.setTextColor(90);
   doc.text(
     `Vigência ${fmtDate(campanha.dataInicial)} a ${fmtDate(campanha.dataFinal)}  •  ${ofertas.length} oferta(s)`,
