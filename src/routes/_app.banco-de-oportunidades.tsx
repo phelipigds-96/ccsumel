@@ -347,7 +347,7 @@ function BancoDeOportunidades() {
                     <TableCell className="text-right font-mono text-xs">{o.quantidade_aproximada}</TableCell>
                     <TableCell className="text-right font-mono text-xs">{brl(o.preco_venda)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={prioridadeVariant[o.prioridade]}>
+                      <Badge variant="outline" className={`text-[10px] ${prioridadeVariant[o.prioridade]}`}>
                         {o.prioridade}
                       </Badge>
                     </TableCell>
