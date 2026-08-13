@@ -524,6 +524,15 @@ function BancoDeOportunidades() {
                 </>
               )}
             </div>
+
+            <BarcodeScanner 
+              open={scannerOpen}
+              onOpenChange={setScannerOpen}
+              onResult={(result) => {
+                handleProductLookup(result);
+              }}
+            />
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={submitting || !editing?.descricao}>
