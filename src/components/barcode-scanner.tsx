@@ -105,16 +105,16 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
   };
 
   useEffect(() => {
+    let timer: NodeJS.Timeout;
     if (open) {
       // Pequeno delay para garantir que o elemento DOM está pronto e o Dialog terminou a transição
-      const timer = setTimeout(startScanner, 500);
-      return () => {
-        clearTimeout(timer);
-        stopScanner();
-      };
-    } else {
-      stopScanner();
+      timer = setTimeout(startScanner, 600);
     }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      stopScanner();
+    };
   }, [open]);
 
   return (
