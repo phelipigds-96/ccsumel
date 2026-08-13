@@ -363,10 +363,13 @@ export function BarcodeScanner({ open, onOpenChange, onResult }: BarcodeScannerP
           />
           
           {diagnosticMode && diagInfo && (
-            <div className="absolute top-2 left-2 bg-black/70 text-[10px] text-white p-2 rounded z-50 font-mono pointer-events-none">
+            <div className="absolute top-2 left-2 bg-black/70 text-[9px] text-white p-2 rounded z-50 font-mono pointer-events-none max-w-[200px]">
               <p>Res: {diagInfo.res}</p>
               <p>Cam: {diagInfo.label}</p>
               <p>Facing: {diagInfo.facing}</p>
+              <p>Focus: {diagInfo.focusMode} ({diagInfo.focusCapabilities})</p>
+              <p>Zoom: {diagInfo.zoomCapabilities}</p>
+              <p>Torch: {diagInfo.torch}</p>
               <p>Result: {diagInfo.lastFrameResult || '...'}</p>
             </div>
           )}
