@@ -286,7 +286,7 @@ Central de Campanhas Sumel`;
         description="Registre a quantidade vendida por produto e calcule a verba a cobrar de cada fornecedor."
       />
 
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
         <Card>
           <CardContent className="p-4">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">{aba === "pendentes" ? "Pendentes de acerto" : "Acertos realizados"}</div>

@@ -118,14 +118,16 @@ function FornecedoresPage() {
       </div>
 
       <div className="rounded-xl border bg-card">
-        <div className="p-4 border-b flex flex-wrap items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar fornecedor..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="max-w-md flex-1 min-w-[220px]"
-          />
+        <div className="p-4 border-b flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar fornecedor..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="pl-9 w-full"
+            />
+          </div>
           <div className="ml-auto text-xs text-muted-foreground">
             {loading ? "Buscando..." : `${rows.length.toLocaleString("pt-BR")} resultado(s)`}
           </div>
