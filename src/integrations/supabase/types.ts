@@ -213,6 +213,90 @@ export type Database = {
           },
         ]
       }
+      oportunidades: {
+        Row: {
+          campanha_id: string | null
+          codigo_interno: string | null
+          created_at: string | null
+          custo: number | null
+          data_coleta: string
+          data_utilizacao: string | null
+          descricao: string
+          gtin: string | null
+          id: string
+          loja: string
+          lote: string | null
+          motivo: Database["public"]["Enums"]["oportunidade_motivo"]
+          observacoes: string | null
+          preco_venda: number | null
+          prioridade: Database["public"]["Enums"]["oportunidade_prioridade"]
+          produto_id: string | null
+          quantidade_aproximada: number | null
+          status: Database["public"]["Enums"]["oportunidade_status"]
+          updated_at: string | null
+          validade: string | null
+        }
+        Insert: {
+          campanha_id?: string | null
+          codigo_interno?: string | null
+          created_at?: string | null
+          custo?: number | null
+          data_coleta?: string
+          data_utilizacao?: string | null
+          descricao: string
+          gtin?: string | null
+          id?: string
+          loja: string
+          lote?: string | null
+          motivo?: Database["public"]["Enums"]["oportunidade_motivo"]
+          observacoes?: string | null
+          preco_venda?: number | null
+          prioridade?: Database["public"]["Enums"]["oportunidade_prioridade"]
+          produto_id?: string | null
+          quantidade_aproximada?: number | null
+          status?: Database["public"]["Enums"]["oportunidade_status"]
+          updated_at?: string | null
+          validade?: string | null
+        }
+        Update: {
+          campanha_id?: string | null
+          codigo_interno?: string | null
+          created_at?: string | null
+          custo?: number | null
+          data_coleta?: string
+          data_utilizacao?: string | null
+          descricao?: string
+          gtin?: string | null
+          id?: string
+          loja?: string
+          lote?: string | null
+          motivo?: Database["public"]["Enums"]["oportunidade_motivo"]
+          observacoes?: string | null
+          preco_venda?: number | null
+          prioridade?: Database["public"]["Enums"]["oportunidade_prioridade"]
+          produto_id?: string | null
+          quantidade_aproximada?: number | null
+          status?: Database["public"]["Enums"]["oportunidade_status"]
+          updated_at?: string | null
+          validade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidades_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "campanhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oportunidades_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       preferencias_colunas: {
         Row: {
           colunas: Json
@@ -402,6 +486,20 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      oportunidade_motivo:
+        | "Excesso de estoque físico"
+        | "Baixo giro"
+        | "Produto parado"
+        | "Produto sazonal"
+        | "Próximo da validade"
+        | "Oportunidade comercial"
+        | "Outros"
+      oportunidade_prioridade: "Alta" | "Média" | "Baixa"
+      oportunidade_status:
+        | "Disponível"
+        | "Reservada"
+        | "Utilizada"
+        | "Arquivada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -530,6 +628,22 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      oportunidade_motivo: [
+        "Excesso de estoque físico",
+        "Baixo giro",
+        "Produto parado",
+        "Produto sazonal",
+        "Próximo da validade",
+        "Oportunidade comercial",
+        "Outros",
+      ],
+      oportunidade_prioridade: ["Alta", "Média", "Baixa"],
+      oportunidade_status: [
+        "Disponível",
+        "Reservada",
+        "Utilizada",
+        "Arquivada",
+      ],
     },
   },
 } as const
