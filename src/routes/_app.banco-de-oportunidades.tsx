@@ -38,6 +38,12 @@ import { brl, fmtDate } from "@/components/campanha-quick-view";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/banco-de-oportunidades")({
+  head: () => ({
+    meta: [
+      { title: "Banco de Oportunidades — Central de Campanhas Sumel" },
+      { name: "description", content: "Gerencie oportunidades comerciais identificadas nas lojas da Central Sumel." },
+    ],
+  }),
   component: BancoDeOportunidades,
 });
 
