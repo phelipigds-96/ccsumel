@@ -172,6 +172,23 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const readOnly = !user?.isAdmin || !!user?.readOnly;
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("todos");
+
+  // Visualização e Ordenação
+  const { visible: viewPrefs, toggle: toggleView } = useColumnPrefs("campanhas.list", ["grid", "list"], { grid: true, list: false });
+  const viewMode = viewPrefs.grid ? "grid" : "list";
+  const setViewMode = (mode: "grid" | "list") => {
+    if (mode === "grid" && !viewPrefs.grid) {
+      toggleView("grid");
+      toggleView("list");
+    } else if (mode === "list" && !viewPrefs.list) {
+      toggleView("list");
+      toggleView("grid");
+    }
+  };
+
+  const [sortField, setSortField] = useState<"dataInicial" | "dataFinal" | "nome" | "status">("dataInicial");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Campanha | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
