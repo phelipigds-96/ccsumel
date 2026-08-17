@@ -4,8 +4,11 @@ import {
   Plus, Search, Package, MapPin, Calendar, AlertCircle, 
   ArrowRight, Filter, MoreHorizontal, History, 
   CheckCircle2, Clock, Archive, Tag, Trash2, Pencil,
-  ChevronDown, Camera
+  ChevronDown, Camera, Loader2
 } from "lucide-react";
+import { ProductSearch } from "@/components/product-search";
+import { type Produto } from "@/lib/produtos";
+
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -70,10 +73,8 @@ function BancoDeOportunidades() {
   const [editing, setEditing] = useState<Partial<Oportunidade> | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState<Oportunidade | null>(null);
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
-  const buscaRef = useRef<HTMLInputElement>(null);
+
 
   const loadData = async () => {
     try {
@@ -156,33 +157,19 @@ function BancoDeOportunidades() {
     }
   };
 
-  const handleProductLookup = async (code?: string) => {
-    const term = code || busca;
-    if (!term) return;
-    setLookingUp(true);
-    try {
-      const p = await findByCodigoOrGtin(term);
-      if (p) {
-        setEditing(prev => ({
-          ...prev,
-          produto_id: p.id,
-          gtin: p.gtin,
-          codigo_interno: p.codigo,
-          descricao: p.descricao,
-          custo: p.custo,
-          preco_venda: p.preco_venda,
-        }));
-        setBusca("");
-        toast.success("Produto encontrado!");
-      } else {
-        toast.error("Produto não encontrado no catálogo.");
-      }
-    } catch (error) {
-      toast.error("Erro na busca.");
-    } finally {
-      setLookingUp(false);
-    }
+  const handleProductSelect = (p: Produto) => {
+    setEditing(prev => ({
+      ...prev,
+      produto_id: p.id,
+      gtin: p.gtin,
+      codigo_interno: p.codigo,
+      descricao: p.descricao,
+      custo: p.custo,
+      preco_venda: p.preco_venda,
+    }));
+    toast.success("Produto selecionado!");
   };
+
 
   const statusIcons: Record<OportunidadeStatus, any> = {
     'Disponível': <Clock className="h-3 w-3 text-amber-500" />,
@@ -411,47 +398,13 @@ function BancoDeOportunidades() {
             <DialogHeader>
               <DialogTitle>{editing?.id ? 'Editar Oportunidade' : 'Nova Oportunidade'}</DialogTitle>
               <DialogDescription>
-                Identifique o produto pelo código de barras e preencha as informações da coleta física.
+                Identifique o produto pelo código ou descrição e preencha as informações da coleta física.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-1 gap-4">
-                <div className="rounded-lg border bg-navy/5 p-3 mb-1">
-                  <Label className="text-xs text-muted-foreground">Código interno ou código de barras</Label>
-                  <div className="flex gap-2 mt-1.5">
-                    <Input 
-                      ref={buscaRef}
-                      autoFocus
-                      value={busca}
-                      onChange={(e) => setBusca(e.target.value)}
-                      placeholder="Bipe o código de barras ou digite o código e pressione Enter" 
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleProductLookup();
-                        }
-                      }}
-                      inputMode="numeric"
-                    />
-                    <Button 
-                      type="button" 
-                      variant="secondary" 
-                      size="icon"
-                      onClick={() => setScannerOpen(true)}
-                      title="Ler código de barras"
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      type="button" 
-                      onClick={() => handleProductLookup()}
-                      disabled={lookingUp}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      {lookingUp ? "Buscando..." : "Buscar"}
-                    </Button>
-                  </div>
-                </div>
+                <ProductSearch onSelect={handleProductSelect} />
+
 
                 <div className="space-y-2">
                   <Label>Descrição (Auto)</Label>
@@ -534,14 +487,6 @@ function BancoDeOportunidades() {
               )}
             </div>
 
-            <BarcodeScanner 
-              open={scannerOpen}
-              onOpenChange={setScannerOpen}
-              onResult={(result) => {
-                setBusca(result);
-                handleProductLookup(result);
-              }}
-            />
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>

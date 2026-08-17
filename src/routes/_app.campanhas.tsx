@@ -1169,39 +1169,27 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
   open: boolean; onOpenChange: (v: boolean) => void; oferta: Oferta | null;
   setOferta: (o: Oferta) => void; onSave: () => void; filiaisPermitidas: string[];
 }) {
-  const [busca, setBusca] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const buscaRef = useRef<HTMLInputElement>(null);
   const promoRef = useRef<HTMLInputElement>(null);
   const { campanhas: todasCampanhas, ofertas: todasOfertas } = useCampanhasStore();
 
-  const handleProductLookup = async (code: string) => {
-    if (!code) return;
-    setLookingUp(true);
-    try {
-      const { findByCodigoOrGtin } = await import("@/lib/produtos");
-      const p = await findByCodigoOrGtin(code);
-      if (p && oferta) {
-        setOferta({
-          ...oferta,
-          codigo: p.codigo || "",
-          gtin: p.gtin || "",
-          descricao: p.descricao,
-          custo: p.custo,
-          precoNormal: p.preco_venda,
-        });
-        toast.success("Produto encontrado!");
-        setTimeout(() => promoRef.current?.focus(), 100);
-      } else {
-        toast.error("Produto não encontrado.");
-      }
-    } catch (e) {
-      toast.error("Erro ao buscar produto.");
-    } finally {
-      setLookingUp(false);
-    }
+  const handleProductSelect = (p: Produto) => {
+    if (!oferta) return;
+    const preco = Number(p.preco_venda) || 0;
+    const custo = Number(p.custo) || 0;
+    setOferta({
+      ...oferta,
+      codigo: p.codigo || "",
+      gtin: p.gtin || "",
+      descricao: p.descricao,
+      precoNormal: preco,
+      custo,
+      precoPromocional: preco,
+    });
+    setTimeout(() => { promoRef.current?.focus(); promoRef.current?.select(); }, 60);
+    toast.success("Produto carregado. Informe o preço promocional ou clique num desconto.");
   };
+
 
   const historico = useMemo(() => {
     if (!oferta) return [];
@@ -1218,41 +1206,9 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
   }, [oferta?.id, oferta?.codigo, oferta?.gtin, todasOfertas, todasCampanhas]);
 
 
-  // Reset campo de busca e foca quando abre uma nova oferta (id muda)
-  useEffect(() => {
-    if (!open || !oferta) return;
-    setBusca("");
-    const t = setTimeout(() => buscaRef.current?.focus(), 50);
-    return () => clearTimeout(t);
-  }, [open, oferta?.id]);
-
   if (!oferta) return null;
   const upd = <K extends keyof Oferta>(k: K, v: Oferta[K]) => setOferta({ ...oferta, [k]: v });
 
-  const lookupProduto = async (code?: string) => {
-    const term = (code ?? busca).trim();
-    if (!term) { toast.error("Informe o código interno ou de barras."); return; }
-    setLookingUp(true);
-    try {
-      const { findByCodigoOrGtin } = await import("@/lib/produtos");
-      const p = await findByCodigoOrGtin(term);
-      if (!p) { toast.error("Produto não encontrado no catálogo."); return; }
-      const preco = Number(p.preco_venda) || 0;
-      const custo = Number(p.custo) || 0;
-      setOferta({
-        ...oferta,
-        codigo: p.codigo || "",
-        gtin: p.gtin || "",
-        descricao: p.descricao,
-        precoNormal: preco,
-        custo,
-        precoPromocional: preco,
-      });
-      setTimeout(() => { promoRef.current?.focus(); promoRef.current?.select(); }, 60);
-      toast.success("Produto carregado. Informe o preço promocional ou clique num desconto.");
-    } catch (e) { toast.error("Erro na consulta: " + (e as Error).message); }
-    finally { setLookingUp(false); }
-  };
 
   const descontoPct = oferta.precoNormal > 0
     ? ((oferta.precoNormal - oferta.precoPromocional) / oferta.precoNormal) * 100
@@ -1273,45 +1229,11 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
         <div className="p-6">
         <DialogHeader>
           <DialogTitle>{oferta.codigo ? "Editar Oferta" : "Nova Oferta"}</DialogTitle>
-          <DialogDescription>Informe o código interno ou de barras para preencher automaticamente.</DialogDescription>
+          <DialogDescription>Localize o produto pelo código ou descrição para preencher automaticamente.</DialogDescription>
         </DialogHeader>
 
-        {/* Busca por Código interno OU GTIN */}
-        <div className="rounded-lg border bg-navy/5 p-3 mb-1">
-          <Label className="text-xs text-muted-foreground">Código interno ou código de barras</Label>
-          <div className="flex gap-2 mt-1.5">
-            <Input
-              ref={buscaRef}
-              autoFocus
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookupProduto(); } }}
-              placeholder="Bipe o código de barras ou digite o código interno e pressione Enter"
-              inputMode="numeric"
-            />
-            <Button 
-              type="button" 
-              variant="secondary" 
-              size="icon" 
-              onClick={() => setScannerOpen(true)}
-              title="Ler código de barras"
-            >
-              <Camera className="h-4 w-4" />
-            </Button>
-            <Button type="button" onClick={() => lookupProduto()} disabled={lookingUp} className="bg-primary hover:bg-primary/90">
-              {lookingUp ? "Buscando..." : "Buscar"}
-            </Button>
-          </div>
-        </div>
+        <ProductSearch onSelect={handleProductSelect} />
 
-        <BarcodeScanner 
-          open={scannerOpen}
-          onOpenChange={setScannerOpen}
-          onResult={(code) => {
-            setBusca(code);
-            lookupProduto(code);
-          }}
-        />
 
         {historico.length > 0 && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 mb-1">
