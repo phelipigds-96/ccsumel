@@ -108,7 +108,7 @@ const toCampanha = (r: any): Campanha => {
     // Se já existe, garantimos que todas as tarefas padrão estejam presentes
     // e removemos eventuais tarefas extras que não pertencem ao padrão fixo
     finalChecklist = CHECKLIST_PADRAO.map(taskName => {
-      const existing = checklist.find(item => item.task === taskName);
+      const existing = (checklist as any[]).find(item => item.task === taskName);
       return existing || { id: crypto.randomUUID(), task: taskName, status: "Pendente" as ChecklistStatus };
     });
   }
