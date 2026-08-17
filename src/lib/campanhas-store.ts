@@ -87,6 +87,7 @@ const toCampanha = (r: any): Campanha => ({
   filiais: Array.isArray(r.filiais) ? r.filiais : [],
   clubeSumel: !!r.clube_sumel,
   materiais: Array.isArray(r.materiais) ? r.materiais : [],
+  checklist: Array.isArray(r.checklist) ? r.checklist : [],
 });
 
 const fromCampanha = (c: Campanha) => ({
@@ -99,6 +100,7 @@ const fromCampanha = (c: Campanha) => ({
   filiais: c.filiais ?? [],
   clube_sumel: !!c.clubeSumel,
   materiais: c.materiais ?? [],
+  checklist: c.checklist ?? [],
 });
 
 const toOferta = (r: any): Oferta => ({

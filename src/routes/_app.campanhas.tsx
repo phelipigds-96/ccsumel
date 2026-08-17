@@ -67,6 +67,13 @@ const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
 const emptyCampanha = (): Campanha => ({
   id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", filiais: [], clubeSumel: false, materiais: [],
+  checklist: [
+    { id: "c1", task: "Coletar produtos", status: "Pendente" },
+    { id: "c2", task: "Precificar ofertas", status: "Pendente" },
+    { id: "c3", task: "Cadastrar no Sistema", status: "Pendente" },
+    { id: "c4", task: "Fazer cartazes para impressão", status: "Pendente" },
+    { id: "c5", task: "Criar encarte digital", status: "Pendente" },
+  ],
 });
 
 const emptyOferta = (campanha: Campanha): Oferta => ({
