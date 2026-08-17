@@ -103,6 +103,8 @@ import {
   type Oportunidade, type OportunidadePrioridade, type OportunidadeStatus 
 } from "@/lib/oportunidades";
 import { BarcodeScanner } from "@/components/barcode-scanner";
+import { CampanhaChecklist } from "@/components/campanha-checklist";
+
 
 
 
@@ -817,6 +819,10 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{campanha.materiais.length}</div>
           <div className="mt-1 text-xs text-muted-foreground">Materiais de apoio para as lojas</div>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <CampanhaChecklist campanha={campanha} />
       </div>
 
       {campanha.materiais.length > 0 && (
