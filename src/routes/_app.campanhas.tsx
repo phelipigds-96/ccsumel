@@ -362,20 +362,43 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         }
       />
 
-      <div className="rounded-xl border bg-card p-4 mb-4 grid gap-3 sm:grid-cols-[1fr_200px]">
-        <div className="relative">
+      <div className="rounded-xl border bg-card p-4 mb-4 flex flex-col md:flex-row items-center gap-3">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar campanha..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos status</SelectItem>
-            <SelectItem value="Ativa">Ativa</SelectItem>
-            <SelectItem value="Programada">Programada</SelectItem>
-            <SelectItem value="Rascunho">Rascunho</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Select value={fStatus} onValueChange={setFStatus}>
+            <SelectTrigger className="w-full md:w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos status</SelectItem>
+              <SelectItem value="Ativa">Ativa</SelectItem>
+              <SelectItem value="Programada">Programada</SelectItem>
+              <SelectItem value="Rascunho">Rascunho</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <div className="flex items-center rounded-lg border bg-background p-1 shadow-sm">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              className="h-8 px-3 rounded-md text-xs"
+              onClick={() => setViewMode("grid")}
+            >
+              <LayoutGrid className="mr-2 h-3.5 w-3.5" />
+              Blocos
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              className="h-8 px-3 rounded-md text-xs"
+              onClick={() => setViewMode("list")}
+            >
+              <List className="mr-2 h-3.5 w-3.5" />
+              Lista
+            </Button>
+          </div>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
