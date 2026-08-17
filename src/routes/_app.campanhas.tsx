@@ -206,8 +206,22 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
     return campanhas
       .filter((c) => categoriaCampanha(c) !== "encerrada")
       .slice()
-      .sort((a, b) => (b.dataInicial || "").localeCompare(a.dataInicial || ""));
-  }, [campanhas]);
+      .sort((a, b) => {
+        let valA: string = "";
+        let valB: string = "";
+
+        if (sortField === "status") {
+          valA = statusCampanha(a);
+          valB = statusCampanha(b);
+        } else {
+          valA = (a[sortField] || "").toString();
+          valB = (b[sortField] || "").toString();
+        }
+
+        const cmp = valA.localeCompare(valB);
+        return sortOrder === "asc" ? cmp : -cmp;
+      });
+  }, [campanhas, sortField, sortOrder]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
