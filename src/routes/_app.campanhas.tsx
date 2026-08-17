@@ -405,7 +405,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
           Nenhuma campanha ativa ou programada.
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="space-y-6">
           {futuras.length > 0 && (
             <section>
@@ -451,6 +451,117 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
               </div>
             </section>
           )}
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/70 bg-navy/[0.04] hover:bg-navy/[0.04] [&>th]:h-10 [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
+                  <TableHead className="w-[100px] cursor-pointer" onClick={() => { 
+                    if (sortField === 'status') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    else { setSortField('status'); setSortOrder('asc'); }
+                  }}>
+                    <div className="flex items-center gap-1">Status <ArrowUpDown className="h-3 w-3" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => { 
+                    if (sortField === 'nome') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    else { setSortField('nome'); setSortOrder('asc'); }
+                  }}>
+                    <div className="flex items-center gap-1">Nome da campanha <ArrowUpDown className="h-3 w-3" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => { 
+                    if (sortField === 'dataInicial') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    else { setSortField('dataInicial'); setSortOrder('asc'); }
+                  }}>
+                    <div className="flex items-center gap-1">Início <ArrowUpDown className="h-3 w-3" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => { 
+                    if (sortField === 'dataFinal') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    else { setSortField('dataFinal'); setSortOrder('asc'); }
+                  }}>
+                    <div className="flex items-center gap-1">Término <ArrowUpDown className="h-3 w-3" /></div>
+                  </TableHead>
+                  <TableHead className="text-center">Produtos</TableHead>
+                  <TableHead className="text-center">Anexos</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((c) => {
+                  const count = countByCampanha.get(c.id) ?? 0;
+                  const status = statusCampanha(c);
+                  return (
+                    <TableRow key={c.id} className="group border-border/60 transition-colors hover:bg-accent/60">
+                      <TableCell>
+                        <Badge variant="outline" className={`${statusVariant[status]} shrink-0 text-[10px] py-0 h-5`}>
+                          {status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-semibold text-navy truncate max-w-[200px]">{c.nome}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmtDate(c.dataInicial)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmtDate(c.dataFinal)}</TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                          {count}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-xs text-muted-foreground">{c.materiais.length}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-0.5">
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Ver produtos e anexos" onClick={() => setQuickView(c)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            title="Imprimir listagem de produtos"
+                            onClick={() => { printCampanhaPDF(c, ofertas.filter((o) => o.campanhaId === c.id)); toast.success("PDF aberto em nova aba."); }}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Compartilhar / exportar">
+                                <Share2 className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <DropdownMenuLabel>Exportar</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => setCvCampanha(c)}>
+                                <FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDpCampanha(c)}>
+                                <ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+
+                          {!readOnly && (
+                            <>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Editar" onClick={() => openEdit(c)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive" title="Excluir" onClick={() => setDeleteId(c.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="outline" onClick={() => onOpen(c.id)} className="ml-2 h-8 px-2 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground text-xs">
+                            Abrir <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
