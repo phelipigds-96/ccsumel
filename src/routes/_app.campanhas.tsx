@@ -33,6 +33,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { ProductSearch } from "@/components/product-search";
+import { type Produto } from "@/lib/produtos";
+
 
 export const Route = createFileRoute("/_app/campanhas")({
   head: () => ({
