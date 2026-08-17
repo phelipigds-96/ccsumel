@@ -3,12 +3,31 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";
 
-export type ChecklistStatus = "Pendente" | "Em andamento" | "Concluída";
+export type ChecklistStatus = "Pendente" | "Concluída";
 
 export interface ChecklistItem {
   id: string;
   task: string;
   status: ChecklistStatus;
+}
+
+export const CHECKLIST_PADRAO: string[] = [
+  "Coletar produtos",
+  "Precificar ofertas",
+  "Cadastrar no Clube Sumel",
+  "Fazer cartazes para impressão",
+  "Criar encarte digital",
+  "Enviar encarte para Marketing",
+  "Enviar lista de ofertas para as lojas",
+  "Cadastrar promoções no sistema",
+];
+
+export function criarChecklistPadrao(): ChecklistItem[] {
+  return CHECKLIST_PADRAO.map((task) => ({
+    id: crypto.randomUUID(),
+    task,
+    status: "Pendente",
+  }));
 }
 
 export interface MaterialApoio {
@@ -77,18 +96,36 @@ const emit = () => {
 
 /* ---------- mapeamento banco <-> app ---------- */
 
-const toCampanha = (r: any): Campanha => ({
-  id: r.id,
-  nome: r.nome ?? "",
-  descricao: r.descricao ?? "",
-  dataInicial: r.data_inicial ?? "",
-  dataFinal: r.data_final ?? "",
-  status: (r.status ?? "Rascunho") as Status,
-  filiais: Array.isArray(r.filiais) ? r.filiais : [],
-  clubeSumel: !!r.clube_sumel,
-  materiais: Array.isArray(r.materiais) ? r.materiais : [],
-  checklist: Array.isArray(r.checklist) ? r.checklist : [],
-});
+const toCampanha = (r: any): Campanha => {
+  const checklist = Array.isArray(r.checklist) ? r.checklist : [];
+  
+  // Garantir que o checklist padrão exista e esteja na ordem correta
+  let finalChecklist: ChecklistItem[] = [];
+  
+  if (checklist.length === 0) {
+    finalChecklist = criarChecklistPadrao();
+  } else {
+    // Se já existe, garantimos que todas as tarefas padrão estejam presentes
+    // e removemos eventuais tarefas extras que não pertencem ao padrão fixo
+    finalChecklist = CHECKLIST_PADRAO.map(taskName => {
+      const existing = (checklist as any[]).find(item => item.task === taskName);
+      return existing || { id: crypto.randomUUID(), task: taskName, status: "Pendente" as ChecklistStatus };
+    });
+  }
+
+  return {
+    id: r.id,
+    nome: r.nome ?? "",
+    descricao: r.descricao ?? "",
+    dataInicial: r.data_inicial ?? "",
+    dataFinal: r.data_final ?? "",
+    status: (r.status ?? "Rascunho") as Status,
+    filiais: Array.isArray(r.filiais) ? r.filiais : [],
+    clubeSumel: !!r.clube_sumel,
+    materiais: Array.isArray(r.materiais) ? r.materiais : [],
+    checklist: finalChecklist,
+  };
+};
 
 const fromCampanha = (c: Campanha) => ({
   id: c.id,
