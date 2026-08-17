@@ -3,6 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";
 
+export type ChecklistStatus = "Pendente" | "Em andamento" | "Concluída";
+
+export interface ChecklistItem {
+  id: string;
+  task: string;
+  status: ChecklistStatus;
+}
+
 export interface MaterialApoio {
   path: string;
   nome: string;
@@ -20,6 +28,7 @@ export interface Campanha {
   filiais: string[];
   clubeSumel: boolean;
   materiais: MaterialApoio[];
+  checklist: ChecklistItem[];
 }
 
 export interface Oferta {
