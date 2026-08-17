@@ -67,6 +67,13 @@ const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
 const emptyCampanha = (): Campanha => ({
   id: crypto.randomUUID(), nome: "", descricao: "", dataInicial: "", dataFinal: "", status: "Rascunho", filiais: [], clubeSumel: false, materiais: [],
+  checklist: [
+    { id: "c1", task: "Coletar produtos", status: "Pendente" },
+    { id: "c2", task: "Precificar ofertas", status: "Pendente" },
+    { id: "c3", task: "Cadastrar no Sistema", status: "Pendente" },
+    { id: "c4", task: "Fazer cartazes para impressão", status: "Pendente" },
+    { id: "c5", task: "Criar encarte digital", status: "Pendente" },
+  ],
 });
 
 const emptyOferta = (campanha: Campanha): Oferta => ({
@@ -96,6 +103,8 @@ import {
   type Oportunidade, type OportunidadePrioridade, type OportunidadeStatus 
 } from "@/lib/oportunidades";
 import { BarcodeScanner } from "@/components/barcode-scanner";
+import { CampanhaChecklist } from "@/components/campanha-checklist";
+
 
 
 
@@ -810,6 +819,10 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{campanha.materiais.length}</div>
           <div className="mt-1 text-xs text-muted-foreground">Materiais de apoio para as lojas</div>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <CampanhaChecklist campanha={campanha} />
       </div>
 
       {campanha.materiais.length > 0 && (
