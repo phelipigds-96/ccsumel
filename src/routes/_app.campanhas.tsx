@@ -252,6 +252,14 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const openNew = () => { setEditing(emptyCampanha()); setDialogOpen(true); };
   const openEdit = (c: Campanha) => { setEditing({ ...c }); setDialogOpen(true); };
 
+  const saveWithMateriais = (c: Campanha, m: MaterialApoio[]) => {
+    const updated = { ...c, materiais: m };
+    onSave(updated);
+    // Atualiza o estado local para refletir no dialog sem fechar
+    setEditing(updated);
+  };
+
+
   const save = () => {
     if (!editing) return;
     if (!editing.nome.trim()) { toast.error("Informe o nome da campanha."); return; }
@@ -578,7 +586,15 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
       )}
 
 
-      <CampanhaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} campanha={editing} setCampanha={setEditing} onSave={save} />
+      <CampanhaDialog
+        open={dialogOpen}
+        onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}
+        campanha={editing}
+        setCampanha={setEditing}
+        onSave={save}
+        onSaveWithMateriais={(m) => editing && saveWithMateriais(editing, m)}
+      />
+
 
       <CampanhaQuickView
         campanha={quickView}
@@ -1013,10 +1029,13 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
 // ============ DIALOGS ============
 
-function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
+function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave, onSaveWithMateriais }: {
   open: boolean; onOpenChange: (v: boolean) => void; campanha: Campanha | null;
-  setCampanha: (c: Campanha) => void; onSave: () => void;
+  setCampanha: (c: Campanha | null) => void; onSave: () => void;
+  onSaveWithMateriais: (m: MaterialApoio[]) => void;
 }) {
+
+
   if (!campanha) return null;
   const upd = <K extends keyof Campanha>(k: K, v: Campanha[K]) => setCampanha({ ...campanha, [k]: v });
 
@@ -1086,7 +1105,9 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
             campanhaId={campanha.id}
             materiais={campanha.materiais}
             onChange={(m) => upd("materiais", m)}
+            onDirectSave={campanha.nome ? (m) => onSaveWithMateriais(m) : undefined}
           />
+
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
@@ -1107,8 +1128,9 @@ const ACCEPT = "image/jpeg,image/jpg,image/png,application/pdf";
 function isImage(tipo: string) { return tipo.startsWith("image/"); }
 
 function MateriaisUploader({
-  campanhaId, materiais, onChange,
-}: { campanhaId: string; materiais: MaterialApoio[]; onChange: (m: MaterialApoio[]) => void }) {
+  campanhaId, materiais, onChange, onDirectSave,
+}: { campanhaId: string; materiais: MaterialApoio[]; onChange: (m: MaterialApoio[]) => void; onDirectSave?: (m: MaterialApoio[]) => void }) {
+
   const [uploading, setUploading] = useState(false);
 
   const handleFiles = async (files: FileList | null) => {
@@ -1133,16 +1155,22 @@ function MateriaisUploader({
       added.push({ path, nome: file.name, tipo: file.type, tamanho: file.size });
     }
     if (added.length) {
-      onChange([...materiais, ...added]);
+      const novo = [...materiais, ...added];
+      onChange(novo);
+      if (onDirectSave) onDirectSave(novo);
       toast.success(`${added.length} arquivo(s) anexado(s).`);
     }
+
     setUploading(false);
   };
 
   const remove = async (m: MaterialApoio) => {
     await supabase.storage.from(BUCKET).remove([m.path]);
-    onChange(materiais.filter(x => x.path !== m.path));
+    const novo = materiais.filter(x => x.path !== m.path);
+    onChange(novo);
+    if (onDirectSave) onDirectSave(novo);
     toast.success("Arquivo removido.");
+
   };
 
   const openMaterial = async (m: MaterialApoio) => {
