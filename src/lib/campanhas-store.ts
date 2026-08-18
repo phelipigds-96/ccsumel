@@ -14,12 +14,9 @@ export interface ChecklistItem {
 export const CHECKLIST_PADRAO: string[] = [
   "Coletar produtos",
   "Precificar ofertas",
-  "Cadastrar no Clube Sumel",
-  "Fazer cartazes para impressão",
+  "Cadastrar ofertas no sistema",
   "Criar encarte digital",
-  "Enviar encarte para Marketing",
-  "Enviar lista de ofertas para as lojas",
-  "Cadastrar promoções no sistema",
+  "Criar cartaz físico",
 ];
 
 export function criarChecklistPadrao(): ChecklistItem[] {
