@@ -34,9 +34,9 @@ export function ProductSearch({ onSelect, autoFocus = true, placeholder }: Produ
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSearch = async (searchTerm: string) => {
+  const handleSearch = async (searchTerm: string, isFromScanner = false) => {
     const term = searchTerm.trim();
-    if (term.length < 3) {
+    if (term.length < 1) {
       setResults([]);
       setIsOpen(false);
       return;
@@ -44,20 +44,64 @@ export function ProductSearch({ onSelect, autoFocus = true, placeholder }: Produ
 
     setLoading(true);
     try {
-      // Tenta busca exata por código primeiro (comportamento atual)
-      const exact = await findByCodigoOrGtin(term);
-      if (exact && (/^\d+$/.test(term) || term.length >= 8)) {
-        onSelect(exact);
-        setQuery("");
-        setResults([]);
-        setIsOpen(false);
-        return;
+      // Regra para códigos numéricos: 
+      // Se for puramente numérico e não vier do scanner, aplicamos regras de espera
+      const isNumeric = /^\d+$/.test(term);
+      
+      if (isNumeric && !isFromScanner) {
+        // Se for 13 dígitos, tratamos como EAN-13 completo
+        if (term.length === 13) {
+          const exact = await findByCodigoOrGtin(term);
+          if (exact) {
+            onSelect(exact);
+            setQuery("");
+            setResults([]);
+            setIsOpen(false);
+            return;
+          }
+        }
+        
+        // Se for menos de 13 dígitos, só fazemos a busca exata por código se for um "Enter" ou se term.length >= 8
+        // (Aqui handleSearch é chamado pelo debounce ou pelo Enter)
+        if (term.length >= 8 || term.length === 0) {
+           const exact = await findByCodigoOrGtin(term);
+           if (exact) {
+             onSelect(exact);
+             setQuery("");
+             setResults([]);
+             setIsOpen(false);
+             return;
+           }
+        }
+        
+        // Se for código interno curto (< 8 dígitos), buscamos por descrição/código na listagem geral
+        const { rows } = await listProdutos(term, 1, 10);
+        setResults(rows);
+        setIsOpen(rows.length > 0);
+      } else if (isFromScanner) {
+        // Busca imediata vinda do scanner
+        const exact = await findByCodigoOrGtin(term);
+        if (exact) {
+          onSelect(exact);
+          setQuery("");
+          setResults([]);
+          setIsOpen(false);
+          return;
+        }
+        const { rows } = await listProdutos(term, 1, 10);
+        setResults(rows);
+        setIsOpen(rows.length > 0);
+      } else {
+        // Busca por descrição (texto) - Autocomplete normal
+        if (term.length < 3) {
+          setResults([]);
+          setIsOpen(false);
+          return;
+        }
+        const { rows } = await listProdutos(term, 1, 10);
+        setResults(rows);
+        setIsOpen(rows.length > 0);
       }
-
-      // Se não for código exato ou se for texto, busca por descrição
-      const { rows } = await listProdutos(term, 1, 10);
-      setResults(rows);
-      setIsOpen(true);
     } catch (error) {
       console.error("Erro na busca:", error);
     } finally {
@@ -70,9 +114,18 @@ export function ProductSearch({ onSelect, autoFocus = true, placeholder }: Produ
     setQuery(val);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const isNumeric = /^\d+$/.test(val.trim());
+    
+    // Se for numérico, aguardamos o usuário terminar (13 dígitos ou debounce maior)
+    // Se for texto, debounce normal (400ms)
+    const debounceTime = isNumeric 
+      ? (val.trim().length === 13 ? 100 : 1000) // Se for 13, dispara quase logo; senão espera 1s
+      : 400;
+
     debounceRef.current = setTimeout(() => {
       handleSearch(val);
-    }, 400);
+    }, debounceTime);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
