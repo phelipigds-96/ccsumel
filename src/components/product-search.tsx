@@ -215,7 +215,7 @@ export function ProductSearch({ onSelect, autoFocus = true, placeholder }: Produ
         onOpenChange={setScannerOpen}
         onResult={(code) => {
           setQuery(code);
-          handleSearch(code);
+          handleSearch(code, true);
         }}
       />
     </div>
