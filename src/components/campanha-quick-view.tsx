@@ -141,9 +141,9 @@ const BUCKET = "campanha-materiais";
 
 export function MateriaisViewer({ materiais }: { materiais: MaterialApoio[] }) {
   const openMaterial = async (m: MaterialApoio) => {
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(m.path, 60 * 10);
-    if (error || !data) { toast.error("Não foi possível abrir o arquivo."); return; }
-    window.open(data.signedUrl, "_blank", "noopener");
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(m.path);
+    if (!data?.publicUrl) { toast.error("Não foi possível abrir o arquivo."); return; }
+    window.open(data.publicUrl, "_blank", "noopener");
   };
   return (
     <div className="rounded-xl border bg-card p-4 mb-4">
