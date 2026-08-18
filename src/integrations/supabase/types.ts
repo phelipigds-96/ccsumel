@@ -54,6 +54,7 @@ export type Database = {
       }
       campanhas: {
         Row: {
+          checklist: Json | null
           clube_sumel: boolean
           created_at: string
           data_final: string | null
@@ -67,6 +68,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checklist?: Json | null
           clube_sumel?: boolean
           created_at?: string
           data_final?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checklist?: Json | null
           clube_sumel?: boolean
           created_at?: string
           data_final?: string | null
