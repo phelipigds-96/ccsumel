@@ -586,7 +586,15 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
       )}
 
 
-      <CampanhaDialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }} campanha={editing} setCampanha={setEditing} onSave={save} />
+      <CampanhaDialog
+        open={dialogOpen}
+        onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}
+        campanha={editing}
+        setCampanha={setEditing}
+        onSave={save}
+        onSaveWithMateriais={(m) => editing && saveWithMateriais(editing, m)}
+      />
+
 
       <CampanhaQuickView
         campanha={quickView}
@@ -1021,11 +1029,12 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
 // ============ DIALOGS ============
 
-function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave }: {
+function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave, onSaveWithMateriais }: {
   open: boolean; onOpenChange: (v: boolean) => void; campanha: Campanha | null;
-  setCampanha: (c: Campanha) => void; onSave: () => void;
+  setCampanha: (c: Campanha | null) => void; onSave: () => void;
   onSaveWithMateriais: (m: MaterialApoio[]) => void;
 }) {
+
 
   if (!campanha) return null;
   const upd = <K extends keyof Campanha>(k: K, v: Campanha[K]) => setCampanha({ ...campanha, [k]: v });
