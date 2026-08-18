@@ -254,8 +254,8 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
 
   const saveWithMateriais = (c: Campanha, m: MaterialApoio[]) => {
     const updated = { ...c, materiais: m };
+    console.log("[CampanhasList] saveWithMateriais triggered for:", c.id, "with:", m);
     onSave(updated);
-    // Atualiza o estado local para refletir no dialog sem fechar
     setEditing(updated);
   };
 
@@ -1156,8 +1156,12 @@ function MateriaisUploader({
     }
     if (added.length) {
       const novo = [...materiais, ...added];
+      console.log("[MateriaisUploader] Adding new materials:", added);
       onChange(novo);
-      if (onDirectSave) onDirectSave(novo);
+      if (onDirectSave) {
+        console.log("[MateriaisUploader] Calling onDirectSave with:", novo);
+        onDirectSave(novo);
+      }
       toast.success(`${added.length} arquivo(s) anexado(s).`);
     }
 

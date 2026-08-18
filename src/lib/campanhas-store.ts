@@ -297,7 +297,15 @@ export const campanhasStore = {
     const next = updater(prev);
     state = { ...state, campanhas: next };
     emit();
-    void syncCampanhas(prev, next).then(() => alinharStatusOfertas());
+    console.log("[campanhasStore] syncCampanhas starting...");
+    void syncCampanhas(prev, next)
+      .then(() => {
+        console.log("[campanhasStore] syncCampanhas completed.");
+        alinharStatusOfertas();
+      })
+      .catch((err) => {
+        console.error("[campanhasStore] syncCampanhas FAILED:", err);
+      });
   },
   setOfertas: (updater: (prev: Oferta[]) => Oferta[]) => {
     const prev = state.ofertas;
