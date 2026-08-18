@@ -268,8 +268,21 @@ async function syncCampanhas(prev: Campanha[], next: Campanha[]) {
     const p = prevMap.get(c.id);
     return !p || JSON.stringify(p) !== JSON.stringify(c);
   });
-  if (removidos.length) await supabase.from("campanhas" as any).delete().in("id", removidos);
-  if (alterados.length) await supabase.from("campanhas" as any).upsert(alterados.map(fromCampanha));
+
+  if (removidos.length) {
+    const { error } = await supabase.from("campanhas" as any).delete().in("id", removidos);
+    if (error) console.error("[campanhasStore] Error deleting campanhas:", error);
+  }
+
+  if (alterados.length) {
+    console.log("[campanhasStore] Upserting changed campaigns:", alterados.map(c => c.nome));
+    const { error } = await supabase.from("campanhas" as any).upsert(alterados.map(fromCampanha));
+    if (error) {
+      console.error("[campanhasStore] Error upserting campanhas:", error);
+      // Aqui poderíamos lançar o erro para ser capturado no setCampanhas
+      throw error;
+    }
+  }
 }
 
 async function syncOfertas(prev: Oferta[], next: Oferta[]) {
@@ -297,7 +310,15 @@ export const campanhasStore = {
     const next = updater(prev);
     state = { ...state, campanhas: next };
     emit();
-    void syncCampanhas(prev, next).then(() => alinharStatusOfertas());
+    console.log("[campanhasStore] syncCampanhas starting...");
+    void syncCampanhas(prev, next)
+      .then(() => {
+        console.log("[campanhasStore] syncCampanhas completed.");
+        alinharStatusOfertas();
+      })
+      .catch((err) => {
+        console.error("[campanhasStore] syncCampanhas FAILED:", err);
+      });
   },
   setOfertas: (updater: (prev: Oferta[]) => Oferta[]) => {
     const prev = state.ofertas;
