@@ -1178,9 +1178,16 @@ function MateriaisUploader({
   };
 
   const openMaterial = async (m: MaterialApoio) => {
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(m.path);
-    if (!data?.publicUrl) { toast.error("Não foi possível abrir o arquivo."); return; }
-    window.open(data.publicUrl, "_blank", "noopener");
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(m.path, 3600);
+    if (error || !data?.signedUrl) {
+      toast.error("Erro ao abrir arquivo. Tentando URL pública...");
+      const { data: publicData } = supabase.storage.from(BUCKET).getPublicUrl(m.path);
+      if (publicData?.publicUrl) {
+        window.open(publicData.publicUrl, "_blank", "noopener");
+      }
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener");
   };
 
   return (
