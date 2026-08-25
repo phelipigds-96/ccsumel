@@ -124,6 +124,30 @@ export type Database = {
         }
         Relationships: []
       }
+      fracionamento_produtos: {
+        Row: {
+          codigo_balanca: string
+          created_at: string
+          descricao: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          codigo_balanca: string
+          created_at?: string
+          descricao: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          codigo_balanca?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ofertas: {
         Row: {
           campanha_id: string
