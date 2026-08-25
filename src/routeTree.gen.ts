@@ -17,6 +17,7 @@ import { Route as AppUsuariosRouteImport } from './routes/_app.usuarios'
 import { Route as AppSellOutRouteImport } from './routes/_app.sell-out'
 import { Route as AppRelatoriosRouteImport } from './routes/_app.relatorios'
 import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-gondola'
+import { Route as AppFracionamentoRouteImport } from './routes/_app.fracionamento'
 import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
@@ -64,6 +65,11 @@ const AppRelatoriosRoute = AppRelatoriosRouteImport.update({
 const AppPontasDeGondolaRoute = AppPontasDeGondolaRouteImport.update({
   id: '/pontas-de-gondola',
   path: '/pontas-de-gondola',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFracionamentoRoute = AppFracionamentoRouteImport.update({
+  id: '/fracionamento',
+  path: '/fracionamento',
   getParentRoute: () => AppRoute,
 } as any)
 const AppFornecedoresRoute = AppFornecedoresRouteImport.update({
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
+  '/fracionamento': typeof AppFracionamentoRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/relatorios': typeof AppRelatoriosRoute
   '/sell-out': typeof AppSellOutRouteWithChildren
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
+  '/fracionamento': typeof AppFracionamentoRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/relatorios': typeof AppRelatoriosRoute
   '/usuarios': typeof AppUsuariosRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/fornecedores': typeof AppFornecedoresRoute
+  '/_app/fracionamento': typeof AppFracionamentoRoute
   '/_app/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/_app/relatorios': typeof AppRelatoriosRoute
   '/_app/sell-out': typeof AppSellOutRouteWithChildren
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
+    | '/fracionamento'
     | '/pontas-de-gondola'
     | '/relatorios'
     | '/sell-out'
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
+    | '/fracionamento'
     | '/pontas-de-gondola'
     | '/relatorios'
     | '/usuarios'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/_app/configuracoes'
     | '/_app/dashboard'
     | '/_app/fornecedores'
+    | '/_app/fracionamento'
     | '/_app/pontas-de-gondola'
     | '/_app/relatorios'
     | '/_app/sell-out'
@@ -286,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/pontas-de-gondola'
       fullPath: '/pontas-de-gondola'
       preLoaderRoute: typeof AppPontasDeGondolaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/fracionamento': {
+      id: '/_app/fracionamento'
+      path: '/fracionamento'
+      fullPath: '/fracionamento'
+      preLoaderRoute: typeof AppFracionamentoRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/fornecedores': {
@@ -376,6 +395,7 @@ interface AppRouteChildren {
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppFornecedoresRoute: typeof AppFornecedoresRoute
+  AppFracionamentoRoute: typeof AppFracionamentoRoute
   AppPontasDeGondolaRoute: typeof AppPontasDeGondolaRoute
   AppRelatoriosRoute: typeof AppRelatoriosRoute
   AppSellOutRoute: typeof AppSellOutRouteWithChildren
@@ -391,6 +411,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppFornecedoresRoute: AppFornecedoresRoute,
+  AppFracionamentoRoute: AppFracionamentoRoute,
   AppPontasDeGondolaRoute: AppPontasDeGondolaRoute,
   AppRelatoriosRoute: AppRelatoriosRoute,
   AppSellOutRoute: AppSellOutRouteWithChildren,

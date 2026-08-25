@@ -78,7 +78,7 @@ async function listFracionamento(): Promise<FracionamentoProduto[]> {
     .select("id, codigo_balanca, descricao")
     .order("descricao", { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []) as FracionamentoProduto[];
+  return (data ?? []) as unknown as FracionamentoProduto[];
 }
 
 function FracionamentoPage() {
