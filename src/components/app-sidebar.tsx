@@ -18,6 +18,7 @@ import {
   Archive,
   Calculator,
   ChevronRight,
+  Scale,
 } from "lucide-react";
 import {
   Sidebar,
@@ -53,6 +54,7 @@ const items: Item[] = [
   { title: "Sell Out", url: "/sell-out/acertos", icon: ShoppingCart },
   { title: "Pontas de Gôndola", url: "/pontas-de-gondola", icon: PackageOpen },
   { title: "Fornecedores", url: "/fornecedores", icon: Truck },
+  { title: "Fracionamento", url: "/fracionamento", icon: Scale },
   { title: "Catálogo de Produtos", url: "/catalogo-de-produtos", icon: Package },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Usuários", url: "/usuarios", icon: Users },
