@@ -1,8 +1,38 @@
-import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useNavigate, useLocation, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { ShieldAlert } from "lucide-react";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { useAuth, PERMISSIONS } from "@/lib/auth";
+
+function RouteGuard() {
+  const { user, loading } = useAuth();
+  const { pathname } = useLocation();
+
+  // Find the most specific permission key that matches the current route.
+  const match = PERMISSIONS.map((p) => p.key)
+    .filter((key) => pathname === key || pathname.startsWith(key + "/"))
+    .sort((a, b) => b.length - a.length)[0];
+
+  if (loading || !user || !match) return <Outlet />;
+  if (user.isAdmin || (user.permissions ?? []).includes(match)) return <Outlet />;
+
+  return (
+    <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-16 text-center">
+      <div className="grid h-12 w-12 place-items-center rounded-xl bg-destructive/10 text-destructive">
+        <ShieldAlert className="h-6 w-6" />
+      </div>
+      <h1 className="text-lg font-bold text-navy">Acesso não autorizado</h1>
+      <p className="text-sm text-muted-foreground">
+        Você não possui permissão para acessar este módulo. Solicite liberação a um administrador.
+      </p>
+      <Button asChild variant="outline" size="sm">
+        <Link to="/dashboard">Voltar ao Dashboard</Link>
+      </Button>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -42,7 +72,7 @@ function AppLayout() {
           </header>
 
           <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">
-            <Outlet />
+            <RouteGuard />
           </main>
         </SidebarInset>
       </div>
