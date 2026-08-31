@@ -182,8 +182,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsers([]);
   };
 
+  const unwrap = (res: any, fallback: string) => {
+    if (res && typeof res === "object" && "ok" in res && !res.ok) {
+      throw new Error(res.error || fallback);
+    }
+    return res;
+  };
+
   const createUser: AuthContextValue["createUser"] = async (u) => {
-    await adminCreateUser({
+    const res = await adminCreateUser({
       data: {
         name: u.name,
         username: u.username,
@@ -195,13 +202,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         readOnly: !!u.readOnly,
       },
     });
+    unwrap(res, "Não foi possível criar o usuário.");
     await refresh();
   };
 
   const updateUser: AuthContextValue["updateUser"] = async (id, patch) => {
     const current = users.find((x) => x.id === id);
     if (!current) throw new Error("Usuário não encontrado.");
-    await adminUpdateUser({
+    const res = await adminUpdateUser({
       data: {
         id,
         name: patch.name ?? current.name,
@@ -214,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         readOnly: patch.readOnly ?? !!current.readOnly,
       },
     });
+    unwrap(res, "Não foi possível salvar o usuário.");
     await refresh();
     if (user && user.id === id) {
       const session = await loadSessionUser(id);
@@ -222,7 +231,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteUser: AuthContextValue["deleteUser"] = async (id) => {
-    await adminDeleteUser({ data: { id } });
+    const res = await adminDeleteUser({ data: { id } });
+    unwrap(res, "Não foi possível excluir o usuário.");
     await refresh();
   };
 
