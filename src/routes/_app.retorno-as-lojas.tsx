@@ -153,7 +153,7 @@ function RetornoAsLojas() {
     <div className="space-y-4">
       <PageHeader
         title="Retorno às Lojas"
-        description={`Produtos apontados pela equipe que Compras já colocou no pedido. Cada retorno fica visível por ${prazo} dias.`}
+        description={`Produtos apontados pela equipe que Compras já avaliou. Cada retorno fica visível por ${prazo} dias.`}
       />
 
       <div className="flex flex-wrap items-center gap-2">
