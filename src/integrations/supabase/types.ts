@@ -118,6 +118,30 @@ export type Database = {
         }
         Relationships: []
       }
+      falta_status_regras: {
+        Row: {
+          bloqueia_novo_lancamento: boolean
+          bloqueio_permanente: boolean
+          created_at: string
+          status: Database["public"]["Enums"]["falta_status"]
+          updated_at: string
+        }
+        Insert: {
+          bloqueia_novo_lancamento?: boolean
+          bloqueio_permanente?: boolean
+          created_at?: string
+          status: Database["public"]["Enums"]["falta_status"]
+          updated_at?: string
+        }
+        Update: {
+          bloqueia_novo_lancamento?: boolean
+          bloqueio_permanente?: boolean
+          created_at?: string
+          status?: Database["public"]["Enums"]["falta_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fornecedores: {
         Row: {
           ativo: boolean
@@ -379,6 +403,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      produto_bloqueios: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          falta_id: string | null
+          id: string
+          motivo: string
+          permanente: boolean
+          product_id: string
+          status: Database["public"]["Enums"]["falta_status"]
+          store_id: string
+          tratado_em: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          falta_id?: string | null
+          id?: string
+          motivo?: string
+          permanente?: boolean
+          product_id: string
+          status: Database["public"]["Enums"]["falta_status"]
+          store_id: string
+          tratado_em?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          falta_id?: string | null
+          id?: string
+          motivo?: string
+          permanente?: boolean
+          product_id?: string
+          status?: Database["public"]["Enums"]["falta_status"]
+          store_id?: string
+          tratado_em?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_bloqueios_falta_id_fkey"
+            columns: ["falta_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_em_falta"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_bloqueios_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_bloqueios_historico: {
+        Row: {
+          ativo_anterior: boolean | null
+          ativo_novo: boolean | null
+          changed_by: string | null
+          changed_by_name: string
+          created_at: string
+          id: string
+          motivo: string
+          product_id: string
+          status_anterior: Database["public"]["Enums"]["falta_status"] | null
+          status_novo: Database["public"]["Enums"]["falta_status"] | null
+          store_id: string
+        }
+        Insert: {
+          ativo_anterior?: boolean | null
+          ativo_novo?: boolean | null
+          changed_by?: string | null
+          changed_by_name?: string
+          created_at?: string
+          id?: string
+          motivo?: string
+          product_id: string
+          status_anterior?: Database["public"]["Enums"]["falta_status"] | null
+          status_novo?: Database["public"]["Enums"]["falta_status"] | null
+          store_id: string
+        }
+        Update: {
+          ativo_anterior?: boolean | null
+          ativo_novo?: boolean | null
+          changed_by?: string | null
+          changed_by_name?: string
+          created_at?: string
+          id?: string
+          motivo?: string
+          product_id?: string
+          status_anterior?: Database["public"]["Enums"]["falta_status"] | null
+          status_novo?: Database["public"]["Enums"]["falta_status"] | null
+          store_id?: string
+        }
+        Relationships: []
       }
       produto_importacoes: {
         Row: {
@@ -644,6 +767,10 @@ export type Database = {
         Returns: boolean
       }
       is_read_only: { Args: { _user_id: string }; Returns: boolean }
+      liberar_produto_bloqueado: {
+        Args: { _bloqueio_id: string; _motivo?: string; _nome: string }
+        Returns: undefined
+      }
       marcar_retorno_ciente: {
         Args: { _falta_id: string; _nome: string }
         Returns: undefined
