@@ -17,6 +17,7 @@ export const PERMISSIONS: { key: string; label: string }[] = [
   { key: "/fornecedores", label: "Fornecedores" },
   { key: "/fracionamento", label: "Fracionamento" },
   { key: "/produtos-em-falta", label: "Produtos em Falta" },
+  { key: "/central-produtos-em-falta", label: "Central de Produtos em Falta" },
   { key: "/catalogo-de-produtos", label: "Catálogo de Produtos" },
   { key: "/relatorios", label: "Relatórios" },
   { key: "/usuarios", label: "Usuários" },
