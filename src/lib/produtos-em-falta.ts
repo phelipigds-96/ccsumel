@@ -207,6 +207,7 @@ export const PERM_RETORNO = "/retorno-as-lojas";
 
 export interface RetornoLoja extends ProdutoEmFalta {
   pedido_realizado_em: string | null;
+  retorno_em: string | null;
   ciente_by: string | null;
   ciente_by_name: string;
   ciente_at: string | null;
@@ -240,9 +241,11 @@ export function podeVerRetorno(
 }
 
 /**
- * Registros com pedido já realizado e ainda dentro do prazo de exibição.
- * A saída da lista é automática, baseada na data em que o status virou
- * "Pedido realizado" — nada é excluído do banco.
+ * Regra: qualquer falta cujo status seja DIFERENTE de "Pendente" entra no
+ * Retorno às Lojas — sem lista fixa de status, então status novos passam a
+ * aparecer automaticamente. A data de entrada (`retorno_em`) é gravada pelo
+ * banco na primeira mudança de situação, e a saída da lista é automática
+ * pelo prazo configurado — nada é excluído do banco.
  */
 export async function listRetornoLojas(opts: { loja?: string | null } = {}) {
   const prazo = await getPrazoRetornoDias();
@@ -250,9 +253,9 @@ export async function listRetornoLojas(opts: { loja?: string | null } = {}) {
 
   let q = table()
     .select("*, produto:produtos(id, descricao, codigo, gtin)")
-    .eq("status", "Pedido realizado")
-    .gte("pedido_realizado_em", limite)
-    .order("pedido_realizado_em", { ascending: false })
+    .neq("status", "Pendente")
+    .gte("retorno_em", limite)
+    .order("retorno_em", { ascending: false })
     .limit(300);
 
   if (opts.loja) q = q.eq("store_id", opts.loja);
@@ -266,6 +269,7 @@ export async function contarRetornosNaoCientes(loja?: string | null) {
   const { rows } = await listRetornoLojas({ loja: loja ?? null });
   return rows.filter((r) => !r.ciente_at).length;
 }
+
 
 export async function marcarCiente(faltaId: string, nome: string) {
   const { error } = await supabase.rpc("marcar_retorno_ciente" as any, {
