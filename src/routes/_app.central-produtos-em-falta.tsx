@@ -76,8 +76,10 @@ interface Grupo {
   itens: ProdutoEmFalta[];
   total: number;
   ultimo: ProdutoEmFalta;
+  primeiro: ProdutoEmFalta;
   status: FaltaStatus;
 }
+
 
 function fmt(dt: string) {
   const d = new Date(dt);
