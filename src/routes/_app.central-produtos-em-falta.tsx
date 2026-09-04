@@ -215,8 +215,12 @@ function CentralProdutosEmFalta() {
         });
       }
       toast.success("Situação atualizada");
-      setAberto(null);
-      await carregar();
+      setAberto({
+        ...aberto,
+        status: novoStatus,
+        itens: aberto.itens.map((i) => ({ ...i, status: novoStatus, management_observation: obsGestao.trim() })),
+      });
+      await Promise.all([carregar(), carregarTimeline(aberto)]);
     } catch (e) {
       toast.error("Não foi possível atualizar", { description: (e as Error).message });
     } finally {
