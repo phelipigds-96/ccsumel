@@ -17,6 +17,31 @@ export type FaltaStatus = (typeof FALTA_STATUS)[number];
 
 export const LOJAS = ["Matriz", "Filial 01", "Filial 02", "Filial 03"];
 
+export const PERM_REGISTRAR = "/produtos-em-falta";
+export const PERM_GERENCIAR = "/central-produtos-em-falta";
+
+const slug = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+/**
+ * Loja do usuário compartilhado: derivada do login/nome do perfil (ex.: "filial01",
+ * "Filial 01", "matriz"). Administradores e usuários de gestão não ficam restritos.
+ */
+export function lojaDoUsuario(
+  user: { name?: string; username?: string; isAdmin?: boolean; permissions?: string[] } | null,
+): string | null {
+  if (!user || user.isAdmin) return null;
+  if ((user.permissions ?? []).includes(PERM_GERENCIAR)) return null;
+  const alvos = [user.username, user.name].filter(Boolean).map((v) => slug(String(v)));
+  return LOJAS.find((l) => alvos.includes(slug(l))) ?? null;
+}
+
+export function podeGerenciarFaltas(
+  user: { isAdmin?: boolean; permissions?: string[] } | null,
+): boolean {
+  return !!user && (user.isAdmin || (user.permissions ?? []).includes(PERM_GERENCIAR));
+}
+
 export interface ProdutoEmFalta {
   id: string;
   product_id: string;

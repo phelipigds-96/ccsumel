@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import type { Produto } from "@/lib/produtos";
-import { createFalta, LOJAS } from "@/lib/produtos-em-falta";
+import { createFalta, LOJAS, lojaDoUsuario } from "@/lib/produtos-em-falta";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/produtos-em-falta")({
   head: () => ({
@@ -58,7 +59,10 @@ function ProdutosEmFaltaPage() {
   const [produto, setProduto] = useState<Produto | null>(null);
   const [nome, setNome] = useState("");
   const [obs, setObs] = useState("");
-  const [loja, setLoja] = useState<string>(LOJAS[0] ?? "Matriz");
+  const { user } = useAuth();
+  const lojaFixa = lojaDoUsuario(user);
+  const [loja, setLoja] = useState<string>(lojaFixa ?? LOJAS[0] ?? "Matriz");
+  useEffect(() => { if (lojaFixa) setLoja(lojaFixa); }, [lojaFixa]);
   const [saving, setSaving] = useState(false);
   const [erroNome, setErroNome] = useState(false);
 
@@ -223,12 +227,18 @@ function ProdutosEmFaltaPage() {
 
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Loja</Label>
-            <Select value={loja} onValueChange={setLoja}>
-              <SelectTrigger className="h-12 text-base"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LOJAS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {lojaFixa ? (
+              <p className="flex h-12 items-center rounded-md border border-border bg-muted/40 px-3 text-base font-semibold">
+                {lojaFixa}
+              </p>
+            ) : (
+              <Select value={loja} onValueChange={setLoja}>
+                <SelectTrigger className="h-12 text-base"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LOJAS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
