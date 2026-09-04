@@ -58,6 +58,7 @@ const items: Item[] = [
   { title: "Fracionamento", url: "/fracionamento", icon: Scale },
   { title: "Produtos em Falta", url: "/produtos-em-falta", icon: ShoppingBasket },
   { title: "Central de Produtos em Falta", url: "/central-produtos-em-falta", icon: ShoppingBasket },
+  { title: "Retorno às Lojas", url: "/retorno-as-lojas", icon: PackageCheck },
   { title: "Catálogo de Produtos", url: "/catalogo-de-produtos", icon: Package },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Usuários", url: "/usuarios", icon: Users },
