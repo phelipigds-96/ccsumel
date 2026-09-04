@@ -240,7 +240,8 @@ function RetornoAsLojas() {
         <ul className="space-y-2">
           {filtradas.map((r) => {
             const novo = !r.ciente_at;
-            const dias = diasDesde(r.pedido_realizado_em);
+            const dias = diasDesde(r.retorno_em);
+            const visual = visualDe(r.status);
             return (
               <li
                 key={r.id}
@@ -254,9 +255,13 @@ function RetornoAsLojas() {
                       {novo && (
                         <Badge className="bg-blue-600 text-white hover:bg-blue-600">🔵 Novo retorno</Badge>
                       )}
-                      <Badge variant="outline" className="border-indigo-300 bg-indigo-100 text-indigo-800">
-                        📦 Pedido realizado
+                      <Badge
+                        variant="outline"
+                        className={`text-[11px] font-semibold uppercase tracking-wide ${visual.classe}`}
+                      >
+                        {visual.emoji} {r.status}
                       </Badge>
+
                       {r.ciente_at && (
                         <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-800">
                           ✓ Ciente
