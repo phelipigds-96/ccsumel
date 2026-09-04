@@ -198,3 +198,79 @@ export async function deleteFalta(id: string) {
   const { error } = await table().delete().eq("id", id);
   if (error) throw error;
 }
+
+// ---------------------------------------------------------------------------
+// Retorno às Lojas
+// ---------------------------------------------------------------------------
+
+export const PERM_RETORNO = "/retorno-as-lojas";
+
+export interface RetornoLoja extends ProdutoEmFalta {
+  pedido_realizado_em: string | null;
+  ciente_by: string | null;
+  ciente_by_name: string;
+  ciente_at: string | null;
+  responsavel_nome?: string;
+}
+
+/** Prazo (em dias) de exibição no Retorno às Lojas. Configurável no banco. */
+export async function getPrazoRetornoDias(): Promise<number> {
+  const { data } = await supabase
+    .from("app_settings" as any)
+    .select("value")
+    .eq("key", "retorno_lojas")
+    .maybeSingle();
+  const v = (data as any)?.value?.prazo_dias;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : 7;
+}
+
+export async function setPrazoRetornoDias(dias: number) {
+  const { error } = await supabase
+    .from("app_settings" as any)
+    .update({ value: { prazo_dias: dias } })
+    .eq("key", "retorno_lojas");
+  if (error) throw error;
+}
+
+export function podeVerRetorno(
+  user: { isAdmin?: boolean; permissions?: string[] } | null,
+): boolean {
+  return !!user && (user.isAdmin || (user.permissions ?? []).includes(PERM_RETORNO));
+}
+
+/**
+ * Registros com pedido já realizado e ainda dentro do prazo de exibição.
+ * A saída da lista é automática, baseada na data em que o status virou
+ * "Pedido realizado" — nada é excluído do banco.
+ */
+export async function listRetornoLojas(opts: { loja?: string | null } = {}) {
+  const prazo = await getPrazoRetornoDias();
+  const limite = new Date(Date.now() - prazo * 24 * 60 * 60 * 1000).toISOString();
+
+  let q = table()
+    .select("*, produto:produtos(id, descricao, codigo, gtin)")
+    .eq("status", "Pedido realizado")
+    .gte("pedido_realizado_em", limite)
+    .order("pedido_realizado_em", { ascending: false })
+    .limit(300);
+
+  if (opts.loja) q = q.eq("store_id", opts.loja);
+
+  const { data, error } = await q;
+  if (error) throw error;
+  return { prazo, rows: (data ?? []) as unknown as RetornoLoja[] };
+}
+
+export async function contarRetornosNaoCientes(loja?: string | null) {
+  const { rows } = await listRetornoLojas({ loja: loja ?? null });
+  return rows.filter((r) => !r.ciente_at).length;
+}
+
+export async function marcarCiente(faltaId: string, nome: string) {
+  const { error } = await supabase.rpc("marcar_retorno_ciente" as any, {
+    _falta_id: faltaId,
+    _nome: nome,
+  });
+  if (error) throw error;
+}

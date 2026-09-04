@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVerbasCooperadasRouteImport } from './routes/_app.verbas-cooperadas'
 import { Route as AppUsuariosRouteImport } from './routes/_app.usuarios'
 import { Route as AppSellOutRouteImport } from './routes/_app.sell-out'
+import { Route as AppRetornoAsLojasRouteImport } from './routes/_app.retorno-as-lojas'
 import { Route as AppRelatoriosRouteImport } from './routes/_app.relatorios'
 import { Route as AppProdutosEmFaltaRouteImport } from './routes/_app.produtos-em-falta'
 import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-gondola'
@@ -57,6 +58,11 @@ const AppUsuariosRoute = AppUsuariosRouteImport.update({
 const AppSellOutRoute = AppSellOutRouteImport.update({
   id: '/sell-out',
   path: '/sell-out',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRetornoAsLojasRoute = AppRetornoAsLojasRouteImport.update({
+  id: '/retorno-as-lojas',
+  path: '/retorno-as-lojas',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRelatoriosRoute = AppRelatoriosRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/produtos-em-falta': typeof AppProdutosEmFaltaRoute
   '/relatorios': typeof AppRelatoriosRoute
+  '/retorno-as-lojas': typeof AppRetornoAsLojasRoute
   '/sell-out': typeof AppSellOutRouteWithChildren
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/produtos-em-falta': typeof AppProdutosEmFaltaRoute
   '/relatorios': typeof AppRelatoriosRoute
+  '/retorno-as-lojas': typeof AppRetornoAsLojasRoute
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
   '/sell-out/acertos': typeof AppSellOutAcertosRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/_app/pontas-de-gondola': typeof AppPontasDeGondolaRoute
   '/_app/produtos-em-falta': typeof AppProdutosEmFaltaRoute
   '/_app/relatorios': typeof AppRelatoriosRoute
+  '/_app/retorno-as-lojas': typeof AppRetornoAsLojasRoute
   '/_app/sell-out': typeof AppSellOutRouteWithChildren
   '/_app/usuarios': typeof AppUsuariosRoute
   '/_app/verbas-cooperadas': typeof AppVerbasCooperadasRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/pontas-de-gondola'
     | '/produtos-em-falta'
     | '/relatorios'
+    | '/retorno-as-lojas'
     | '/sell-out'
     | '/usuarios'
     | '/verbas-cooperadas'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/pontas-de-gondola'
     | '/produtos-em-falta'
     | '/relatorios'
+    | '/retorno-as-lojas'
     | '/usuarios'
     | '/verbas-cooperadas'
     | '/sell-out/acertos'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/_app/pontas-de-gondola'
     | '/_app/produtos-em-falta'
     | '/_app/relatorios'
+    | '/_app/retorno-as-lojas'
     | '/_app/sell-out'
     | '/_app/usuarios'
     | '/_app/verbas-cooperadas'
@@ -309,6 +321,13 @@ declare module '@tanstack/react-router' {
       path: '/sell-out'
       fullPath: '/sell-out'
       preLoaderRoute: typeof AppSellOutRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/retorno-as-lojas': {
+      id: '/_app/retorno-as-lojas'
+      path: '/retorno-as-lojas'
+      fullPath: '/retorno-as-lojas'
+      preLoaderRoute: typeof AppRetornoAsLojasRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/relatorios': {
@@ -439,6 +458,7 @@ interface AppRouteChildren {
   AppPontasDeGondolaRoute: typeof AppPontasDeGondolaRoute
   AppProdutosEmFaltaRoute: typeof AppProdutosEmFaltaRoute
   AppRelatoriosRoute: typeof AppRelatoriosRoute
+  AppRetornoAsLojasRoute: typeof AppRetornoAsLojasRoute
   AppSellOutRoute: typeof AppSellOutRouteWithChildren
   AppUsuariosRoute: typeof AppUsuariosRoute
   AppVerbasCooperadasRoute: typeof AppVerbasCooperadasRoute
@@ -457,6 +477,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPontasDeGondolaRoute: AppPontasDeGondolaRoute,
   AppProdutosEmFaltaRoute: AppProdutosEmFaltaRoute,
   AppRelatoriosRoute: AppRelatoriosRoute,
+  AppRetornoAsLojasRoute: AppRetornoAsLojasRoute,
   AppSellOutRoute: AppSellOutRouteWithChildren,
   AppUsuariosRoute: AppUsuariosRoute,
   AppVerbasCooperadasRoute: AppVerbasCooperadasRoute,

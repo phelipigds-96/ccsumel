@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Scale,
   ShoppingBasket,
+  PackageCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,6 +39,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth";
+import { contarRetornosNaoCientes, lojaDoUsuario, podeVerRetorno } from "@/lib/produtos-em-falta";
 
 type Item = {
   title: string;
@@ -58,6 +60,7 @@ const items: Item[] = [
   { title: "Fracionamento", url: "/fracionamento", icon: Scale },
   { title: "Produtos em Falta", url: "/produtos-em-falta", icon: ShoppingBasket },
   { title: "Central de Produtos em Falta", url: "/central-produtos-em-falta", icon: ShoppingBasket },
+  { title: "Retorno às Lojas", url: "/retorno-as-lojas", icon: PackageCheck },
   { title: "Catálogo de Produtos", url: "/catalogo-de-produtos", icon: Package },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Usuários", url: "/usuarios", icon: Users },
@@ -83,6 +86,30 @@ export function AppSidebar() {
     .filter(Boolean) as Item[];
 
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [retornos, setRetornos] = useState(0);
+
+  const canRetorno = podeVerRetorno(user);
+  const lojaRetorno = lojaDoUsuario(user);
+
+  useEffect(() => {
+    if (!canRetorno) {
+      setRetornos(0);
+      return;
+    }
+    let alive = true;
+    const load = () =>
+      contarRetornosNaoCientes(lojaRetorno)
+        .then((n) => {
+          if (alive) setRetornos(n);
+        })
+        .catch(() => undefined);
+    void load();
+    const id = setInterval(load, 120_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [canRetorno, lojaRetorno, pathname]);
 
   useEffect(() => {
     visibleItems.forEach((item) => {
@@ -150,6 +177,11 @@ export function AppSidebar() {
                         <Link to={item.url} onClick={handleNavigate} className="flex items-center gap-2.5">
                           <item.icon className={`h-4 w-4 shrink-0 ${active ? "" : "text-sidebar-foreground/60"}`} />
                           {!collapsed && <span className="truncate text-[13px]">{item.title}</span>}
+                          {!collapsed && item.url === "/retorno-as-lojas" && retornos > 0 && (
+                            <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary-foreground">
+                              {retornos}
+                            </span>
+                          )}
                         </Link>
                       </SidebarMenuButton>
 
