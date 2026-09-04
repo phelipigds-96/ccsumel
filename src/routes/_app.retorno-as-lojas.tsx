@@ -114,7 +114,8 @@ function RetornoAsLojas() {
       .filter((r) => (filtro === "nao-lidos" ? !r.ciente_at : filtro === "cientes" ? !!r.ciente_at : true))
       .filter((r) => {
         if (periodo === "todos") return true;
-        const dias = diasDesde(r.pedido_realizado_em);
+        const dias = diasDesde(r.retorno_em);
+
         return periodo === "hoje" ? dias === 0 : dias <= Number(periodo);
       })
       .filter((r) =>
