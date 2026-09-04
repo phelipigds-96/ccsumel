@@ -161,6 +161,7 @@ function CentralProdutosEmFalta() {
     for (const [key, itens] of map) {
       itens.sort((a, b) => +new Date(b.reported_at) - +new Date(a.reported_at));
       const ultimo = itens[0]!;
+      const primeiro = itens[itens.length - 1]!;
       if (itens.length < min) continue;
       out.push({
         key,
@@ -171,6 +172,7 @@ function CentralProdutosEmFalta() {
         itens,
         total: itens.length,
         ultimo,
+        primeiro,
         status: ultimo.status,
       });
     }
@@ -179,10 +181,34 @@ function CentralProdutosEmFalta() {
     out.sort((a, b) => {
       if (ordem === "quantidade") return b.total - a.total || +new Date(b.ultimo.reported_at) - +new Date(a.ultimo.reported_at);
       if (ordem === "recentes") return +new Date(b.ultimo.reported_at) - +new Date(a.ultimo.reported_at);
-      return pendPrio(a) - pendPrio(b) || b.total - a.total || +new Date(b.ultimo.reported_at) - +new Date(a.ultimo.reported_at);
+      if (ordem === "antigas") return +new Date(a.primeiro.reported_at) - +new Date(b.primeiro.reported_at);
+      // Prioridade de Compras: pendentes → mais apontamentos → mais antigas
+      return (
+        pendPrio(a) - pendPrio(b) ||
+        b.total - a.total ||
+        +new Date(a.primeiro.reported_at) - +new Date(b.primeiro.reported_at)
+      );
     });
     return out;
   }, [rows, busca, fLoja, fStatus, fPeriodo, fMin, ordem]);
+
+  const resumo = useMemo(() => {
+    const inicioHoje = new Date();
+    inicioHoje.setHours(0, 0, 0, 0);
+    const pendentesProdutos = new Set(
+      rows.filter((r) => r.status === "Pendente").map((r) => `${r.product_id}::${r.store_id}`),
+    ).size;
+    const hoje = rows.filter((r) => new Date(r.reported_at) >= inicioHoje).length;
+    const contagem = new Map<string, number>();
+    for (const r of rows) {
+      const k = `${r.product_id}::${r.store_id}`;
+      contagem.set(k, (contagem.get(k) ?? 0) + 1);
+    }
+    let multiplos = 0;
+    for (const v of contagem.values()) if (v > 1) multiplos += 1;
+    return { pendentesProdutos, hoje, multiplos };
+  }, [rows]);
+
 
   const carregarTimeline = async (g: Grupo) => {
     setTimelineLoading(true);
