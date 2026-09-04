@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import type { Produto } from "@/lib/produtos";
-import { createFalta, LOJAS } from "@/lib/produtos-em-falta";
+import { createFalta, LOJAS, lojaDoUsuario } from "@/lib/produtos-em-falta";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/produtos-em-falta")({
   head: () => ({
