@@ -151,21 +151,23 @@ function Consulta({
   loading: boolean;
 }) {
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<FracionamentoProduto | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
+  const term = normalize(search);
+
   const resultados = useMemo(() => {
-    const term = normalize(search);
-    if (!term) return produtos;
+    if (!term) return [];
     return produtos.filter(
       (p) =>
         normalize(p.descricao).includes(term) ||
         normalize(p.codigo_balanca).includes(term),
     );
-  }, [produtos, search]);
+  }, [produtos, term]);
 
   return (
     <div>
@@ -175,61 +177,95 @@ function Consulta({
           ref={inputRef}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Pesquisar produto ou código..."
+          placeholder="Pesquisar produto ou código de balança"
           className="h-14 rounded-2xl border-border/80 bg-card pl-12 text-base shadow-sm focus-visible:ring-primary sm:text-lg"
         />
       </div>
 
-      <div className="mt-3 flex items-center justify-between px-1 text-xs text-muted-foreground">
-        <span>
-          {loading
-            ? "Carregando produtos..."
-            : `${resultados.length} produto${resultados.length === 1 ? "" : "s"}`}
-        </span>
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch("")}
-            className="font-medium text-primary hover:underline"
-          >
-            Limpar busca
-          </button>
-        )}
-      </div>
-
-      {!loading && resultados.length === 0 && (
-        <div className="mt-10 flex flex-col items-center gap-2 text-center text-muted-foreground">
+      {!term ? (
+        <div className="mt-12 flex flex-col items-center gap-2 text-center text-muted-foreground">
+          <PackageSearch className="h-10 w-10 opacity-40" />
+          <p className="text-sm">Digite o nome ou código para pesquisar.</p>
+        </div>
+      ) : loading ? (
+        <div className="mt-12 flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : resultados.length === 0 ? (
+        <div className="mt-12 flex flex-col items-center gap-2 text-center text-muted-foreground">
           <PackageSearch className="h-10 w-10 opacity-40" />
           <p className="text-sm">
             Nenhum produto encontrado para <strong>"{search}"</strong>.
           </p>
         </div>
+      ) : (
+        <>
+          <div className="mt-3 flex items-center justify-between px-1 text-xs text-muted-foreground">
+            <span>
+              {resultados.length} produto{resultados.length === 1 ? "" : "s"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="font-medium text-primary hover:underline"
+            >
+              Limpar busca
+            </button>
+          </div>
+
+          <ul className="mt-2 divide-y divide-border/70 overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
+            {resultados.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(p)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/60 active:bg-muted"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-foreground">
+                      {p.descricao}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      Código: {p.codigo_balanca}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-base font-bold tabular-nums text-primary">
+                    {p.codigo_balanca}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {resultados.map((p) => (
-          <div
-            key={p.id}
-            className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
-          >
-            <div
-              className="text-sm font-semibold leading-snug text-foreground"
-              title={p.descricao}
-            >
-              {p.descricao}
-            </div>
-            <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+      <Dialog
+        open={!!selected}
+        onOpenChange={(o) => !o && setSelected(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center text-base uppercase leading-snug">
+              {selected?.descricao}
+            </DialogTitle>
+            <DialogDescription className="text-center text-[11px] font-medium uppercase tracking-[0.2em]">
               Código de balança
-            </div>
-            <div className="mt-1 text-center text-5xl font-bold tabular-nums tracking-tight text-primary">
-              {p.codigo_balanca}
-            </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 text-center text-7xl font-black tabular-nums tracking-tight text-primary sm:text-8xl">
+            {selected?.codigo_balanca}
           </div>
-        ))}
-      </div>
+          <DialogFooter>
+            <Button className="w-full" onClick={() => setSelected(null)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Gestão / Importação                                                 */
