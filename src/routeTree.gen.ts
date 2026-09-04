@@ -16,6 +16,7 @@ import { Route as AppVerbasCooperadasRouteImport } from './routes/_app.verbas-co
 import { Route as AppUsuariosRouteImport } from './routes/_app.usuarios'
 import { Route as AppSellOutRouteImport } from './routes/_app.sell-out'
 import { Route as AppRelatoriosRouteImport } from './routes/_app.relatorios'
+import { Route as AppProdutosEmFaltaRouteImport } from './routes/_app.produtos-em-falta'
 import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-gondola'
 import { Route as AppFracionamentoRouteImport } from './routes/_app.fracionamento'
 import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
@@ -60,6 +61,11 @@ const AppSellOutRoute = AppSellOutRouteImport.update({
 const AppRelatoriosRoute = AppRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProdutosEmFaltaRoute = AppProdutosEmFaltaRouteImport.update({
+  id: '/produtos-em-falta',
+  path: '/produtos-em-falta',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPontasDeGondolaRoute = AppPontasDeGondolaRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/fornecedores': typeof AppFornecedoresRoute
   '/fracionamento': typeof AppFracionamentoRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
+  '/produtos-em-falta': typeof AppProdutosEmFaltaRoute
   '/relatorios': typeof AppRelatoriosRoute
   '/sell-out': typeof AppSellOutRouteWithChildren
   '/usuarios': typeof AppUsuariosRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/fornecedores': typeof AppFornecedoresRoute
   '/fracionamento': typeof AppFracionamentoRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
+  '/produtos-em-falta': typeof AppProdutosEmFaltaRoute
   '/relatorios': typeof AppRelatoriosRoute
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/_app/fornecedores': typeof AppFornecedoresRoute
   '/_app/fracionamento': typeof AppFracionamentoRoute
   '/_app/pontas-de-gondola': typeof AppPontasDeGondolaRoute
+  '/_app/produtos-em-falta': typeof AppProdutosEmFaltaRoute
   '/_app/relatorios': typeof AppRelatoriosRoute
   '/_app/sell-out': typeof AppSellOutRouteWithChildren
   '/_app/usuarios': typeof AppUsuariosRoute
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/fornecedores'
     | '/fracionamento'
     | '/pontas-de-gondola'
+    | '/produtos-em-falta'
     | '/relatorios'
     | '/sell-out'
     | '/usuarios'
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/fornecedores'
     | '/fracionamento'
     | '/pontas-de-gondola'
+    | '/produtos-em-falta'
     | '/relatorios'
     | '/usuarios'
     | '/verbas-cooperadas'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/_app/fornecedores'
     | '/_app/fracionamento'
     | '/_app/pontas-de-gondola'
+    | '/_app/produtos-em-falta'
     | '/_app/relatorios'
     | '/_app/sell-out'
     | '/_app/usuarios'
@@ -291,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof AppRelatoriosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/produtos-em-falta': {
+      id: '/_app/produtos-em-falta'
+      path: '/produtos-em-falta'
+      fullPath: '/produtos-em-falta'
+      preLoaderRoute: typeof AppProdutosEmFaltaRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/pontas-de-gondola': {
@@ -397,6 +416,7 @@ interface AppRouteChildren {
   AppFornecedoresRoute: typeof AppFornecedoresRoute
   AppFracionamentoRoute: typeof AppFracionamentoRoute
   AppPontasDeGondolaRoute: typeof AppPontasDeGondolaRoute
+  AppProdutosEmFaltaRoute: typeof AppProdutosEmFaltaRoute
   AppRelatoriosRoute: typeof AppRelatoriosRoute
   AppSellOutRoute: typeof AppSellOutRouteWithChildren
   AppUsuariosRoute: typeof AppUsuariosRoute
@@ -413,6 +433,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFornecedoresRoute: AppFornecedoresRoute,
   AppFracionamentoRoute: AppFracionamentoRoute,
   AppPontasDeGondolaRoute: AppPontasDeGondolaRoute,
+  AppProdutosEmFaltaRoute: AppProdutosEmFaltaRoute,
   AppRelatoriosRoute: AppRelatoriosRoute,
   AppSellOutRoute: AppSellOutRouteWithChildren,
   AppUsuariosRoute: AppUsuariosRoute,
