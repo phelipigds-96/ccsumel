@@ -437,6 +437,106 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos_em_falta: {
+        Row: {
+          created_at: string
+          id: string
+          managed_at: string | null
+          managed_by: string | null
+          management_observation: string
+          observation: string
+          product_id: string
+          reported_at: string
+          reported_by_name: string
+          reported_by_user_id: string | null
+          reported_by_username: string
+          status: Database["public"]["Enums"]["falta_status"]
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          managed_at?: string | null
+          managed_by?: string | null
+          management_observation?: string
+          observation?: string
+          product_id: string
+          reported_at?: string
+          reported_by_name: string
+          reported_by_user_id?: string | null
+          reported_by_username?: string
+          status?: Database["public"]["Enums"]["falta_status"]
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          managed_at?: string | null
+          managed_by?: string | null
+          management_observation?: string
+          observation?: string
+          product_id?: string
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          reported_by_username?: string
+          status?: Database["public"]["Enums"]["falta_status"]
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_em_falta_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos_em_falta_historico: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string
+          created_at: string
+          falta_id: string
+          id: string
+          observation: string
+          status_anterior: Database["public"]["Enums"]["falta_status"] | null
+          status_novo: Database["public"]["Enums"]["falta_status"]
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string
+          created_at?: string
+          falta_id: string
+          id?: string
+          observation?: string
+          status_anterior?: Database["public"]["Enums"]["falta_status"] | null
+          status_novo: Database["public"]["Enums"]["falta_status"]
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string
+          created_at?: string
+          falta_id?: string
+          id?: string
+          observation?: string
+          status_anterior?: Database["public"]["Enums"]["falta_status"] | null
+          status_novo?: Database["public"]["Enums"]["falta_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_em_falta_historico_falta_id_fkey"
+            columns: ["falta_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_em_falta"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -513,6 +613,17 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      falta_status:
+        | "Pendente"
+        | "Em análise"
+        | "Comprar"
+        | "Pedido realizado"
+        | "Aguardando recebimento"
+        | "Estoque disponível / verificar loja"
+        | "Falta no fornecedor"
+        | "Produto descontinuado"
+        | "Resolvido"
+        | "Não é ruptura"
       oportunidade_motivo:
         | "Excesso de estoque físico"
         | "Baixo giro"
@@ -655,6 +766,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      falta_status: [
+        "Pendente",
+        "Em análise",
+        "Comprar",
+        "Pedido realizado",
+        "Aguardando recebimento",
+        "Estoque disponível / verificar loja",
+        "Falta no fornecedor",
+        "Produto descontinuado",
+        "Resolvido",
+        "Não é ruptura",
+      ],
       oportunidade_motivo: [
         "Excesso de estoque físico",
         "Baixo giro",
