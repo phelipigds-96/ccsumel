@@ -304,9 +304,10 @@ function RetornoAsLojas() {
                     <dd className="font-medium">{fmt(r.reported_at)}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Pedido realizado em</dt>
-                    <dd className="font-medium">{fmtHora(r.pedido_realizado_em)}</dd>
+                    <dt className="text-muted-foreground">Retorno de Compras em</dt>
+                    <dd className="font-medium">{fmtHora(r.retorno_em)}</dd>
                   </div>
+
                   <div>
                     <dt className="text-muted-foreground">Há</dt>
                     <dd className="font-medium">{dias === 0 ? "hoje" : `${dias} dia(s)`}</dd>
