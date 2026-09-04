@@ -475,6 +475,7 @@ export type Database = {
           reported_by_name: string
           reported_by_user_id: string | null
           reported_by_username: string
+          retorno_em: string | null
           status: Database["public"]["Enums"]["falta_status"]
           store_id: string
           updated_at: string
@@ -495,6 +496,7 @@ export type Database = {
           reported_by_name: string
           reported_by_user_id?: string | null
           reported_by_username?: string
+          retorno_em?: string | null
           status?: Database["public"]["Enums"]["falta_status"]
           store_id: string
           updated_at?: string
@@ -515,6 +517,7 @@ export type Database = {
           reported_by_name?: string
           reported_by_user_id?: string | null
           reported_by_username?: string
+          retorno_em?: string | null
           status?: Database["public"]["Enums"]["falta_status"]
           store_id?: string
           updated_at?: string

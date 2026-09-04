@@ -55,7 +55,27 @@ const diasDesde = (iso: string | null | undefined) => {
   return Math.max(0, Math.floor(ms / 86_400_000));
 };
 
+/** Aparência por situação. Situações novas caem no padrão, sem quebrar a tela. */
+const STATUS_VISUAL: Record<string, { emoji: string; classe: string }> = {
+  "Em análise": { emoji: "🟡", classe: "border-amber-300 bg-amber-100 text-amber-900" },
+  Comprar: { emoji: "🛒", classe: "border-sky-300 bg-sky-100 text-sky-900" },
+  "Pedido realizado": { emoji: "📦", classe: "border-indigo-300 bg-indigo-100 text-indigo-800" },
+  "Aguardando recebimento": { emoji: "🚚", classe: "border-cyan-300 bg-cyan-100 text-cyan-900" },
+  "Estoque disponível / verificar loja": {
+    emoji: "🔎",
+    classe: "border-teal-300 bg-teal-100 text-teal-900",
+  },
+  "Falta no fornecedor": { emoji: "⚠️", classe: "border-orange-300 bg-orange-100 text-orange-900" },
+  "Produto descontinuado": { emoji: "🔴", classe: "border-red-300 bg-red-100 text-red-800" },
+  Resolvido: { emoji: "✅", classe: "border-emerald-300 bg-emerald-100 text-emerald-800" },
+  "Não é ruptura": { emoji: "⚪", classe: "border-slate-300 bg-slate-100 text-slate-800" },
+};
+
+const visualDe = (status: string) =>
+  STATUS_VISUAL[status] ?? { emoji: "ℹ️", classe: "border-border bg-muted text-foreground" };
+
 type Filtro = "todos" | "nao-lidos" | "cientes";
+
 
 function RetornoAsLojas() {
   const { user } = useAuth();
@@ -94,7 +114,8 @@ function RetornoAsLojas() {
       .filter((r) => (filtro === "nao-lidos" ? !r.ciente_at : filtro === "cientes" ? !!r.ciente_at : true))
       .filter((r) => {
         if (periodo === "todos") return true;
-        const dias = diasDesde(r.pedido_realizado_em);
+        const dias = diasDesde(r.retorno_em);
+
         return periodo === "hoje" ? dias === 0 : dias <= Number(periodo);
       })
       .filter((r) =>
@@ -132,7 +153,7 @@ function RetornoAsLojas() {
     <div className="space-y-4">
       <PageHeader
         title="Retorno às Lojas"
-        description={`Produtos apontados pela equipe que Compras já colocou no pedido. Cada retorno fica visível por ${prazo} dias.`}
+        description={`Produtos apontados pela equipe que Compras já avaliou. Cada retorno fica visível por ${prazo} dias.`}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -181,7 +202,7 @@ function RetornoAsLojas() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Qualquer período</SelectItem>
-            <SelectItem value="hoje">Pedidos de hoje</SelectItem>
+            <SelectItem value="hoje">Retornos de hoje</SelectItem>
             <SelectItem value="3">Últimos 3 dias</SelectItem>
             <SelectItem value="7">Últimos 7 dias</SelectItem>
           </SelectContent>
@@ -219,7 +240,8 @@ function RetornoAsLojas() {
         <ul className="space-y-2">
           {filtradas.map((r) => {
             const novo = !r.ciente_at;
-            const dias = diasDesde(r.pedido_realizado_em);
+            const dias = diasDesde(r.retorno_em);
+            const visual = visualDe(r.status);
             return (
               <li
                 key={r.id}
@@ -233,9 +255,13 @@ function RetornoAsLojas() {
                       {novo && (
                         <Badge className="bg-blue-600 text-white hover:bg-blue-600">🔵 Novo retorno</Badge>
                       )}
-                      <Badge variant="outline" className="border-indigo-300 bg-indigo-100 text-indigo-800">
-                        📦 Pedido realizado
+                      <Badge
+                        variant="outline"
+                        className={`text-[11px] font-semibold uppercase tracking-wide ${visual.classe}`}
+                      >
+                        {visual.emoji} {r.status}
                       </Badge>
+
                       {r.ciente_at && (
                         <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-800">
                           ✓ Ciente
@@ -278,9 +304,10 @@ function RetornoAsLojas() {
                     <dd className="font-medium">{fmt(r.reported_at)}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Pedido realizado em</dt>
-                    <dd className="font-medium">{fmtHora(r.pedido_realizado_em)}</dd>
+                    <dt className="text-muted-foreground">Retorno de Compras em</dt>
+                    <dd className="font-medium">{fmtHora(r.retorno_em)}</dd>
                   </div>
+
                   <div>
                     <dt className="text-muted-foreground">Há</dt>
                     <dd className="font-medium">{dias === 0 ? "hoje" : `${dias} dia(s)`}</dd>
