@@ -202,7 +202,7 @@ function RetornoAsLojas() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Qualquer período</SelectItem>
-            <SelectItem value="hoje">Pedidos de hoje</SelectItem>
+            <SelectItem value="hoje">Retornos de hoje</SelectItem>
             <SelectItem value="3">Últimos 3 dias</SelectItem>
             <SelectItem value="7">Últimos 7 dias</SelectItem>
           </SelectContent>
