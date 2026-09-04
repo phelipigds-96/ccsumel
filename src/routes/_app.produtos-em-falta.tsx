@@ -216,6 +216,7 @@ function ProdutosEmFaltaPage() {
             </Label>
             <Input
               id="pf-nome"
+              ref={nomeRef}
               value={nome}
               onChange={(e) => { setNome(e.target.value); if (e.target.value.trim()) setErroNome(false); }}
               placeholder="Digite seu nome"
@@ -278,6 +279,7 @@ function ProdutosEmFaltaPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Pesquisar produto ou código de barras..."
+          autoFocus
           inputMode="search"
           autoComplete="off"
           className="h-14 pl-11 text-base"
