@@ -17,9 +17,22 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import {
-  listFaltas, updateFaltaStatus, FALTA_STATUS, LOJAS,
-  type FaltaStatus, type ProdutoEmFalta,
+  listFaltas, updateFaltaStatus, listHistoricoMany, FALTA_STATUS, LOJAS,
+  type FaltaStatus, type FaltaHistorico, type ProdutoEmFalta,
 } from "@/lib/produtos-em-falta";
+
+const STATUS_EMOJI: Record<FaltaStatus, string> = {
+  "Pendente": "🔴",
+  "Em análise": "🟡",
+  "Comprar": "🛒",
+  "Pedido realizado": "📦",
+  "Aguardando recebimento": "🚚",
+  "Estoque disponível / verificar loja": "🔎",
+  "Falta no fornecedor": "⚠️",
+  "Produto descontinuado": "🚫",
+  "Resolvido": "✅",
+  "Não é ruptura": "➖",
+};
 
 export const Route = createFileRoute("/_app/central-produtos-em-falta")({
   head: () => ({
@@ -90,6 +103,8 @@ function CentralProdutosEmFalta() {
   const [novoStatus, setNovoStatus] = useState<FaltaStatus>("Em análise");
   const [obsGestao, setObsGestao] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [timeline, setTimeline] = useState<FaltaHistorico[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
 
   const carregar = async () => {
     setLoading(true);
@@ -166,10 +181,23 @@ function CentralProdutosEmFalta() {
     return out;
   }, [rows, busca, fLoja, fStatus, fPeriodo, fMin, ordem]);
 
+  const carregarTimeline = async (g: Grupo) => {
+    setTimelineLoading(true);
+    try {
+      setTimeline(await listHistoricoMany(g.itens.map((i) => i.id)));
+    } catch (e) {
+      toast.error("Falha ao carregar o histórico", { description: (e as Error).message });
+    } finally {
+      setTimelineLoading(false);
+    }
+  };
+
   const abrir = (g: Grupo) => {
     setAberto(g);
     setNovoStatus(g.status);
     setObsGestao(g.ultimo.management_observation ?? "");
+    setTimeline([]);
+    void carregarTimeline(g);
   };
 
   const aplicarStatus = async () => {
@@ -187,8 +215,12 @@ function CentralProdutosEmFalta() {
         });
       }
       toast.success("Situação atualizada");
-      setAberto(null);
-      await carregar();
+      setAberto({
+        ...aberto,
+        status: novoStatus,
+        itens: aberto.itens.map((i) => ({ ...i, status: novoStatus, management_observation: obsGestao.trim() })),
+      });
+      await Promise.all([carregar(), carregarTimeline(aberto)]);
     } catch (e) {
       toast.error("Não foi possível atualizar", { description: (e as Error).message });
     } finally {
@@ -384,6 +416,39 @@ function CentralProdutosEmFalta() {
                 </ul>
               </div>
 
+              <div>
+                <p className="mb-2 text-sm font-semibold text-navy">Linha do tempo da situação</p>
+                {timelineLoading ? (
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando linha do tempo…
+                  </p>
+                ) : timeline.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma movimentação registrada.</p>
+                ) : (
+                  <ol className="space-y-3 border-l border-border pl-4">
+                    {timeline.map((h) => (
+                      <li key={h.id} className="relative">
+                        <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(h.created_at).toLocaleString("pt-BR", {
+                            day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+                          })}
+                        </p>
+                        <p className="text-sm text-foreground">
+                          <span className="font-semibold">{h.changed_by_name || "Sistema"}</span>{" "}
+                          {h.status_anterior
+                            ? <>alterou para “{STATUS_EMOJI[h.status_novo]} {h.status_novo}”</>
+                            : <>registrou a falta</>}
+                        </p>
+                        {h.observation && (
+                          <p className="text-sm text-muted-foreground">Observação: {h.observation}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+
               {user?.isAdmin && (
                 <div className="space-y-3 rounded-lg border border-border p-3">
                   <p className="text-sm font-semibold text-navy">Tratativa da gestão</p>
@@ -392,7 +457,9 @@ function CentralProdutosEmFalta() {
                     <Select value={novoStatus} onValueChange={(v) => setNovoStatus(v as FaltaStatus)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {FALTA_STATUS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        {FALTA_STATUS.map((s) => (
+                          <SelectItem key={s} value={s}>{STATUS_EMOJI[s]} {s}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
