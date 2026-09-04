@@ -17,9 +17,22 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import {
-  listFaltas, updateFaltaStatus, FALTA_STATUS, LOJAS,
-  type FaltaStatus, type ProdutoEmFalta,
+  listFaltas, updateFaltaStatus, listHistoricoMany, FALTA_STATUS, LOJAS,
+  type FaltaStatus, type FaltaHistorico, type ProdutoEmFalta,
 } from "@/lib/produtos-em-falta";
+
+const STATUS_EMOJI: Record<FaltaStatus, string> = {
+  "Pendente": "🔴",
+  "Em análise": "🟡",
+  "Comprar": "🛒",
+  "Pedido realizado": "📦",
+  "Aguardando recebimento": "🚚",
+  "Estoque disponível / verificar loja": "🔎",
+  "Falta no fornecedor": "⚠️",
+  "Produto descontinuado": "🚫",
+  "Resolvido": "✅",
+  "Não é ruptura": "➖",
+};
 
 export const Route = createFileRoute("/_app/central-produtos-em-falta")({
   head: () => ({
