@@ -46,6 +46,16 @@ export interface FaltaHistorico {
   created_at: string;
 }
 
+/**
+ * Lê o usuário da sessão local. NÃO usar supabase.auth.getUser(): qualquer
+ * falha de rede/token nessa chamada dispara signOut global e derruba o login
+ * compartilhado da loja no meio do registro.
+ */
+async function currentUser() {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user ?? null;
+}
+
 const table = () => supabase.from("produtos_em_falta" as any);
 const historicoTable = () => supabase.from("produtos_em_falta_historico" as any);
 
@@ -82,8 +92,7 @@ export async function createFalta(input: {
   const name = input.reported_by_name.trim();
   if (!name) throw new Error("Informe o nome de quem está apontando a falta.");
 
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user ?? null;
+  const user = await currentUser();
 
   const payload = {
     product_id: input.product_id,
@@ -118,8 +127,7 @@ export async function updateFaltaStatus(input: {
   observation?: string;
   changed_by_name: string;
 }) {
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user ?? null;
+  const user = await currentUser();
 
   const { error } = await table()
     .update({
