@@ -362,6 +362,8 @@ function CentralProdutosEmFalta() {
             <SelectItem value="pendentes">Pendentes primeiro</SelectItem>
             <SelectItem value="quantidade">Maior nº de apontamentos</SelectItem>
             <SelectItem value="recentes">Mais recentes</SelectItem>
+            <SelectItem value="antigas">Mais antigas</SelectItem>
+
           </SelectContent>
         </Select>
       </div>
@@ -409,7 +411,10 @@ function CentralProdutosEmFalta() {
                       <span className="max-w-[140px] truncate text-xs font-medium text-foreground">
                         {g.ultimo.reported_by_name}
                       </span>
-                      <Badge variant="outline" className={`text-xs ${STATUS_TONE[g.status]}`}>{g.status}</Badge>
+                      <Badge variant="outline" className={`text-xs font-semibold ${STATUS_TONE[g.status]}`}>
+                        {STATUS_EMOJI[g.status]} {g.status}
+                      </Badge>
+
                     </div>
                   </button>
                 </li>
