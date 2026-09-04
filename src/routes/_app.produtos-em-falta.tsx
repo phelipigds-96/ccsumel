@@ -59,7 +59,10 @@ function ProdutosEmFaltaPage() {
   const [produto, setProduto] = useState<Produto | null>(null);
   const [nome, setNome] = useState("");
   const [obs, setObs] = useState("");
-  const [loja, setLoja] = useState<string>(LOJAS[0] ?? "Matriz");
+  const { user } = useAuth();
+  const lojaFixa = lojaDoUsuario(user);
+  const [loja, setLoja] = useState<string>(lojaFixa ?? LOJAS[0] ?? "Matriz");
+  useEffect(() => { if (lojaFixa) setLoja(lojaFixa); }, [lojaFixa]);
   const [saving, setSaving] = useState(false);
   const [erroNome, setErroNome] = useState(false);
 
