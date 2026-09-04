@@ -55,7 +55,27 @@ const diasDesde = (iso: string | null | undefined) => {
   return Math.max(0, Math.floor(ms / 86_400_000));
 };
 
+/** Aparência por situação. Situações novas caem no padrão, sem quebrar a tela. */
+const STATUS_VISUAL: Record<string, { emoji: string; classe: string }> = {
+  "Em análise": { emoji: "🟡", classe: "border-amber-300 bg-amber-100 text-amber-900" },
+  Comprar: { emoji: "🛒", classe: "border-sky-300 bg-sky-100 text-sky-900" },
+  "Pedido realizado": { emoji: "📦", classe: "border-indigo-300 bg-indigo-100 text-indigo-800" },
+  "Aguardando recebimento": { emoji: "🚚", classe: "border-cyan-300 bg-cyan-100 text-cyan-900" },
+  "Estoque disponível / verificar loja": {
+    emoji: "🔎",
+    classe: "border-teal-300 bg-teal-100 text-teal-900",
+  },
+  "Falta no fornecedor": { emoji: "⚠️", classe: "border-orange-300 bg-orange-100 text-orange-900" },
+  "Produto descontinuado": { emoji: "🔴", classe: "border-red-300 bg-red-100 text-red-800" },
+  Resolvido: { emoji: "✅", classe: "border-emerald-300 bg-emerald-100 text-emerald-800" },
+  "Não é ruptura": { emoji: "⚪", classe: "border-slate-300 bg-slate-100 text-slate-800" },
+};
+
+const visualDe = (status: string) =>
+  STATUS_VISUAL[status] ?? { emoji: "ℹ️", classe: "border-border bg-muted text-foreground" };
+
 type Filtro = "todos" | "nao-lidos" | "cientes";
+
 
 function RetornoAsLojas() {
   const { user } = useAuth();
