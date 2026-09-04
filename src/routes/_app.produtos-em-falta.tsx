@@ -78,7 +78,7 @@ function ProdutosEmFaltaPage() {
     const t = setTimeout(async () => {
       try {
         const like = termo.replace(/[%_,().]/g, " ");
-        const accentTolerant = normalize(like).replace(/[aeiouc]/g, "_");
+        const accentTolerant = normalize(like).replace(/[aeiou]/g, "_");
         const { data, error } = await supabase
           .from("produtos")
           .select("id, descricao, codigo, gtin, preco_venda, custo, fornecedor, ativo")
