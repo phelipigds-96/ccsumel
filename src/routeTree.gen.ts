@@ -22,6 +22,7 @@ import { Route as AppFracionamentoRouteImport } from './routes/_app.fracionament
 import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppCentralProdutosEmFaltaRouteImport } from './routes/_app.central-produtos-em-falta'
 import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalogo-de-produtos'
 import { Route as AppCampanhasEncerradasRouteImport } from './routes/_app.campanhas-encerradas'
 import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
@@ -93,6 +94,12 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCentralProdutosEmFaltaRoute =
+  AppCentralProdutosEmFaltaRouteImport.update({
+    id: '/central-produtos-em-falta',
+    path: '/central-produtos-em-falta',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppCatalogoDeProdutosRoute = AppCatalogoDeProdutosRouteImport.update({
   id: '/catalogo-de-produtos',
   path: '/catalogo-de-produtos',
@@ -131,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/campanhas': typeof AppCampanhasRoute
   '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
+  '/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
@@ -151,6 +159,7 @@ export interface FileRoutesByTo {
   '/campanhas': typeof AppCampanhasRoute
   '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
+  '/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/fornecedores': typeof AppFornecedoresRoute
@@ -172,6 +181,7 @@ export interface FileRoutesById {
   '/_app/campanhas': typeof AppCampanhasRoute
   '/_app/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
   '/_app/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
+  '/_app/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/fornecedores': typeof AppFornecedoresRoute
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/campanhas'
     | '/campanhas-encerradas'
     | '/catalogo-de-produtos'
+    | '/central-produtos-em-falta'
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/campanhas'
     | '/campanhas-encerradas'
     | '/catalogo-de-produtos'
+    | '/central-produtos-em-falta'
     | '/configuracoes'
     | '/dashboard'
     | '/fornecedores'
@@ -234,6 +246,7 @@ export interface FileRouteTypes {
     | '/_app/campanhas'
     | '/_app/campanhas-encerradas'
     | '/_app/catalogo-de-produtos'
+    | '/_app/central-produtos-em-falta'
     | '/_app/configuracoes'
     | '/_app/dashboard'
     | '/_app/fornecedores'
@@ -347,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/central-produtos-em-falta': {
+      id: '/_app/central-produtos-em-falta'
+      path: '/central-produtos-em-falta'
+      fullPath: '/central-produtos-em-falta'
+      preLoaderRoute: typeof AppCentralProdutosEmFaltaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/catalogo-de-produtos': {
       id: '/_app/catalogo-de-produtos'
       path: '/catalogo-de-produtos'
@@ -411,6 +431,7 @@ interface AppRouteChildren {
   AppCampanhasRoute: typeof AppCampanhasRoute
   AppCampanhasEncerradasRoute: typeof AppCampanhasEncerradasRoute
   AppCatalogoDeProdutosRoute: typeof AppCatalogoDeProdutosRoute
+  AppCentralProdutosEmFaltaRoute: typeof AppCentralProdutosEmFaltaRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppFornecedoresRoute: typeof AppFornecedoresRoute
@@ -428,6 +449,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCampanhasRoute: AppCampanhasRoute,
   AppCampanhasEncerradasRoute: AppCampanhasEncerradasRoute,
   AppCatalogoDeProdutosRoute: AppCatalogoDeProdutosRoute,
+  AppCentralProdutosEmFaltaRoute: AppCentralProdutosEmFaltaRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppFornecedoresRoute: AppFornecedoresRoute,
