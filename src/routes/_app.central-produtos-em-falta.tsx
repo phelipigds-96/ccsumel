@@ -416,6 +416,39 @@ function CentralProdutosEmFalta() {
                 </ul>
               </div>
 
+              <div>
+                <p className="mb-2 text-sm font-semibold text-navy">Linha do tempo da situação</p>
+                {timelineLoading ? (
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando linha do tempo…
+                  </p>
+                ) : timeline.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma movimentação registrada.</p>
+                ) : (
+                  <ol className="space-y-3 border-l border-border pl-4">
+                    {timeline.map((h) => (
+                      <li key={h.id} className="relative">
+                        <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(h.created_at).toLocaleString("pt-BR", {
+                            day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+                          })}
+                        </p>
+                        <p className="text-sm text-foreground">
+                          <span className="font-semibold">{h.changed_by_name || "Sistema"}</span>{" "}
+                          {h.status_anterior
+                            ? <>alterou para “{STATUS_EMOJI[h.status_novo]} {h.status_novo}”</>
+                            : <>registrou a falta</>}
+                        </p>
+                        {h.observation && (
+                          <p className="text-sm text-muted-foreground">Observação: {h.observation}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+
               {user?.isAdmin && (
                 <div className="space-y-3 rounded-lg border border-border p-3">
                   <p className="text-sm font-semibold text-navy">Tratativa da gestão</p>
