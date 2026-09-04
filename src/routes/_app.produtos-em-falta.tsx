@@ -227,12 +227,18 @@ function ProdutosEmFaltaPage() {
 
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Loja</Label>
-            <Select value={loja} onValueChange={setLoja}>
-              <SelectTrigger className="h-12 text-base"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LOJAS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {lojaFixa ? (
+              <p className="flex h-12 items-center rounded-md border border-border bg-muted/40 px-3 text-base font-semibold">
+                {lojaFixa}
+              </p>
+            ) : (
+              <Select value={loja} onValueChange={setLoja}>
+                <SelectTrigger className="h-12 text-base"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LOJAS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
