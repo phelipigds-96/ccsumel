@@ -76,8 +76,10 @@ interface Grupo {
   itens: ProdutoEmFalta[];
   total: number;
   ultimo: ProdutoEmFalta;
+  primeiro: ProdutoEmFalta;
   status: FaltaStatus;
 }
+
 
 function fmt(dt: string) {
   const d = new Date(dt);
@@ -159,6 +161,7 @@ function CentralProdutosEmFalta() {
     for (const [key, itens] of map) {
       itens.sort((a, b) => +new Date(b.reported_at) - +new Date(a.reported_at));
       const ultimo = itens[0]!;
+      const primeiro = itens[itens.length - 1]!;
       if (itens.length < min) continue;
       out.push({
         key,
@@ -169,6 +172,7 @@ function CentralProdutosEmFalta() {
         itens,
         total: itens.length,
         ultimo,
+        primeiro,
         status: ultimo.status,
       });
     }
@@ -177,10 +181,34 @@ function CentralProdutosEmFalta() {
     out.sort((a, b) => {
       if (ordem === "quantidade") return b.total - a.total || +new Date(b.ultimo.reported_at) - +new Date(a.ultimo.reported_at);
       if (ordem === "recentes") return +new Date(b.ultimo.reported_at) - +new Date(a.ultimo.reported_at);
-      return pendPrio(a) - pendPrio(b) || b.total - a.total || +new Date(b.ultimo.reported_at) - +new Date(a.ultimo.reported_at);
+      if (ordem === "antigas") return +new Date(a.primeiro.reported_at) - +new Date(b.primeiro.reported_at);
+      // Prioridade de Compras: pendentes → mais apontamentos → mais antigas
+      return (
+        pendPrio(a) - pendPrio(b) ||
+        b.total - a.total ||
+        +new Date(a.primeiro.reported_at) - +new Date(b.primeiro.reported_at)
+      );
     });
     return out;
   }, [rows, busca, fLoja, fStatus, fPeriodo, fMin, ordem]);
+
+  const resumo = useMemo(() => {
+    const inicioHoje = new Date();
+    inicioHoje.setHours(0, 0, 0, 0);
+    const pendentesProdutos = new Set(
+      rows.filter((r) => r.status === "Pendente").map((r) => `${r.product_id}::${r.store_id}`),
+    ).size;
+    const hoje = rows.filter((r) => new Date(r.reported_at) >= inicioHoje).length;
+    const contagem = new Map<string, number>();
+    for (const r of rows) {
+      const k = `${r.product_id}::${r.store_id}`;
+      contagem.set(k, (contagem.get(k) ?? 0) + 1);
+    }
+    let multiplos = 0;
+    for (const v of contagem.values()) if (v > 1) multiplos += 1;
+    return { pendentesProdutos, hoje, multiplos };
+  }, [rows]);
+
 
   const carregarTimeline = async (g: Grupo) => {
     setTimelineLoading(true);
@@ -241,8 +269,30 @@ function CentralProdutosEmFalta() {
         }
       />
 
+      {/* Resumo rápido */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+          <p className="text-2xl font-bold text-destructive">{resumo.pendentesProdutos}</p>
+          <p className="text-xs font-medium text-muted-foreground">produtos pendentes</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-3">
+          <p className="text-2xl font-bold text-navy">{resumo.hoje}</p>
+          <p className="text-xs font-medium text-muted-foreground">apontamentos hoje</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setFMin(fMin === "2" ? "1" : "2")}
+          className={`rounded-xl border p-3 text-left transition-colors ${
+            fMin === "2" ? "border-primary bg-accent" : "border-border bg-card hover:bg-muted/50"
+          }`}
+        >
+          <p className="text-2xl font-bold text-navy">{resumo.multiplos}</p>
+          <p className="text-xs font-medium text-muted-foreground">produtos com múltiplos apontamentos</p>
+        </button>
+      </div>
+
       {/* Indicadores */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {INDICADORES.map((s) => (
           <button
             key={s}
@@ -253,12 +303,14 @@ function CentralProdutosEmFalta() {
             }`}
           >
             <p className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
+              <span className="mr-1">{STATUS_EMOJI[s]}</span>
               {s === "Resolvido" ? "Resolvidos" : s === "Pendente" ? "Pendentes" : s}
             </p>
             <p className="mt-1 text-2xl font-bold text-navy">{contagens.get(s) ?? 0}</p>
           </button>
         ))}
       </div>
+
 
       {/* Filtros */}
       <div className="mt-5 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-6">
@@ -310,6 +362,8 @@ function CentralProdutosEmFalta() {
             <SelectItem value="pendentes">Pendentes primeiro</SelectItem>
             <SelectItem value="quantidade">Maior nº de apontamentos</SelectItem>
             <SelectItem value="recentes">Mais recentes</SelectItem>
+            <SelectItem value="antigas">Mais antigas</SelectItem>
+
           </SelectContent>
         </Select>
       </div>
@@ -357,7 +411,10 @@ function CentralProdutosEmFalta() {
                       <span className="max-w-[140px] truncate text-xs font-medium text-foreground">
                         {g.ultimo.reported_by_name}
                       </span>
-                      <Badge variant="outline" className={`text-xs ${STATUS_TONE[g.status]}`}>{g.status}</Badge>
+                      <Badge variant="outline" className={`text-xs font-semibold ${STATUS_TONE[g.status]}`}>
+                        {STATUS_EMOJI[g.status]} {g.status}
+                      </Badge>
+
                     </div>
                   </button>
                 </li>
