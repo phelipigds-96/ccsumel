@@ -113,11 +113,15 @@ function ProdutosEmFaltaPage() {
     return () => clearTimeout(t);
   }, [search]);
 
+  const nomeRef = useRef<HTMLInputElement>(null);
+
   const selecionar = (p: Produto) => {
     setProduto(p);
     setErroNome(false);
     setStep("registro");
+    setTimeout(() => nomeRef.current?.focus(), 80);
   };
+
 
   const registrar = async () => {
     if (!produto) return;
