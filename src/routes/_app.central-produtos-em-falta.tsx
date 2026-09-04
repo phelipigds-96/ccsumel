@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import {
-  listFaltas, updateFaltaStatus, listHistoricoMany, FALTA_STATUS, LOJAS,
+  listFaltas, updateFaltaStatus, listHistoricoMany, podeGerenciarFaltas, FALTA_STATUS, LOJAS,
   type FaltaStatus, type FaltaHistorico, type ProdutoEmFalta,
 } from "@/lib/produtos-em-falta";
 
@@ -89,6 +89,7 @@ function fmt(dt: string) {
 
 function CentralProdutosEmFalta() {
   const { user } = useAuth();
+  const podeGerenciar = podeGerenciarFaltas(user);
   const [rows, setRows] = useState<ProdutoEmFalta[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -449,7 +450,7 @@ function CentralProdutosEmFalta() {
                 )}
               </div>
 
-              {user?.isAdmin && (
+              {podeGerenciar && (
                 <div className="space-y-3 rounded-lg border border-border p-3">
                   <p className="text-sm font-semibold text-navy">Tratativa da gestão</p>
                   <div className="space-y-2">
@@ -472,7 +473,7 @@ function CentralProdutosEmFalta() {
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setAberto(null)}>Fechar</Button>
-                {user?.isAdmin && (
+                {podeGerenciar && (
                   <Button onClick={() => void aplicarStatus()} disabled={salvando}>
                     {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Salvar tratativa
