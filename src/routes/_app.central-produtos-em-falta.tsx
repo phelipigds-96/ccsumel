@@ -269,8 +269,30 @@ function CentralProdutosEmFalta() {
         }
       />
 
+      {/* Resumo rápido */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+          <p className="text-2xl font-bold text-destructive">{resumo.pendentesProdutos}</p>
+          <p className="text-xs font-medium text-muted-foreground">produtos pendentes</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-3">
+          <p className="text-2xl font-bold text-navy">{resumo.hoje}</p>
+          <p className="text-xs font-medium text-muted-foreground">apontamentos hoje</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setFMin(fMin === "2" ? "1" : "2")}
+          className={`rounded-xl border p-3 text-left transition-colors ${
+            fMin === "2" ? "border-primary bg-accent" : "border-border bg-card hover:bg-muted/50"
+          }`}
+        >
+          <p className="text-2xl font-bold text-navy">{resumo.multiplos}</p>
+          <p className="text-xs font-medium text-muted-foreground">produtos com múltiplos apontamentos</p>
+        </button>
+      </div>
+
       {/* Indicadores */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {INDICADORES.map((s) => (
           <button
             key={s}
@@ -281,12 +303,14 @@ function CentralProdutosEmFalta() {
             }`}
           >
             <p className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
+              <span className="mr-1">{STATUS_EMOJI[s]}</span>
               {s === "Resolvido" ? "Resolvidos" : s === "Pendente" ? "Pendentes" : s}
             </p>
             <p className="mt-1 text-2xl font-bold text-navy">{contagens.get(s) ?? 0}</p>
           </button>
         ))}
       </div>
+
 
       {/* Filtros */}
       <div className="mt-5 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-6">
