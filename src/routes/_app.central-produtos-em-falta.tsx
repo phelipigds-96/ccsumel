@@ -179,10 +179,23 @@ function CentralProdutosEmFalta() {
     return out;
   }, [rows, busca, fLoja, fStatus, fPeriodo, fMin, ordem]);
 
+  const carregarTimeline = async (g: Grupo) => {
+    setTimelineLoading(true);
+    try {
+      setTimeline(await listHistoricoMany(g.itens.map((i) => i.id)));
+    } catch (e) {
+      toast.error("Falha ao carregar o histórico", { description: (e as Error).message });
+    } finally {
+      setTimelineLoading(false);
+    }
+  };
+
   const abrir = (g: Grupo) => {
     setAberto(g);
     setNovoStatus(g.status);
     setObsGestao(g.ultimo.management_observation ?? "");
+    setTimeline([]);
+    void carregarTimeline(g);
   };
 
   const aplicarStatus = async () => {
