@@ -52,6 +52,27 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       campanhas: {
         Row: {
           checklist: Json | null
@@ -439,12 +460,16 @@ export type Database = {
       }
       produtos_em_falta: {
         Row: {
+          ciente_at: string | null
+          ciente_by: string | null
+          ciente_by_name: string
           created_at: string
           id: string
           managed_at: string | null
           managed_by: string | null
           management_observation: string
           observation: string
+          pedido_realizado_em: string | null
           product_id: string
           reported_at: string
           reported_by_name: string
@@ -455,12 +480,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ciente_at?: string | null
+          ciente_by?: string | null
+          ciente_by_name?: string
           created_at?: string
           id?: string
           managed_at?: string | null
           managed_by?: string | null
           management_observation?: string
           observation?: string
+          pedido_realizado_em?: string | null
           product_id: string
           reported_at?: string
           reported_by_name: string
@@ -471,12 +500,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ciente_at?: string | null
+          ciente_by?: string | null
+          ciente_by_name?: string
           created_at?: string
           id?: string
           managed_at?: string | null
           managed_by?: string | null
           management_observation?: string
           observation?: string
+          pedido_realizado_em?: string | null
           product_id?: string
           reported_at?: string
           reported_by_name?: string
@@ -608,6 +641,10 @@ export type Database = {
         Returns: boolean
       }
       is_read_only: { Args: { _user_id: string }; Returns: boolean }
+      marcar_retorno_ciente: {
+        Args: { _falta_id: string; _nome: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
