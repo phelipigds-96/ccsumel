@@ -150,6 +150,16 @@ export async function updateFaltaStatus(input: {
   if (histError) throw histError;
 }
 
+export async function listHistoricoMany(faltaIds: string[]): Promise<FaltaHistorico[]> {
+  if (faltaIds.length === 0) return [];
+  const { data, error } = await historicoTable()
+    .select("*")
+    .in("falta_id", faltaIds)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as FaltaHistorico[];
+}
+
 export async function listHistorico(faltaId: string): Promise<FaltaHistorico[]> {
   const { data, error } = await historicoTable()
     .select("*")
