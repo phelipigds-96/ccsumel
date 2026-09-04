@@ -103,6 +103,8 @@ function CentralProdutosEmFalta() {
   const [novoStatus, setNovoStatus] = useState<FaltaStatus>("Em análise");
   const [obsGestao, setObsGestao] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [timeline, setTimeline] = useState<FaltaHistorico[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
 
   const carregar = async () => {
     setLoading(true);
