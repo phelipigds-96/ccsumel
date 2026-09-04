@@ -35,6 +35,17 @@ const normalize = (s: string) =>
     .toLowerCase()
     .trim();
 
+const rankProduct = (produto: Produto, term: string) => {
+  const description = normalize(produto.descricao);
+  const code = normalize(produto.codigo ?? "");
+  const gtin = normalize(produto.gtin ?? "");
+  if (code === term || gtin === term) return 0;
+  if (description === term) return 1;
+  if (description.startsWith(`${term} `)) return 2;
+  if (description.split(/\s+/).some((word) => word.startsWith(term))) return 3;
+  return 4;
+};
+
 type Step = "busca" | "registro" | "confirmado";
 
 function ProdutosEmFaltaPage() {
@@ -47,7 +58,7 @@ function ProdutosEmFaltaPage() {
   const [produto, setProduto] = useState<Produto | null>(null);
   const [nome, setNome] = useState("");
   const [obs, setObs] = useState("");
-  const [loja, setLoja] = useState<string>(LOJAS[0]!);
+  const [loja, setLoja] = useState<string>(LOJAS[0] ?? "Matriz");
   const [saving, setSaving] = useState(false);
   const [erroNome, setErroNome] = useState(false);
 
@@ -66,22 +77,28 @@ function ProdutosEmFaltaPage() {
     const id = ++reqId.current;
     const t = setTimeout(async () => {
       try {
-        const like = termo.replace(/[%,]/g, " ");
+        const like = termo.replace(/[%_,().]/g, " ");
+        const accentTolerant = normalize(like).replace(/[aeiouc]/g, "_");
         const { data, error } = await supabase
           .from("produtos")
           .select("id, descricao, codigo, gtin, preco_venda, custo, fornecedor, ativo")
-          .or(`descricao.ilike.%${like}%,codigo.ilike.%${like}%,gtin.ilike.%${like}%`)
+          .or(
+            `descricao.ilike.%${like}%,descricao.ilike.%${accentTolerant}%,codigo.ilike.%${like}%,gtin.ilike.%${like}%`,
+          )
           .order("descricao", { ascending: true })
-          .limit(60);
+          .limit(300);
         if (error) throw error;
         if (id !== reqId.current) return;
         const termoNorm = normalize(termo);
-        const rows = ((data ?? []) as unknown as Produto[]).filter(
-          (p) =>
-            normalize(p.descricao).includes(termoNorm) ||
-            normalize(p.codigo ?? "").includes(termoNorm) ||
-            normalize(p.gtin ?? "").includes(termoNorm),
-        );
+        const rows = ((data ?? []) as unknown as Produto[])
+          .filter(
+            (p) =>
+              normalize(p.descricao).includes(termoNorm) ||
+              normalize(p.codigo ?? "").includes(termoNorm) ||
+              normalize(p.gtin ?? "").includes(termoNorm),
+          )
+          .sort((a, b) => rankProduct(a, termoNorm) - rankProduct(b, termoNorm) || a.descricao.localeCompare(b.descricao, "pt-BR"))
+          .slice(0, 60);
         setResultados(rows);
       } catch (e) {
         if (id === reqId.current) toast.error("Falha ao pesquisar", { description: (e as Error).message });
