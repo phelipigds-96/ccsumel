@@ -457,7 +457,9 @@ function CentralProdutosEmFalta() {
                     <Select value={novoStatus} onValueChange={(v) => setNovoStatus(v as FaltaStatus)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {FALTA_STATUS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        {FALTA_STATUS.map((s) => (
+                          <SelectItem key={s} value={s}>{STATUS_EMOJI[s]} {s}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
