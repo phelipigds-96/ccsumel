@@ -536,6 +536,46 @@ function CentralProdutosEmFalta() {
                 )}
               </div>
 
+              {bloqueio && (
+                <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <p className="text-sm font-semibold text-destructive">🔒 Bloqueio de novos lançamentos</p>
+                  <p className="text-sm text-foreground">
+                    Este produto está bloqueado para novas solicitações na loja <span className="font-semibold">{bloqueio.store_id}</span> —
+                    situação: <span className="font-semibold">{STATUS_EMOJI[bloqueio.status]} {bloqueio.status}</span>
+                    {bloqueio.permanente && " (bloqueio permanente)"}.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Definido em {new Date(bloqueio.tratado_em).toLocaleString("pt-BR")}.
+                  </p>
+                  {user?.isAdmin ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Motivo da liberação (obrigatório)</Label>
+                        <Textarea
+                          rows={2}
+                          value={motivoLiberacao}
+                          onChange={(e) => setMotivoLiberacao(e.target.value)}
+                          placeholder="Ex.: produto voltou a ser trabalhado pelo fornecedor"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => void liberar()}
+                        disabled={liberando}
+                      >
+                        {liberando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        ✅ Liberar produto (Produto ativo)
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Somente um administrador pode liberar este produto para novos lançamentos.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {podeGerenciar && (
                 <div className="space-y-3 rounded-lg border border-border p-3">
                   <p className="text-sm font-semibold text-navy">Tratativa da gestão</p>
