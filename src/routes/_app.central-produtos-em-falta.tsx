@@ -231,7 +231,31 @@ function CentralProdutosEmFalta() {
     setNovoStatus(g.status);
     setObsGestao(g.ultimo.management_observation ?? "");
     setTimeline([]);
+    setBloqueio(null);
+    setMotivoLiberacao("");
     void carregarTimeline(g);
+    getBloqueioAtivo(g.ultimo.product_id, g.loja)
+      .then(setBloqueio)
+      .catch(() => setBloqueio(null));
+  };
+
+  const liberar = async () => {
+    if (!bloqueio) return;
+    if (!motivoLiberacao.trim()) {
+      toast.error("Informe o motivo da liberação.");
+      return;
+    }
+    setLiberando(true);
+    try {
+      await liberarBloqueio(bloqueio.id, motivoLiberacao);
+      toast.success("Bloqueio liberado", { description: "O produto voltou a poder ser solicitado nesta loja." });
+      setBloqueio(null);
+      setMotivoLiberacao("");
+    } catch (e) {
+      toast.error("Não foi possível liberar", { description: (e as Error).message });
+    } finally {
+      setLiberando(false);
+    }
   };
 
   const aplicarStatus = async () => {
