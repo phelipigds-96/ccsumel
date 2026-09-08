@@ -18,7 +18,8 @@ import {
 import { useAuth } from "@/lib/auth";
 import {
   listFaltas, updateFaltaStatus, listHistoricoMany, podeGerenciarFaltas, FALTA_STATUS, LOJAS,
-  type FaltaStatus, type FaltaHistorico, type ProdutoEmFalta,
+  getBloqueioAtivo, liberarBloqueio,
+  type FaltaStatus, type FaltaHistorico, type ProdutoEmFalta, type ProdutoBloqueio,
 } from "@/lib/produtos-em-falta";
 
 const STATUS_EMOJI: Record<FaltaStatus, string> = {
@@ -108,6 +109,10 @@ function CentralProdutosEmFalta() {
   const [salvando, setSalvando] = useState(false);
   const [timeline, setTimeline] = useState<FaltaHistorico[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [bloqueio, setBloqueio] = useState<ProdutoBloqueio | null>(null);
+  const [motivoLiberacao, setMotivoLiberacao] = useState("");
+  const [liberando, setLiberando] = useState(false);
+
 
   const carregar = async () => {
     setLoading(true);
@@ -226,7 +231,31 @@ function CentralProdutosEmFalta() {
     setNovoStatus(g.status);
     setObsGestao(g.ultimo.management_observation ?? "");
     setTimeline([]);
+    setBloqueio(null);
+    setMotivoLiberacao("");
     void carregarTimeline(g);
+    getBloqueioAtivo(g.ultimo.product_id, g.loja)
+      .then(setBloqueio)
+      .catch(() => setBloqueio(null));
+  };
+
+  const liberar = async () => {
+    if (!bloqueio) return;
+    if (!motivoLiberacao.trim()) {
+      toast.error("Informe o motivo da liberação.");
+      return;
+    }
+    setLiberando(true);
+    try {
+      await liberarBloqueio(bloqueio.id, motivoLiberacao);
+      toast.success("Bloqueio liberado", { description: "O produto voltou a poder ser solicitado nesta loja." });
+      setBloqueio(null);
+      setMotivoLiberacao("");
+    } catch (e) {
+      toast.error("Não foi possível liberar", { description: (e as Error).message });
+    } finally {
+      setLiberando(false);
+    }
   };
 
   const aplicarStatus = async () => {
@@ -506,6 +535,46 @@ function CentralProdutosEmFalta() {
                   </ol>
                 )}
               </div>
+
+              {bloqueio && (
+                <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <p className="text-sm font-semibold text-destructive">🔒 Bloqueio de novos lançamentos</p>
+                  <p className="text-sm text-foreground">
+                    Este produto está bloqueado para novas solicitações na loja <span className="font-semibold">{bloqueio.store_id}</span> —
+                    situação: <span className="font-semibold">{STATUS_EMOJI[bloqueio.status]} {bloqueio.status}</span>
+                    {bloqueio.permanente && " (bloqueio permanente)"}.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Definido em {new Date(bloqueio.tratado_em).toLocaleString("pt-BR")}.
+                  </p>
+                  {user?.isAdmin ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Motivo da liberação (obrigatório)</Label>
+                        <Textarea
+                          rows={2}
+                          value={motivoLiberacao}
+                          onChange={(e) => setMotivoLiberacao(e.target.value)}
+                          placeholder="Ex.: produto voltou a ser trabalhado pelo fornecedor"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => void liberar()}
+                        disabled={liberando}
+                      >
+                        {liberando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        ✅ Liberar produto (Produto ativo)
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Somente um administrador pode liberar este produto para novos lançamentos.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {podeGerenciar && (
                 <div className="space-y-3 rounded-lg border border-border p-3">

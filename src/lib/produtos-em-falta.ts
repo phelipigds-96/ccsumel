@@ -200,6 +200,85 @@ export async function deleteFalta(id: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Bloqueio de novos lançamentos (por produto + loja)
+// ---------------------------------------------------------------------------
+
+export interface ProdutoBloqueio {
+  id: string;
+  product_id: string;
+  store_id: string;
+  status: FaltaStatus;
+  permanente: boolean;
+  ativo: boolean;
+  motivo: string;
+  tratado_em: string;
+}
+
+const bloqueiosTable = () => supabase.from("produto_bloqueios" as any);
+
+/** Bloqueios ativos para uma lista de produtos em uma loja (uso na pesquisa). */
+export async function listBloqueiosAtivos(productIds: string[], loja: string) {
+  const map = new Map<string, ProdutoBloqueio>();
+  if (productIds.length === 0 || !loja) return map;
+  const { data, error } = await bloqueiosTable()
+    .select("id, product_id, store_id, status, permanente, motivo, tratado_em")
+    .in("product_id", productIds)
+    .eq("store_id", loja)
+    .eq("ativo", true);
+  if (error) throw error;
+  for (const b of (data ?? []) as unknown as ProdutoBloqueio[]) map.set(b.product_id, b);
+  return map;
+}
+
+/** Bloqueio ativo de um produto em uma loja (uso na Central / revalidação). */
+export async function getBloqueioAtivo(productId: string, loja: string) {
+  const { data, error } = await bloqueiosTable()
+    .select("id, product_id, store_id, status, permanente, motivo, tratado_em")
+    .eq("product_id", productId)
+    .eq("store_id", loja)
+    .eq("ativo", true)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as unknown as ProdutoBloqueio | null) ?? null;
+}
+
+/** Converte os erros do gatilho do banco em mensagens claras para o chão de loja. */
+export function traduzErroLancamento(e: unknown): string {
+  const msg = (e as { message?: string })?.message ?? "";
+  if (msg.includes("PRODUTO_BLOQUEADO")) {
+    const partes = msg.split("|");
+    const status = partes[1]?.trim();
+    const data = partes[2]?.trim();
+    return [
+      "Este produto possui um retorno da área de Compras:",
+      status ? `Status atual: ${status}` : null,
+      data ? `Solicitação anterior tratada em: ${data}` : null,
+      "O produto não pode ser adicionado novamente à Lista de Faltas.",
+    ].filter(Boolean).join("\n");
+  }
+  if (msg.includes("PRODUTO_JA_SOLICITADO")) {
+    return "Este produto já possui uma solicitação pendente para esta loja.";
+  }
+  return msg || "Não foi possível registrar.";
+}
+
+/** Liberação administrativa do bloqueio ("Produto ativo"). Restrita a admin no banco. */
+export async function liberarBloqueio(bloqueioId: string, motivo: string) {
+  const user = await currentUser();
+  const nome =
+    (user?.user_metadata?.["name"] as string) ??
+    (user?.user_metadata?.["username"] as string) ??
+    user?.email ??
+    "Administrador";
+  const { error } = await supabase.rpc("liberar_produto_bloqueado" as any, {
+    _bloqueio_id: bloqueioId,
+    _nome: nome,
+    _motivo: motivo.trim(),
+  });
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
 // Retorno às Lojas
 // ---------------------------------------------------------------------------
 
