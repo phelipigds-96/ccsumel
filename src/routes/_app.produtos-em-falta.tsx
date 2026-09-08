@@ -12,7 +12,10 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import type { Produto } from "@/lib/produtos";
-import { createFalta, LOJAS, lojaDoUsuario } from "@/lib/produtos-em-falta";
+import {
+  createFalta, listBloqueiosAtivos, traduzErroLancamento, LOJAS, lojaDoUsuario,
+  type ProdutoBloqueio,
+} from "@/lib/produtos-em-falta";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/produtos-em-falta")({
@@ -57,6 +60,7 @@ function ProdutosEmFaltaPage() {
   const [buscando, setBuscando] = useState(false);
 
   const [produto, setProduto] = useState<Produto | null>(null);
+  const [bloqueios, setBloqueios] = useState<Map<string, ProdutoBloqueio>>(new Map());
   const [nome, setNome] = useState("");
   const [obs, setObs] = useState("");
   const { user } = useAuth();
@@ -74,6 +78,7 @@ function ProdutosEmFaltaPage() {
     const termo = search.trim();
     if (termo.length < 2) {
       setResultados([]);
+      setBloqueios(new Map());
       setBuscando(false);
       return;
     }
@@ -104,6 +109,12 @@ function ProdutosEmFaltaPage() {
           .sort((a, b) => rankProduct(a, termoNorm) - rankProduct(b, termoNorm) || a.descricao.localeCompare(b.descricao, "pt-BR"))
           .slice(0, 60);
         setResultados(rows);
+        try {
+          const bl = await listBloqueiosAtivos(rows.map((p) => p.id), loja);
+          if (id === reqId.current) setBloqueios(bl);
+        } catch {
+          /* pesquisa continua mesmo se a checagem de bloqueio falhar; o banco revalida ao salvar */
+        }
       } catch (e) {
         if (id === reqId.current) toast.error("Falha ao pesquisar", { description: (e as Error).message });
       } finally {
@@ -111,11 +122,12 @@ function ProdutosEmFaltaPage() {
       }
     }, 250);
     return () => clearTimeout(t);
-  }, [search]);
+  }, [search, loja]);
 
   const nomeRef = useRef<HTMLInputElement>(null);
 
   const selecionar = (p: Produto) => {
+    if (bloqueios.has(p.id)) return;
     setProduto(p);
     setErroNome(false);
     setStep("registro");
@@ -141,7 +153,15 @@ function ProdutosEmFaltaPage() {
       setConfirmacao({ produto: produto.descricao, nome: nome.trim(), loja });
       setStep("confirmado");
     } catch (e) {
-      toast.error("Não foi possível registrar", { description: (e as Error).message });
+      const msg = traduzErroLancamento(e);
+      if (msg.includes("retorno da área de Compras") || msg.includes("solicitação pendente")) {
+        toast.error("⚠️ Produto não disponível para novo lançamento", { description: msg, duration: 8000 });
+        // Volta à pesquisa para o colaborador ver o selo de bloqueio do produto
+        setProduto(null);
+        setStep("busca");
+      } else {
+        toast.error("Não foi possível registrar", { description: msg });
+      }
     } finally {
       setSaving(false);
     }
@@ -298,20 +318,41 @@ function ProdutosEmFaltaPage() {
         <p className="mt-6 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</p>
       ) : (
         <ul className="mt-4 divide-y divide-border/70 overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
-          {resultados.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                onClick={() => selecionar(p)}
-                className="w-full px-4 py-3 text-left transition-colors hover:bg-muted/60 active:bg-muted"
-              >
-                <span className="block truncate text-sm font-semibold text-foreground">{p.descricao}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {p.codigo ? `Cód. ${p.codigo}` : p.gtin ?? ""}
-                </span>
-              </button>
-            </li>
-          ))}
+          {resultados.map((p) => {
+            const bloqueio = bloqueios.get(p.id);
+            if (bloqueio) {
+              return (
+                <li key={p.id} className="cursor-not-allowed bg-destructive/5 px-4 py-3">
+                  <span className="block truncate text-sm font-semibold text-muted-foreground">{p.descricao}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {p.codigo ? `Cód. ${p.codigo}` : p.gtin ?? ""}
+                  </span>
+                  <span className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-bold text-destructive">
+                    🔴 PRODUTO BLOQUEADO — {bloqueio.status}
+                  </span>
+                  {bloqueio.permanente && (
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                      Bloqueio permanente definido por Compras.
+                    </span>
+                  )}
+                </li>
+              );
+            }
+            return (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => selecionar(p)}
+                  className="w-full px-4 py-3 text-left transition-colors hover:bg-muted/60 active:bg-muted"
+                >
+                  <span className="block truncate text-sm font-semibold text-foreground">{p.descricao}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {p.codigo ? `Cód. ${p.codigo}` : p.gtin ?? ""}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

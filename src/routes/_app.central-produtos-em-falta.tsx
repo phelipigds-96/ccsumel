@@ -18,7 +18,8 @@ import {
 import { useAuth } from "@/lib/auth";
 import {
   listFaltas, updateFaltaStatus, listHistoricoMany, podeGerenciarFaltas, FALTA_STATUS, LOJAS,
-  type FaltaStatus, type FaltaHistorico, type ProdutoEmFalta,
+  getBloqueioAtivo, liberarBloqueio,
+  type FaltaStatus, type FaltaHistorico, type ProdutoEmFalta, type ProdutoBloqueio,
 } from "@/lib/produtos-em-falta";
 
 const STATUS_EMOJI: Record<FaltaStatus, string> = {
@@ -108,6 +109,10 @@ function CentralProdutosEmFalta() {
   const [salvando, setSalvando] = useState(false);
   const [timeline, setTimeline] = useState<FaltaHistorico[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [bloqueio, setBloqueio] = useState<ProdutoBloqueio | null>(null);
+  const [motivoLiberacao, setMotivoLiberacao] = useState("");
+  const [liberando, setLiberando] = useState(false);
+
 
   const carregar = async () => {
     setLoading(true);
