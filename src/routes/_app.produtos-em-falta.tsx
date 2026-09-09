@@ -13,7 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Produto } from "@/lib/produtos";
 import {
-  createFalta, listBloqueiosAtivos, traduzErroLancamento, LOJAS, lojaDoUsuario,
+  createFalta, getBloqueioAtivo, listBloqueiosAtivos, traduzErroLancamento, LOJAS, lojaDoUsuario,
   type ProdutoBloqueio,
 } from "@/lib/produtos-em-falta";
 import { useAuth } from "@/lib/auth";
@@ -50,6 +50,9 @@ const rankProduct = (produto: Produto, term: string) => {
   return 4;
 };
 
+const dataTratamento = (value: string) =>
+  new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(value));
+
 type Step = "busca" | "registro" | "confirmado";
 
 function ProdutosEmFaltaPage() {
@@ -61,6 +64,8 @@ function ProdutosEmFaltaPage() {
 
   const [produto, setProduto] = useState<Produto | null>(null);
   const [bloqueios, setBloqueios] = useState<Map<string, ProdutoBloqueio>>(new Map());
+  const [bloqueioRegistro, setBloqueioRegistro] = useState<ProdutoBloqueio | null>(null);
+  const [checandoBloqueio, setChecandoBloqueio] = useState(false);
   const [nome, setNome] = useState("");
   const [obs, setObs] = useState("");
   const { user } = useAuth();
@@ -126,12 +131,36 @@ function ProdutosEmFaltaPage() {
 
   const nomeRef = useRef<HTMLInputElement>(null);
 
-  const selecionar = (p: Produto) => {
-    if (bloqueios.has(p.id)) return;
-    setProduto(p);
-    setErroNome(false);
-    setStep("registro");
-    setTimeout(() => nomeRef.current?.focus(), 80);
+  const selecionar = async (p: Produto) => {
+    const conhecido = bloqueios.get(p.id);
+    if (conhecido) return;
+
+    setChecandoBloqueio(true);
+    try {
+      const bloqueioAtual = await getBloqueioAtivo(p.id, loja);
+      if (bloqueioAtual) {
+        setBloqueios((atuais) => new Map(atuais).set(p.id, bloqueioAtual));
+        toast.error("🔴 Produto bloqueado", {
+          description: `${p.descricao}\nStatus: ${bloqueioAtual.status}\nTratado em: ${dataTratamento(bloqueioAtual.tratado_em)}`,
+          duration: 8000,
+        });
+        return;
+      }
+      setProduto(p);
+      setBloqueioRegistro(null);
+      setErroNome(false);
+      setStep("registro");
+      setTimeout(() => nomeRef.current?.focus(), 80);
+    } catch {
+      // O gatilho do banco continua sendo a proteção final caso esta consulta falhe.
+      setProduto(p);
+      setBloqueioRegistro(null);
+      setErroNome(false);
+      setStep("registro");
+      setTimeout(() => nomeRef.current?.focus(), 80);
+    } finally {
+      setChecandoBloqueio(false);
+    }
   };
 
 
@@ -144,6 +173,17 @@ function ProdutosEmFaltaPage() {
     }
     setSaving(true);
     try {
+      const bloqueioAtual = await getBloqueioAtivo(produto.id, loja);
+      if (bloqueioAtual) {
+        setBloqueioRegistro(bloqueioAtual);
+        setBloqueios((atuais) => new Map(atuais).set(produto.id, bloqueioAtual));
+        toast.error("⚠️ Produto não disponível para novo lançamento", {
+          description: `Status atual: ${bloqueioAtual.status}`,
+          duration: 8000,
+        });
+        return;
+      }
+
       await createFalta({
         product_id: produto.id,
         store_id: loja,
@@ -169,6 +209,7 @@ function ProdutosEmFaltaPage() {
 
   const recomecar = () => {
     setProduto(null);
+    setBloqueioRegistro(null);
     setObs("");
     setSearch("");
     setResultados([]);
@@ -229,6 +270,20 @@ function ProdutosEmFaltaPage() {
           )}
         </div>
 
+        {bloqueioRegistro && (
+          <div role="alert" className="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+            <p className="font-bold text-destructive">🔴 PRODUTO BLOQUEADO</p>
+            <p className="mt-2 text-sm font-semibold text-foreground">Produto: {produto.descricao}</p>
+            <p className="mt-1 text-sm text-foreground">Status: {bloqueioRegistro.status}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Solicitação anterior tratada em: {dataTratamento(bloqueioRegistro.tratado_em)}
+            </p>
+            <p className="mt-2 text-sm text-foreground">
+              O produto não pode ser adicionado novamente à Lista de Faltas.
+            </p>
+          </div>
+        )}
+
         <div className="mt-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="pf-nome" className="text-sm font-semibold">
@@ -278,9 +333,13 @@ function ProdutosEmFaltaPage() {
             />
           </div>
 
-          <Button className="h-14 w-full text-base font-bold" onClick={registrar} disabled={saving}>
+          <Button
+            className="h-14 w-full text-base font-bold"
+            onClick={registrar}
+            disabled={saving || checandoBloqueio || Boolean(bloqueioRegistro)}
+          >
             {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-            {saving ? "Registrando…" : "🚨 REGISTRAR FALTA"}
+            {bloqueioRegistro ? "PRODUTO BLOQUEADO" : saving ? "Registrando…" : "🚨 REGISTRAR FALTA"}
           </Button>
         </div>
       </div>
@@ -322,19 +381,27 @@ function ProdutosEmFaltaPage() {
             const bloqueio = bloqueios.get(p.id);
             if (bloqueio) {
               return (
-                <li key={p.id} className="cursor-not-allowed bg-destructive/5 px-4 py-3">
-                  <span className="block truncate text-sm font-semibold text-muted-foreground">{p.descricao}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {p.codigo ? `Cód. ${p.codigo}` : p.gtin ?? ""}
-                  </span>
-                  <span className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-bold text-destructive">
-                    🔴 PRODUTO BLOQUEADO — {bloqueio.status}
-                  </span>
-                  {bloqueio.permanente && (
-                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                      Bloqueio permanente definido por Compras.
+                <li key={p.id} className="bg-destructive/5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled
+                    className="h-auto w-full cursor-not-allowed flex-col items-start rounded-none px-4 py-3 text-left opacity-100"
+                    aria-label={`${p.descricao}, produto bloqueado, status ${bloqueio.status}`}
+                  >
+                    <span className="block max-w-full truncate text-sm font-semibold text-muted-foreground">{p.descricao}</span>
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {p.codigo ? `Cód. ${p.codigo}` : p.gtin ?? ""}
                     </span>
-                  )}
+                    <span className="mt-1.5 whitespace-normal text-[11px] font-bold text-destructive">
+                      🔴 PRODUTO BLOQUEADO — {bloqueio.status}
+                    </span>
+                    {bloqueio.permanente && (
+                      <span className="mt-0.5 whitespace-normal text-[11px] font-normal text-muted-foreground">
+                        Bloqueio permanente definido por Compras.
+                      </span>
+                    )}
+                  </Button>
                 </li>
               );
             }
