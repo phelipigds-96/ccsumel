@@ -357,3 +357,35 @@ export async function marcarCiente(faltaId: string, nome: string) {
   });
   if (error) throw error;
 }
+
+// ---------------------------------------------------------------------------
+// Regras configuráveis: quais situações bloqueiam novos lançamentos
+// ---------------------------------------------------------------------------
+
+export interface RegraStatus {
+  status: FaltaStatus;
+  bloqueia_novo_lancamento: boolean;
+  bloqueio_permanente: boolean;
+}
+
+const regrasTable = () => supabase.from("falta_status_regras" as any);
+
+/** Regras atuais, na mesma ordem dos status do sistema. */
+export async function listRegrasStatus(): Promise<RegraStatus[]> {
+  const { data, error } = await regrasTable().select("status, bloqueia_novo_lancamento, bloqueio_permanente");
+  if (error) throw error;
+  const rows = (data ?? []) as unknown as RegraStatus[];
+  const map = new Map(rows.map((r) => [r.status, r]));
+  return FALTA_STATUS.map(
+    (s) => map.get(s) ?? { status: s, bloqueia_novo_lancamento: false, bloqueio_permanente: false },
+  );
+}
+
+/** Atualiza uma regra (somente administradores, validado no banco). */
+export async function updateRegraStatus(
+  status: FaltaStatus,
+  patch: { bloqueia_novo_lancamento?: boolean; bloqueio_permanente?: boolean },
+) {
+  const { error } = await regrasTable().update(patch).eq("status", status);
+  if (error) throw error;
+}
