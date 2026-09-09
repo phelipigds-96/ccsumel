@@ -173,7 +173,12 @@ function ProdutosEmFaltaPage() {
     }
     setSaving(true);
     try {
-      const bloqueioAtual = await getBloqueioAtivo(produto.id, loja);
+      let bloqueioAtual: ProdutoBloqueio | null = null;
+      try {
+        bloqueioAtual = await getBloqueioAtivo(produto.id, loja);
+      } catch {
+        // Se a consulta preventiva falhar, o gatilho do banco ainda valida o lançamento.
+      }
       if (bloqueioAtual) {
         setBloqueioRegistro(bloqueioAtual);
         setBloqueios((atuais) => new Map(atuais).set(produto.id, bloqueioAtual));
