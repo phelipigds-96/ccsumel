@@ -86,6 +86,7 @@ function UsuariosPage() {
   const [editing, setEditing] = useState<StoredUser | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [confirmDelete, setConfirmDelete] = useState<StoredUser | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -142,6 +143,16 @@ function UsuariosPage() {
     e.preventDefault();
     const name = form.name.trim();
     const username = form.username.trim();
+
+    /* ANÁLISE SOLICITADA:
+     * Motivo pelo qual os botões pareciam não fazer nada (além de faltar feedback/loading):
+     * O backend em users.functions.ts retorna um padrão de Result { ok: false, error: string }
+     * em falhas da base de dados (como usuário duplicado), em vez de lançar um throw real (exceção livre).
+     * Como o bloco try/catch do frontend falhava em reconhecer e validar essa assinatura, o fluxo fingia
+     * que a request era um sucesso, exibia o toast dizendo que deu tudo certo e simplesmente fechava
+     * a janela pop-up, ignorando o erro embutido no payload sem de fato aplicar modificações.
+     */
+
     if (!name) return toast.error("Informe o nome.");
     if (!username) return toast.error("Informe o nome de usuário (login).");
     if (!/^[a-zA-Z0-9._-]+$/.test(username))
@@ -156,6 +167,7 @@ function UsuariosPage() {
       if (form.password !== form.confirmPassword) return toast.error("As senhas não coincidem.");
     }
 
+    setIsSubmitting(true);
     try {
       if (editing) {
         const patch: Partial<StoredUser> = {
@@ -168,10 +180,15 @@ function UsuariosPage() {
           readOnly: !form.isAdmin && form.readOnly,
         };
         if (form.password) patch.password = form.password;
-        await updateUser(editing.id, patch);
+        
+        const res = await updateUser(editing.id, patch) as any;
+        if (res && res.ok === false) {
+           toast.error(res.error || "Erro ao atualizar usuário.");
+           return;
+        }
         toast.success("Usuário atualizado.");
       } else {
-        await createUser({
+        const res = await createUser({
           name,
           username,
           password: form.password,
@@ -180,23 +197,39 @@ function UsuariosPage() {
           permissions: form.isAdmin ? ALL_PERMISSIONS : form.permissions,
           isAdmin: form.isAdmin,
           readOnly: !form.isAdmin && form.readOnly,
-        });
+        }) as any;
+        
+        if (res && res.ok === false) {
+           toast.error(res.error || "Erro ao cadastrar usuário.");
+           return;
+        }
         toast.success("Usuário cadastrado.");
       }
       setDialogOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar usuário.");
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Erro crítico ao salvar usuário.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   async function handleDelete() {
     if (!confirmDelete) return;
+    setIsSubmitting(true);
     try {
-      await deleteUser(confirmDelete.id);
+      const res = await deleteUser(confirmDelete.id) as any;
+      if (res && res.ok === false) {
+          toast.error(res.error || "Erro ao remover usuário.");
+          return;
+      }
       toast.success("Usuário removido.");
       setConfirmDelete(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao remover usuário.");
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Erro crítico ao remover usuário.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -445,11 +478,11 @@ function UsuariosPage() {
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-primary hover:bg-primary/90">
-                {editing ? "Salvar alterações" : "Cadastrar usuário"}
+              <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={isSubmitting}>
+                {isSubmitting ? "Processando..." : editing ? "Salvar alterações" : "Cadastrar usuário"}
               </Button>
             </DialogFooter>
           </form>
@@ -465,9 +498,13 @@ function UsuariosPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
+            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={isSubmitting} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isSubmitting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
