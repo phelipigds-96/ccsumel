@@ -193,6 +193,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const createUser: AuthContextValue["createUser"] = async (u) => {
+    console.log("[auth.createUser] Início — montando o payload para a server function adminCreateUser().", {
+      name: u.name,
+      username: u.username,
+      status: u.status,
+      permissoes: u.permissions?.length ?? 0,
+      isAdmin: !!u.isAdmin,
+      readOnly: !!u.readOnly,
+    });
     const res = await adminCreateUser({
       data: {
         name: u.name,
@@ -205,8 +213,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         readOnly: !!u.readOnly,
       },
     });
+    console.log("[auth.createUser] Resposta da server function adminCreateUser():", res);
+    console.log("[auth.createUser] Validando a resposta com unwrap() — lança erro quando res.ok === false.");
     unwrap(res, "Não foi possível criar o usuário.");
+    console.log("[auth.createUser] unwrap() não lançou erro. Recarregando a lista de usuários (refresh).");
     await refresh();
+    console.log("[auth.createUser] Fim — lista recarregada. Retornando para o handleSubmit.");
   };
 
   const updateUser: AuthContextValue["updateUser"] = async (id, patch) => {
@@ -220,11 +232,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // montar o payload, mesclamos com o patch do formulário e só então chamamos
     // a server function de atualização.
     let current = users.find((x) => x.id === id);
+    console.log("[auth.updateUser] Início — procurando o usuário no state local.", {
+      id,
+      encontradoNoState: !!current,
+      totalNoState: users.length,
+    });
     if (!current) {
+      console.warn(
+        "[auth.updateUser] Usuário não está no state local. Tentando recarregar via fetchUsers() — se essa leitura for bloqueada (RLS/permissão), o código segue em frente com o registro indefinido.",
+      );
       try {
         const fresh = await fetchUsers();
         setUsers(fresh);
         current = fresh.find((x) => x.id === id);
+        console.log("[auth.updateUser] Recarga concluída. Usuário encontrado após a recarga?", !!current, {
+          totalRecarregado: fresh.length,
+        });
       } catch (err) {
         console.error("[auth.updateUser] não foi possível recarregar a lista de usuários", err);
       }
@@ -232,35 +255,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const name = (patch.name ?? current?.name ?? "").trim();
     const username = (patch.username ?? current?.username ?? "").trim().toLowerCase();
-    if (!name) throw new Error("Informe o nome.");
+    console.log("[auth.updateUser] Valores mesclados (patch + registro atual do banco/state):", {
+      name,
+      username,
+    });
+    if (!name) {
+      console.warn("[auth.updateUser] BLOQUEIO: nome vazio. Lançando erro antes de chamar o backend.");
+      throw new Error("Informe o nome.");
+    }
     if (!username) {
+      console.warn(
+        "[auth.updateUser] BLOQUEIO: username vazio — o registro atual não foi encontrado nem no state nem no banco.",
+      );
       throw new Error(
         "Não foi possível identificar o usuário a ser atualizado. Recarregue a página e tente novamente.",
       );
     }
 
-    const res = await adminUpdateUser({
-      data: {
-        id,
-        name,
-        username,
-        password: patch.password || undefined,
-        status: patch.status ?? current?.status ?? "ativo",
-        notes: patch.notes ?? current?.notes ?? "",
-        permissions: patch.permissions ?? current?.permissions ?? [],
-        isAdmin: patch.isAdmin ?? !!current?.isAdmin,
-        readOnly: patch.readOnly ?? !!current?.readOnly,
-      },
+    const payload = {
+      id,
+      name,
+      username,
+      password: patch.password || undefined,
+      status: patch.status ?? current?.status ?? "ativo",
+      notes: patch.notes ?? current?.notes ?? "",
+      permissions: patch.permissions ?? current?.permissions ?? [],
+      isAdmin: patch.isAdmin ?? !!current?.isAdmin,
+      readOnly: patch.readOnly ?? !!current?.readOnly,
+    };
+    console.log("[auth.updateUser] Chamando a server function adminUpdateUser() com o payload:", {
+      ...payload,
+      password: payload.password ? "***" : undefined,
     });
+
+    const res = await adminUpdateUser({ data: payload });
+    console.log("[auth.updateUser] Resposta da server function adminUpdateUser():", res);
     unwrap(res, "Não foi possível salvar o usuário.");
 
     // Só recarregamos depois da confirmação do backend.
+    console.log("[auth.updateUser] unwrap() não lançou erro. Recarregando a lista (refresh).");
     await refresh();
+    console.log("[auth.updateUser] Lista recarregada.");
 
     if (user && user.id === id) {
+      console.log("[auth.updateUser] O usuário editado é o próprio logado — recarregando a sessão.");
       const session = await loadSessionUser(id);
       if (!session) {
         // O próprio usuário logado ficou inativo ou sem perfil: encerra a sessão.
+        console.warn(
+          "[auth.updateUser] Sessão inválida após a edição (usuário inativo ou sem perfil). Encerrando o login.",
+        );
         await supabase.auth.signOut();
         setUser(null);
         setUsers([]);
@@ -268,6 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setUser(session);
     }
+    console.log("[auth.updateUser] Fim — atualização concluída sem lançar erro.");
   };
 
   const deleteUser: AuthContextValue["deleteUser"] = async (id) => {

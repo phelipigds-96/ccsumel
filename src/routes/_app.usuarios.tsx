@@ -102,12 +102,18 @@ function UsuariosPage() {
   }, [users, search]);
 
   function openNew() {
+    console.log(
+      "[Usuários][Cadastro] 1/6 — Botão 'Novo Usuário' clicado. Abrindo o formulário em branco.",
+    );
     setEditing(null);
     setForm(emptyForm());
     setDialogOpen(true);
   }
 
   function openEdit(u: StoredUser) {
+    console.log(
+      `[Usuários][Edição] 1/6 — Botão 'Editar' clicado para o usuário ${u.username} (id ${u.id}). Preenchendo o formulário com os dados atuais.`,
+    );
     setEditing(u);
     setForm({
       name: u.name,
@@ -141,24 +147,73 @@ function UsuariosPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    const mode = editing ? "Edição" : "Cadastro";
+
+    console.log(
+      `[Usuários][${mode}] 2/6 — onSubmit do formulário disparado. Iniciando a validação dos campos.`,
+      {
+        modo: mode,
+        editingId: editing?.id ?? null,
+        form: {
+          name: form.name,
+          username: form.username,
+          status: form.status,
+          isAdmin: form.isAdmin,
+          readOnly: form.readOnly,
+          permissions: form.permissions.length,
+          senhaPreenchida: !!form.password,
+          confirmacaoPreenchida: !!form.confirmPassword,
+        },
+      },
+    );
+
     const name = form.name.trim();
     const username = form.username.trim();
 
-    if (!name) return toast.error("Informe o nome.");
-    if (!username) return toast.error("Informe o nome de usuário (login).");
-    if (!/^[a-zA-Z0-9._-]+$/.test(username))
+    if (!name) {
+      console.warn(`[Usuários][${mode}] 3/6 — BLOQUEIO na validação: campo 'Nome' vazio. Abortando com return antes de qualquer chamada ao backend.`);
+      return toast.error("Informe o nome.");
+    }
+    if (!username) {
+      console.warn(`[Usuários][${mode}] 3/6 — BLOQUEIO na validação: campo 'Login' vazio. Abortando com return antes de qualquer chamada ao backend.`);
+      return toast.error("Informe o nome de usuário (login).");
+    }
+    if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+      console.warn(`[Usuários][${mode}] 3/6 — BLOQUEIO na validação: login com caracteres inválidos:`, username);
       return toast.error("Use apenas letras, números, ponto, hífen ou underline no login.");
-
-    if (!editing) {
-      if (!form.password) return toast.error("Informe a senha.");
-      if (form.password.length < 6) return toast.error("A senha deve ter ao menos 6 caracteres.");
-      if (form.password !== form.confirmPassword) return toast.error("As senhas não coincidem.");
-    } else if (form.password || form.confirmPassword) {
-      if (form.password.length < 6) return toast.error("A nova senha deve ter ao menos 6 caracteres.");
-      if (form.password !== form.confirmPassword) return toast.error("As senhas não coincidem.");
     }
 
+    if (!editing) {
+      if (!form.password) {
+        console.warn("[Usuários][Cadastro] 3/6 — BLOQUEIO na validação: senha vazia.");
+        return toast.error("Informe a senha.");
+      }
+      if (form.password.length < 6) {
+        console.warn("[Usuários][Cadastro] 3/6 — BLOQUEIO na validação: senha com menos de 6 caracteres.");
+        return toast.error("A senha deve ter ao menos 6 caracteres.");
+      }
+      if (form.password !== form.confirmPassword) {
+        console.warn("[Usuários][Cadastro] 3/6 — BLOQUEIO na validação: senha e confirmação diferentes.");
+        return toast.error("As senhas não coincidem.");
+      }
+    } else if (form.password || form.confirmPassword) {
+      if (form.password.length < 6) {
+        console.warn("[Usuários][Edição] 3/6 — BLOQUEIO na validação: nova senha com menos de 6 caracteres.");
+        return toast.error("A nova senha deve ter ao menos 6 caracteres.");
+      }
+      if (form.password !== form.confirmPassword) {
+        console.warn("[Usuários][Edição] 3/6 — BLOQUEIO na validação: nova senha e confirmação diferentes.");
+        return toast.error("As senhas não coincidem.");
+      }
+    }
+
+    console.log(`[Usuários][${mode}] 3/6 — Validação concluída sem bloqueio. Prosseguindo para o envio.`);
+
     setIsSubmitting(true);
+    console.log(
+      `[Usuários][${mode}] 4/6 — setIsSubmitting(true) aplicado (botões desabilitados). Chamando a função de auth agora.`,
+    );
+
     try {
       if (editing) {
         const patch: Partial<StoredUser> = {
@@ -171,11 +226,18 @@ function UsuariosPage() {
           readOnly: !form.isAdmin && form.readOnly,
         };
         if (form.password) patch.password = form.password;
-        
+
+        console.log("[Usuários][Edição] 5/6 — Chamando updateUser() do contexto de auth.", {
+          id: editing.id,
+          patch: { ...patch, password: patch.password ? "***" : undefined },
+        });
+
         await updateUser(editing.id, patch);
+
+        console.log("[Usuários][Edição] 6/6 — updateUser() retornou sem lançar erro.");
         toast.success("Usuário atualizado.");
       } else {
-        await createUser({
+        const payload: Omit<StoredUser, "id" | "createdAt"> = {
           name,
           username,
           password: form.password,
@@ -184,14 +246,29 @@ function UsuariosPage() {
           permissions: form.isAdmin ? ALL_PERMISSIONS : form.permissions,
           isAdmin: form.isAdmin,
           readOnly: !form.isAdmin && form.readOnly,
+        };
+
+        console.log("[Usuários][Cadastro] 5/6 — Chamando createUser() do contexto de auth.", {
+          ...payload,
+          password: "***",
         });
+
+        await createUser(payload);
+
+        console.log("[Usuários][Cadastro] 6/6 — createUser() retornou sem lançar erro.");
         toast.success("Usuário cadastrado.");
       }
+
+      console.log(`[Usuários][${mode}] 6/6 — Fechando o formulário (setDialogOpen(false)).`);
       setDialogOpen(false);
     } catch (err) {
-      console.error(err);
+      console.error(
+        `[Usuários][${mode}] ERRO capturado no handleSubmit — o fluxo foi interrompido neste ponto:`,
+        err,
+      );
       toast.error(err instanceof Error ? err.message : "Erro crítico ao salvar usuário.");
     } finally {
+      console.log(`[Usuários][${mode}] finally — setIsSubmitting(false) (botões reabilitados).`);
       setIsSubmitting(false);
     }
   }
@@ -459,7 +536,16 @@ function UsuariosPage() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                className="bg-primary hover:bg-primary/90"
+                disabled={isSubmitting}
+                onClick={() =>
+                  console.log(
+                    `[Usuários][${editing ? "Edição" : "Cadastro"}] 1/6 — Botão '${editing ? "Salvar alterações" : "Cadastrar usuário"}' clicado. Disparando o submit do formulário.`,
+                  )
+                }
+              >
                 {isSubmitting ? "Processando..." : editing ? "Salvar alterações" : "Cadastrar usuário"}
               </Button>
             </DialogFooter>
@@ -477,9 +563,9 @@ function UsuariosPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete} 
-              disabled={isSubmitting} 
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isSubmitting ? "Excluindo..." : "Excluir"}
