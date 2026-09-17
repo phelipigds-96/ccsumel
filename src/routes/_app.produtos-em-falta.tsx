@@ -362,9 +362,15 @@ function ProdutosEmFaltaPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               Solicitação anterior tratada em: {dataTratamento(bloqueioRegistro.tratado_em)}
             </p>
-            <p className="mt-2 text-sm text-foreground">
-              O produto não pode ser adicionado novamente à Lista de Faltas.
-            </p>
+            {bloqueioRegistro.permanente ? (
+              <p className="mt-2 text-sm italic text-muted-foreground">
+                “Este produto foi marcado como {bloqueioRegistro.status.toLowerCase()} pela área de Compras e não pode ser solicitado novamente.”
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-foreground">
+                O produto não pode ser adicionado novamente à Lista de Faltas.
+              </p>
+            )}
           </div>
         )}
 
@@ -511,12 +517,19 @@ function ProdutosEmFaltaPage() {
                     <span className="block text-xs font-normal text-muted-foreground">
                       {p.codigo ? `Cód. ${p.codigo}` : (p.gtin ?? "")}
                     </span>
-                    <span className="mt-1.5 whitespace-normal text-[11px] font-bold text-destructive">
-                      🔴 PRODUTO BLOQUEADO — {bloqueio.status}
+                    <span className="mt-2 text-sm font-bold text-destructive">
+                      🔴 BLOQUEADO
                     </span>
-                    {bloqueio.permanente && (
-                      <span className="mt-0.5 whitespace-normal text-[11px] font-normal text-muted-foreground">
-                        Bloqueio permanente definido por Compras.
+                    <span className="whitespace-normal text-sm font-semibold text-foreground">
+                      {bloqueio.status}
+                    </span>
+                    {bloqueio.permanente ? (
+                      <span className="mt-1 whitespace-normal text-[13px] italic text-muted-foreground">
+                        “Este produto foi marcado como {bloqueio.status.toLowerCase()} pela área de Compras e não pode ser solicitado novamente.”
+                      </span>
+                    ) : (
+                      <span className="mt-1 whitespace-normal text-[13px] text-muted-foreground">
+                        O produto não pode ser adicionado novamente à Lista de Faltas.
                       </span>
                     )}
                   </Button>
