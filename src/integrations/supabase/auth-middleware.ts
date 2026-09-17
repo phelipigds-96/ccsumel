@@ -41,8 +41,8 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
         ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
         ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
       ];
-      const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-      console.error(`[Supabase] ${message}`);
+      const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. This indicates a lack of connection to the Lovable Cloud or another configuration issue. Please connect Supabase in Lovable Cloud to correct this.`;
+      console.error(`[Supabase Configuration Error] ${message}`);
       throw new Error(message);
     }
     
