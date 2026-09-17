@@ -305,7 +305,7 @@ function RetornoAsLojas() {
         <Button
           variant="outline"
           size="sm"
-          className="h-11 w-full sm:ml-auto sm:h-9 sm:w-auto"
+          className="h-10 w-full sm:ml-auto sm:h-9 sm:w-auto"
           onClick={() => void carregar()}
           disabled={loading}
         >
@@ -324,12 +324,12 @@ function RetornoAsLojas() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar produto, código ou solicitante..."
-            className="h-11 pl-9"
+            className="h-10 pl-9"
           />
         </div>
 
         <Select value={leituraFiltro} onValueChange={setLeituraFiltro}>
-          <SelectTrigger className="h-11 w-full">
+          <SelectTrigger className="h-10 w-full">
             <SelectValue placeholder="Status de Leitura" />
           </SelectTrigger>
           <SelectContent>
@@ -340,7 +340,7 @@ function RetornoAsLojas() {
         </Select>
 
         <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-          <SelectTrigger className="h-11 w-full">
+          <SelectTrigger className="h-10 w-full">
             <SelectValue placeholder="Status Compras" />
           </SelectTrigger>
           <SelectContent>
@@ -354,7 +354,7 @@ function RetornoAsLojas() {
         </Select>
 
         <Select value={periodo} onValueChange={setPeriodo}>
-          <SelectTrigger className="h-11 w-full">
+          <SelectTrigger className="h-10 w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -367,7 +367,7 @@ function RetornoAsLojas() {
 
         {!lojaFixa && (
           <Select value={loja} onValueChange={setLoja}>
-            <SelectTrigger className="h-11 w-full">
+            <SelectTrigger className="h-10 w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -384,7 +384,7 @@ function RetornoAsLojas() {
         {temFiltroAtivo && (
           <Button
             variant="ghost"
-            className="h-11 w-full text-xs text-muted-foreground hover:text-foreground"
+            className="h-10 w-full text-xs text-muted-foreground hover:text-foreground"
             onClick={limparFiltros}
           >
             <X className="mr-1.5 h-3.5 w-3.5" /> Limpar filtros
@@ -424,13 +424,13 @@ function RetornoAsLojas() {
             selecionados. Ajuste a busca ou limpe os filtros para ver tudo.
           </p>
           {temFiltroAtivo && (
-            <Button variant="outline" size="sm" className="h-10" onClick={limparFiltros}>
+            <Button variant="outline" size="sm" className="h-9" onClick={limparFiltros}>
               <X className="mr-1.5 h-3.5 w-3.5" /> Limpar filtros
             </Button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 xl:gap-4">
           {filtradas.map((r) => {
             const visual = visualDe(r.status);
             const isCiente = Boolean(r.ciente_at);
@@ -438,55 +438,53 @@ function RetornoAsLojas() {
             return (
               <Card
                 key={r.id}
-                className={`relative flex flex-col overflow-hidden border border-l-4 transition-all duration-200 hover:shadow-md ${
-                  isCiente
-                    ? "border-border border-l-emerald-500 bg-muted/20 opacity-90"
-                    : "border-amber-300/50 border-l-amber-500 bg-card shadow-sm shadow-amber-500/10"
+                className={`relative flex flex-col overflow-hidden border border-l-4 transition-all duration-200 hover:shadow-md ${ 
+                 isCiente
+                    ? "border-border border-l-emerald-500 bg-muted/10 opacity-95"
+                    : "border-amber-300/50 border-l-amber-500 bg-card shadow-sm shadow-amber-500/5"
                 }`}
               >
                 {!isCiente && (
-                  <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40">
-                    <span className="relative flex h-2 w-2">
+                  <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-1.5 py-0.5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40">
+                    <span className="relative flex h-1.5 w-1.5">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
                       <span className="relative inline-flex h-full w-full rounded-full bg-amber-500"></span>
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400">
                       Novo
                     </span>
                   </div>
                 )}
 
-                <CardHeader className="space-y-2 pb-3">
-                  {/* Badges de Topo: Loja e Status */}
-                  <div className="flex flex-wrap items-center justify-between gap-1.5 pr-4">
+                <CardHeader className="flex flex-col space-y-1.5 p-3 pb-1">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 pr-8">
                     <Badge
                       variant="outline"
-                      className="bg-muted/50 text-[11px] font-semibold"
+                      className="bg-muted/50 border-border/50 text-[10px] px-1.5 py-0 font-medium text-muted-foreground shadow-none hover:bg-muted"
                     >
-                      <Building2 className="mr-1 h-3 w-3 text-muted-foreground" />
+                      <Building2 className="mr-1 h-3 w-3" />
                       {r.store_id}
                     </Badge>
                     <Badge
                       variant="outline"
-                      className={`px-2.5 py-0.5 text-[11px] uppercase tracking-wide shadow-sm ${visual.classe}`}
+                      className={`px-1.5 py-0 text-[10px] uppercase tracking-wide border-transparent shadow-none ${visual.classe}`}
                     >
                       {visual.emoji} {r.status}
                     </Badge>
                   </div>
 
-                  {/* Nome do Produto */}
                   <div>
-                    <h3 className="text-base font-bold leading-snug text-navy line-clamp-2">
+                    <h3 className="text-[13px] sm:text-sm font-bold leading-tight text-foreground line-clamp-2">
                       {r.produto?.descricao ?? "Produto não identificado"}
                     </h3>
-                    <div className="mt-1 flex flex-wrap gap-2 font-mono text-xs text-muted-foreground">
+                    <div className="mt-1 flex flex-wrap gap-1 font-mono text-[9px] sm:text-[10px] text-muted-foreground">
                       {r.produto?.codigo && (
-                        <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5">
-                          <Tag className="h-3 w-3" /> Cód: {r.produto.codigo}
+                        <span className="inline-flex items-center rounded bg-muted/60 px-1 py-0.5">
+                          <Tag className="mr-0.5 h-2.5 w-2.5 opacity-70" /> {r.produto.codigo}
                         </span>
                       )}
                       {r.produto?.gtin && (
-                        <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5">
+                        <span className="inline-flex items-center rounded bg-muted/60 px-1 py-0.5">
                           EAN: {r.produto.gtin}
                         </span>
                       )}
@@ -494,102 +492,72 @@ function RetornoAsLojas() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="flex-1 space-y-3 pb-3 text-xs">
-                  {/* Informações detalhadas */}
-                  <div className="grid grid-cols-1 gap-2.5 rounded-lg border border-border/50 bg-muted/30 p-2.5 sm:grid-cols-2 sm:gap-2">
+                <CardContent className="flex-1 space-y-2.5 p-3 pt-1 text-[11px]">
+                  <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border/40 bg-muted/20 p-2">
                     <div className="min-w-0">
-                      <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Solicitante
-                      </span>
-                      <span className="mt-0.5 flex items-center gap-1 truncate font-semibold text-foreground">
-                        <User className="h-3 w-3 shrink-0 text-muted-foreground" />
-                        {r.reported_by_name || "—"}
-                      </span>
+                      <span className="block text-[9px] font-semibold uppercase text-muted-foreground">Solicitante</span>
+                      <span className="mt-0.5 block truncate font-medium text-foreground">{r.reported_by_name || "—"}</span>
                     </div>
                     <div className="min-w-0">
-                      <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Data Solicitação
-                      </span>
-                      <span className="mt-0.5 flex items-center gap-1 font-medium text-foreground">
-                        <Calendar className="h-3 w-3 shrink-0 text-muted-foreground" />
-                        {fmtHora(r.reported_at)}
-                      </span>
+                      <span className="block text-[9px] font-semibold uppercase text-muted-foreground">Data Solicit.</span>
+                      <span className="mt-0.5 block truncate text-muted-foreground">{fmtHora(r.reported_at)}</span>
                     </div>
                     <div className="min-w-0">
-                      <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Tratado por
-                      </span>
-                      <span className="mt-0.5 flex items-center gap-1 truncate font-semibold text-foreground">
-                        <UserCheck className="h-3 w-3 shrink-0 text-sky-600" />
-                        {r.responsavel_nome || "Compras"}
-                      </span>
+                      <span className="block text-[9px] font-semibold uppercase text-muted-foreground">Tratado por</span>
+                      <span className="mt-0.5 block truncate font-medium text-sky-700 dark:text-sky-400">{r.responsavel_nome || "Compras"}</span>
                     </div>
                     <div className="min-w-0">
-                      <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Data Tratativa
-                      </span>
-                      <span className="mt-0.5 flex items-center gap-1 font-medium text-foreground">
-                        <Clock className="h-3 w-3 shrink-0 text-sky-600" />
-                        {fmtHora(r.retorno_em)}
-                      </span>
+                      <span className="block text-[9px] font-semibold uppercase text-muted-foreground">Data Trat.</span>
+                      <span className="mt-0.5 block truncate text-muted-foreground">{fmtHora(r.retorno_em)}</span>
                     </div>
                   </div>
 
-                  {/* Resposta/Observação de Compras */}
                   {r.management_observation ? (
-                    <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-2.5 text-sky-950 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-200">
-                      <div className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-sky-800 dark:text-sky-300">
-                        <MessageSquare className="h-3.5 w-3.5" /> Resposta de
-                        Compras:
+                    <div className="rounded-md border border-sky-200/60 bg-sky-50/50 p-2 text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-200">
+                      <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold text-sky-800 dark:text-sky-300">
+                        <MessageSquare className="h-3 w-3" /> Resposta de Compras:
                       </div>
-                      <p className="whitespace-pre-wrap text-xs font-normal leading-relaxed">
+                      <p className="whitespace-pre-wrap text-[11px] leading-snug opacity-90">
                         {r.management_observation}
                       </p>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 px-1 text-[11px] italic text-muted-foreground">
-                      <MessageSquare className="h-3 w-3 opacity-50" /> Sem observações adicionais gravadas.
+                    <div className="flex items-center gap-1 px-0.5 text-[10px] italic text-muted-foreground/60">
+                      <MessageSquare className="h-3 w-3 opacity-50" /> Sem observações adicionais.
                     </div>
                   )}
                 </CardContent>
 
-                <CardFooter className="flex flex-col items-stretch gap-2 border-t border-border/60 bg-muted/10 pb-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardFooter className="flex flex-row items-center justify-between gap-2 border-t border-border/40 bg-muted/5 p-2.5">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => void handleAbrirHistorico(r)}
-                    className="h-11 w-full shrink-0 border-muted-foreground/30 text-xs shadow-sm hover:border-muted-foreground/50 sm:h-9 sm:w-auto"
+                    className="h-8 px-2 text-[11px] text-muted-foreground hover:bg-muted"
                   >
-                    <History className="mr-1.5 h-3.5 w-3.5 opacity-70" />
+                    <History className="mr-1 h-3.5 w-3.5" />
                     Histórico
                   </Button>
 
                   {isCiente ? (
-                    <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                      <span className="truncate">
-                        Ciente em {fmtHora(r.ciente_at)}
-                      </span>
+                    <div className="flex items-center gap-1 rounded bg-emerald-500/10 px-2 py-1.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500" />
+                      Lido {fmtHora(r.ciente_at)}
                     </div>
                   ) : (
                     <Button
                       variant="default"
                       size="sm"
-                      className="h-11 w-full flex-1 bg-emerald-600 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 sm:h-9"
+                      className="h-8 bg-emerald-600 px-3 text-[11px] font-medium text-white hover:bg-emerald-700"
                       disabled={marcandoId === r.id}
                       onClick={() => void handleMarcarCiente(r.id)}
                     >
                       {marcandoId === r.id ? (
-                        <>
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          Registrando...
-                        </>
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <>
-                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                          Marcar Ciente
-                        </>
+                        <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                       )}
+                      Marcar Ciente
                     </Button>
                   )}
                 </CardFooter>

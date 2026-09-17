@@ -102,7 +102,7 @@ function CentralProdutosEmFalta() {
   const [fStatus, setFStatus] = useState<string>("todos");
   const [fPeriodo, setFPeriodo] = useState("todos");
   const [fMin, setFMin] = useState("1");
-  const [ordem, setOrdem] = useState("pendentes");
+  const [ordem, setOrdem] = useState("recentes");
 
   const [aberto, setAberto] = useState<Grupo | null>(null);
   const [novoStatus, setNovoStatus] = useState<FaltaStatus>("Em análise");
