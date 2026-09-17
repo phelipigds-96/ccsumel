@@ -154,13 +154,24 @@ export async function updateFaltaStatus(input: {
 }) {
   const user = await currentUser();
 
+  const payload: any = {
+    status: input.status,
+    management_observation: input.observation?.trim() ?? "",
+    managed_by: user?.id ?? null,
+    managed_at: new Date().toISOString(),
+  };
+
+  // Se a tratativa tiver status diferente de Pendente, atualiza a data de retorno
+  // para que ela apareça na lista de Retorno às Lojas e reseta o ciente para a loja.
+  if (input.status !== "Pendente") {
+    payload.retorno_em = new Date().toISOString();
+    payload.ciente_at = null;
+    payload.ciente_by = null;
+    payload.ciente_by_name = "";
+  }
+
   const { error } = await table()
-    .update({
-      status: input.status,
-      management_observation: input.observation?.trim() ?? "",
-      managed_by: user?.id ?? null,
-      managed_at: new Date().toISOString(),
-    })
+    .update(payload)
     .eq("id", input.id);
   if (error) throw error;
 

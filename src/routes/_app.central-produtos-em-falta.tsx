@@ -356,12 +356,15 @@ function CentralProdutosEmFalta() {
     setSalvando(true);
     try {
       for (const item of aberto.itens) {
-        if (item.status === novoStatus && !obsGestao.trim()) continue;
+        const novaObs = obsGestao.trim();
+        const obsAtual = item.management_observation?.trim() || "";
+        if (item.status === novoStatus && obsAtual === novaObs) continue;
+
         await updateFaltaStatus({
           id: item.id,
           status_anterior: item.status,
           status: novoStatus,
-          observation: obsGestao,
+          observation: novaObs,
           changed_by_name: user?.name || user?.username || "Gestão",
         });
       }
