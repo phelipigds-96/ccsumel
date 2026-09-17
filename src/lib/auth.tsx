@@ -23,6 +23,7 @@ export const PERMISSIONS: { key: string; label: string }[] = [
   { key: "/relatorios", label: "Relatórios" },
   { key: "/usuarios", label: "Usuários" },
   { key: "/configuracoes", label: "Configurações" },
+  { key: "/solicitacoes-produtos", label: "Solicitações de Novos Produtos" },
 ];
 
 export const ALL_PERMISSIONS = PERMISSIONS.map((p) => p.key);
