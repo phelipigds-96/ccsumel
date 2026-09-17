@@ -182,7 +182,7 @@ function UsuariosPage() {
         if (form.password) patch.password = form.password;
         
         const res = await updateUser(editing.id, patch) as any;
-        if (res && res.ok === false) {
+        if (res && (res.ok === false || res.error)) {
            toast.error(res.error || "Erro ao atualizar usuário.");
            return;
         }
@@ -199,7 +199,7 @@ function UsuariosPage() {
           readOnly: !form.isAdmin && form.readOnly,
         }) as any;
         
-        if (res && res.ok === false) {
+        if (res && (res.ok === false || res.error)) {
            toast.error(res.error || "Erro ao cadastrar usuário.");
            return;
         }

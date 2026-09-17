@@ -85,57 +85,108 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<Result<{ id: string }>> => {
     try {
       await assertAdmin(context as any);
-      const username = data.username.trim().toLowerCase();
+      if (!data.id) throw new Error("Usuário não informado para atualização.");
+
+      const username = (data.username ?? "").trim().toLowerCase();
+      if (!username) throw new Error("Informe o nome de usuário (login).");
+      if (data.password && data.password.length < 6) {
+        throw new Error("A senha deve ter ao menos 6 caracteres.");
+      }
+
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-      const attrs: Record<string, unknown> = { email: usernameToEmail(username), email_confirm: true };
-      if (data.password) {
-        if (data.password.length < 6) throw new Error("A senha deve ter ao menos 6 caracteres.");
-        attrs.password = data.password;
-      }
-      const { error: ae } = await supabaseAdmin.auth.admin.updateUserById(data.id, attrs as any);
-      if (ae) {
-        throw new Error(
-          /already/i.test(ae.message) ? "Já existe um usuário com esse login." : ae.message,
-        );
+      // 1) O usuário precisa existir no auth antes de qualquer alteração.
+      const { data: existing, error: ge } = await supabaseAdmin.auth.admin.getUserById(data.id);
+      if (ge || !existing?.user) {
+        throw new Error("Usuário não encontrado no sistema de autenticação.");
       }
 
-      if (!data.isAdmin) {
-        const { data: currentRole } = await (supabaseAdmin as any)
+      // 2) Validações antes de mutar qualquer coisa.
+      const { data: currentRole } = await (supabaseAdmin as any)
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.id)
+        .maybeSingle();
+      if (!data.isAdmin && currentRole?.role === "admin") {
+        const { count } = await (supabaseAdmin as any)
           .from("user_roles")
-          .select("role")
-          .eq("user_id", data.id)
-          .maybeSingle();
-        if (currentRole?.role === "admin") {
-          const { count } = await (supabaseAdmin as any)
-            .from("user_roles")
-            .select("user_id", { count: "exact", head: true })
-            .eq("role", "admin");
-          if ((count ?? 0) <= 1) {
-            throw new Error("Não é possível remover os privilégios do único administrador.");
-          }
+          .select("user_id", { count: "exact", head: true })
+          .eq("role", "admin");
+        if ((count ?? 0) <= 1) {
+          throw new Error("Não é possível remover os privilégios do único administrador.");
         }
       }
 
-      const { error: pe } = await (supabaseAdmin as any)
-        .from("profiles")
-        .update({
-          name: data.name,
-          username,
-          status: data.status,
-          notes: data.notes ?? "",
-          permissions: data.permissions,
-          read_only: data.readOnly,
-        })
-        .eq("id", data.id);
-      if (pe) {
-        throw new Error(pe.code === "23505" ? "Já existe um usuário com esse login." : pe.message);
+      // 3) Login e senha: envia ao auth apenas o que realmente mudou.
+      const nextEmail = usernameToEmail(username);
+      const currentEmail = (existing.user.email ?? "").toLowerCase();
+      const authAttrs: Record<string, unknown> = {};
+      if (currentEmail !== nextEmail.toLowerCase()) {
+        authAttrs.email = nextEmail;
+        authAttrs.email_confirm = true;
+      }
+      if (data.password) authAttrs.password = data.password;
+
+      if (Object.keys(authAttrs).length > 0) {
+        const { error: ae } = await supabaseAdmin.auth.admin.updateUserById(
+          data.id,
+          authAttrs as any,
+        );
+        if (ae) {
+          throw new Error(
+            /already|registered|exists/i.test(ae.message)
+              ? "Já existe um usuário com esse login."
+              : ae.message,
+          );
+        }
       }
 
-      await (supabaseAdmin as any).from("user_roles").delete().eq("user_id", data.id);
-      await (supabaseAdmin as any)
-        .from("user_roles")
-        .insert({ user_id: data.id, role: data.isAdmin ? "admin" : "user" });
+      // 4) Perfil: confirma que a linha realmente foi gravada.
+      const profile = {
+        name: data.name,
+        username,
+        status: data.status,
+        notes: data.notes ?? "",
+        permissions: data.permissions ?? [],
+        read_only: data.readOnly,
+      };
+      const { data: updated, error: ue } = await (supabaseAdmin as any)
+        .from("profiles")
+        .update(profile)
+        .eq("id", data.id)
+        .select("id");
+      if (ue) {
+        throw new Error(ue.code === "23505" ? "Já existe um usuário com esse login." : ue.message);
+      }
+      if (!updated || updated.length === 0) {
+        const { error: ie } = await (supabaseAdmin as any)
+          .from("profiles")
+          .insert({ id: data.id, ...profile });
+        if (ie) {
+          throw new Error(ie.code === "23505" ? "Já existe um usuário com esse login." : ie.message);
+        }
+      }
+
+      // 5) Perfil de acesso: atualiza sem apagar antes, para não deixar o usuário sem role.
+      const nextRole = data.isAdmin ? "admin" : "user";
+      if (currentRole?.role !== nextRole) {
+        const { data: roleRows, error: rpe } = await (supabaseAdmin as any)
+          .from("user_roles")
+          .update({ role: nextRole })
+          .eq("user_id", data.id)
+          .select("id");
+        if (rpe) throw new Error(rpe.message);
+        if (!roleRows || roleRows.length === 0) {
+          const { error: re } = await (supabaseAdmin as any)
+            .from("user_roles")
+            .insert({ user_id: data.id, role: nextRole });
+          if (re) {
+            throw new Error(
+              `O perfil foi salvo, mas não foi possível aplicar o perfil de acesso: ${re.message}`,
+            );
+          }
+        }
+      }
 
       return { ok: true, data: { id: data.id } };
     } catch (err) {
