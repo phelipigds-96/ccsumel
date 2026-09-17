@@ -162,8 +162,6 @@ export async function updateFaltaStatus(input: {
     managed_at: new Date().toISOString(),
   };
 
-  // Se a tratativa tiver status diferente de Pendente, atualiza a data de retorno
-  // para que ela apareça na lista de Retorno às Lojas e reseta o ciente para a loja.
   if (input.status !== "Pendente") {
     payload.retorno_em = new Date().toISOString();
     payload.ciente_at = null;
@@ -186,7 +184,6 @@ export async function updateFaltaStatus(input: {
   });
   if (histError) throw histError;
 
-  // Insere gatilho de bloqueio permanente para o status descontinuado
   if (input.status === "Produto descontinuado") {
     const { data: falta } = await table().select("product_id, store_id").eq("id", input.id).maybeSingle();
     if (falta) {
@@ -258,10 +255,6 @@ export async function deleteFalta(id: string) {
   if (error) throw error;
 }
 
-// ---------------------------------------------------------------------------
-// Bloqueio de novos lançamentos (por produto + loja)
-// ---------------------------------------------------------------------------
-
 export interface ProdutoBloqueio {
   id: string;
   product_id: string;
@@ -299,7 +292,6 @@ export async function checkFaltaPendente(productId: string, loja: string) {
   return data != null;
 }
 
-/** Bloqueios ativos para uma lista de produtos em uma loja (uso na pesquisa). */
 export async function listBloqueiosAtivos(productIds: string[], loja: string) {
   const map = new Map<string, ProdutoBloqueio>();
   if (productIds.length === 0 || !loja) return map;
@@ -313,7 +305,6 @@ export async function listBloqueiosAtivos(productIds: string[], loja: string) {
   return map;
 }
 
-/** Bloqueio ativo de um produto em uma loja (uso na Central / revalidação). */
 export async function getBloqueioAtivo(productId: string, loja: string) {
   const { data, error } = await bloqueiosTable()
     .select("id, product_id, store_id, status, permanente, motivo, tratado_em")
@@ -325,7 +316,6 @@ export async function getBloqueioAtivo(productId: string, loja: string) {
   return (data as unknown as ProdutoBloqueio | null) ?? null;
 }
 
-/** Converte os erros do gatilho do banco em mensagens claras para o chão de loja. */
 export function traduzErroLancamento(e: unknown): string {
   const msg = (e as { message?: string })?.message ?? "";
   if (msg.includes("PRODUTO_BLOQUEADO")) {
@@ -345,7 +335,6 @@ export function traduzErroLancamento(e: unknown): string {
   return msg || "Não foi possível registrar.";
 }
 
-/** Usuário logado: id e nome de exibição (usado na liberação e no histórico). */
 async function usuarioAtualComNome() {
   const user = await currentUser();
   return {
@@ -358,7 +347,6 @@ async function usuarioAtualComNome() {
   };
 }
 
-/** Liberação administrativa do bloqueio ("Produto ativo"). Restrita a admin no banco. */
 export async function liberarBloqueio(bloqueioId: string, motivo: string) {
   const { nome } = await usuarioAtualComNome();
   const { error } = await supabase.rpc("liberar_produto_bloqueado" as any, {
@@ -368,10 +356,6 @@ export async function liberarBloqueio(bloqueioId: string, motivo: string) {
   });
   if (error) throw error;
 }
-
-// ---------------------------------------------------------------------------
-// Alteração da condição de bloqueio + histórico (produto + loja)
-// ---------------------------------------------------------------------------
 
 export interface ProdutoBloqueioAtivo extends ProdutoBloqueio {
   produto?: { id: string; descricao: string; codigo: string | null; gtin: string | null } | null;
@@ -408,7 +392,6 @@ async function descreverProdutos(ids: string[]) {
   return map;
 }
 
-/** Bloqueios ativos (de todas as lojas ou de uma loja), com o produto carregado. */
 export async function listBloqueiosAtivosTodos(
   opts: { loja?: string | null } = {},
 ): Promise<ProdutoBloqueioAtivo[]> {
@@ -425,11 +408,6 @@ export async function listBloqueiosAtivosTodos(
   return rows.map((r) => ({ ...r, produto: map.get(r.product_id) ?? null }));
 }
 
-/**
- * Histórico das alterações de condição de bloqueio, do mais recente para o
- * mais antigo. Se a tabela de histórico ainda não existir no banco, devolve
- * lista vazia em vez de derrubar a tela.
- */
 export async function listHistoricoBloqueios(limite = 50): Promise<ProdutoBloqueioHistorico[]> {
   try {
     const { data, error } = await bloqueiosHistTable()
@@ -445,13 +423,6 @@ export async function listHistoricoBloqueios(limite = 50): Promise<ProdutoBloque
   }
 }
 
-/**
- * Altera a condição de bloqueio de um produto em uma loja e registra a ação no
- * histórico (produto, loja, status anterior, novo status, usuário, data/hora e
- * motivo). "Produto ativo" libera o produto para novos lançamentos pelo RPC
- * administrativo; qualquer outro status apenas troca a condição, mantendo o
- * bloqueio. Devolve true quando o histórico foi gravado.
- */
 export async function alterarCondicaoBloqueio(input: {
   bloqueio: ProdutoBloqueio;
   novoStatus: string;
@@ -507,7 +478,6 @@ export interface RetornoLoja extends ProdutoEmFalta {
   responsavel_nome?: string;
 }
 
-/** Prazo (em dias) de exibição no Retorno às Lojas. Configurável no banco. */
 export async function getPrazoRetornoDias(): Promise<number> {
   const { data } = await supabase
     .from("app_settings" as any)
@@ -533,13 +503,6 @@ export function podeVerRetorno(
   return !!user && (user.isAdmin || (user.permissions ?? []).includes(PERM_RETORNO));
 }
 
-/**
- * Regra: qualquer falta cujo status seja DIFERENTE de "Pendente" entra no
- * Retorno às Lojas — sem lista fixa de status, então status novos passam a
- * aparecer automaticamente. A data de entrada (`retorno_em`) é gravada pelo
- * banco na primeira mudança de situação, e a saída da lista é automática
- * pelo prazo configurado — nada é excluído do banco.
- */
 export async function listRetornoLojas(opts: { loja?: string | null } = {}) {
   const prazo = await getPrazoRetornoDias();
   const limite = new Date(Date.now() - prazo * 24 * 60 * 60 * 1000).toISOString();
@@ -555,7 +518,29 @@ export async function listRetornoLojas(opts: { loja?: string | null } = {}) {
 
   const { data, error } = await q;
   if (error) throw error;
-  return { prazo, rows: (data ?? []) as unknown as RetornoLoja[] };
+  const rows = (data ?? []) as unknown as RetornoLoja[];
+
+  if (rows.length > 0) {
+    const ids = rows.map((r) => r.id);
+    const { data: histData } = await historicoTable()
+      .select("falta_id, changed_by_name, created_at")
+      .in("falta_id", ids)
+      .order("created_at", { ascending: false });
+
+    if (histData) {
+      const histMap = new Map<string, string>();
+      for (const h of histData as any[]) {
+        if (!histMap.has(h.falta_id) && h.changed_by_name) {
+          histMap.set(h.falta_id, h.changed_by_name);
+        }
+      }
+      for (const r of rows) {
+        r.responsavel_nome = histMap.get(r.id) || "Compras";
+      }
+    }
+  }
+
+  return { prazo, rows };
 }
 
 export async function contarRetornosNaoCientes(loja?: string | null) {
@@ -563,18 +548,23 @@ export async function contarRetornosNaoCientes(loja?: string | null) {
   return rows.filter((r) => !r.ciente_at).length;
 }
 
-
 export async function marcarCiente(faltaId: string, nome: string) {
-  const { error } = await supabase.rpc("marcar_retorno_ciente" as any, {
-    _falta_id: faltaId,
-    _nome: nome,
-  });
-  if (error) throw error;
-}
+  const user = await currentUser();
+  const payload = {
+    ciente_at: new Date().toISOString(),
+    ciente_by: user?.id ?? null,
+    ciente_by_name: nome,
+  };
 
-// ---------------------------------------------------------------------------
-// Regras configuráveis: quais situações bloqueiam novos lançamentos
-// ---------------------------------------------------------------------------
+  const { error } = await table().update(payload).eq("id", faltaId);
+  if (error) {
+    const { error: rpcError } = await supabase.rpc("marcar_retorno_ciente" as any, {
+      _falta_id: faltaId,
+      _nome: nome,
+    });
+    if (rpcError) throw rpcError;
+  }
+}
 
 export interface RegraStatus {
   status: FaltaStatus;
@@ -584,7 +574,6 @@ export interface RegraStatus {
 
 const regrasTable = () => supabase.from("falta_status_regras" as any);
 
-/** Regras atuais, na mesma ordem dos status do sistema. */
 export async function listRegrasStatus(): Promise<RegraStatus[]> {
   const { data, error } = await regrasTable().select("status, bloqueia_novo_lancamento, bloqueio_permanente");
   if (error) throw error;
@@ -595,7 +584,6 @@ export async function listRegrasStatus(): Promise<RegraStatus[]> {
   );
 }
 
-/** Atualiza uma regra (somente administradores, validado no banco). */
 export async function updateRegraStatus(
   status: FaltaStatus,
   patch: { bloqueia_novo_lancamento?: boolean; bloqueio_permanente?: boolean },

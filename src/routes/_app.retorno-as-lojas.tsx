@@ -1,6 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, PackageCheck, RefreshCw, Search } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Loader2,
+  PackageCheck,
+  RefreshCw,
+  Search,
+  User,
+  UserCheck,
+  Building2,
+  Tag,
+  Calendar,
+  MessageSquare,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
@@ -8,11 +21,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import {
-  listRetornoLojas, lojaDoUsuario, LOJAS, type RetornoLoja,
+  listRetornoLojas,
+  lojaDoUsuario,
+  marcarCiente,
+  LOJAS,
+  type RetornoLoja,
 } from "@/lib/produtos-em-falta";
 
 export const Route = createFileRoute("/_app/retorno-as-lojas")({
@@ -39,13 +66,14 @@ export const Route = createFileRoute("/_app/retorno-as-lojas")({
 const normalize = (s: string) =>
   s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
-const fmt = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
-
 const fmtHora = (iso: string | null | undefined) =>
   iso
     ? new Date(iso).toLocaleString("pt-BR", {
-        day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       })
     : "—";
 
@@ -55,24 +83,24 @@ const diasDesde = (iso: string | null | undefined) => {
   return Math.max(0, Math.floor(ms / 86_400_000));
 };
 
-/** Aparência por situação. Situações novas caem no padrão, sem quebrar a tela. */
+/** Aparência e destaque por status da tratativa */
 const STATUS_VISUAL: Record<string, { emoji: string; classe: string }> = {
-  "Em análise": { emoji: "🟡", classe: "border-amber-300 bg-amber-100 text-amber-900" },
-  Comprar: { emoji: "🛒", classe: "border-sky-300 bg-sky-100 text-sky-900" },
-  "Pedido realizado": { emoji: "📦", classe: "border-indigo-300 bg-indigo-100 text-indigo-800" },
-  "Aguardando recebimento": { emoji: "🚚", classe: "border-cyan-300 bg-cyan-100 text-cyan-900" },
+  "Em análise": { emoji: "🟡", classe: "border-amber-300 bg-amber-100 text-amber-900 font-bold" },
+  Comprar: { emoji: "🛒", classe: "border-sky-300 bg-sky-100 text-sky-900 font-bold" },
+  "Pedido realizado": { emoji: "📦", classe: "border-indigo-300 bg-indigo-100 text-indigo-800 font-bold" },
+  "Aguardando recebimento": { emoji: "🚚", classe: "border-cyan-300 bg-cyan-100 text-cyan-900 font-bold" },
   "Estoque disponível / verificar loja": {
     emoji: "🔎",
-    classe: "border-teal-300 bg-teal-100 text-teal-900",
+    classe: "border-teal-300 bg-teal-100 text-teal-900 font-bold",
   },
-  "Falta no fornecedor": { emoji: "⚠️", classe: "border-orange-300 bg-orange-100 text-orange-900" },
-  "Produto descontinuado": { emoji: "🔴", classe: "border-red-300 bg-red-100 text-red-800" },
-  Resolvido: { emoji: "✅", classe: "border-emerald-300 bg-emerald-100 text-emerald-800" },
-  "Não é ruptura": { emoji: "⚪", classe: "border-slate-300 bg-slate-100 text-slate-800" },
+  "Falta no fornecedor": { emoji: "⚠️", classe: "border-orange-300 bg-orange-100 text-orange-900 font-bold" },
+  "Produto descontinuado": { emoji: "🔴", classe: "border-red-300 bg-red-100 text-red-800 font-bold" },
+  Resolvido: { emoji: "✅", classe: "border-emerald-300 bg-emerald-100 text-emerald-800 font-bold" },
+  "Não é ruptura": { emoji: "⚪", classe: "border-slate-300 bg-slate-100 text-slate-800 font-bold" },
 };
 
 const visualDe = (status: string) =>
-  STATUS_VISUAL[status] ?? { emoji: "ℹ️", classe: "border-border bg-muted text-foreground" };
+  STATUS_VISUAL[status] ?? { emoji: "ℹ️", classe: "border-border bg-muted text-foreground font-bold" };
 
 function RetornoAsLojas() {
   const { user } = useAuth();
@@ -81,9 +109,11 @@ function RetornoAsLojas() {
   const [rows, setRows] = useState<RetornoLoja[]>([]);
   const [prazo, setPrazo] = useState(7);
   const [loading, setLoading] = useState(true);
+  const [marcandoId, setMarcandoId] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
   const [loja, setLoja] = useState<string>(lojaFixa ?? "todas");
   const [periodo, setPeriodo] = useState<string>("todos");
+  const [statusFiltro, setStatusFiltro] = useState<string>("todos");
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -102,10 +132,37 @@ function RetornoAsLojas() {
     void carregar();
   }, [carregar]);
 
+  const handleMarcarCiente = async (id: string) => {
+    const nomeUsuario = user?.name || user?.username || "Gerente de Loja";
+    setMarcandoId(id);
+    try {
+      await marcarCiente(id, nomeUsuario);
+      toast.success("Ciente registrado com sucesso!");
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                ciente_at: new Date().toISOString(),
+                ciente_by_name: nomeUsuario,
+              }
+            : r,
+        ),
+      );
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível registrar o ciente.",
+      );
+    } finally {
+      setMarcandoId(null);
+    }
+  };
+
   const filtradas = useMemo(() => {
     const s = normalize(busca);
     return rows
       .filter((r) => (lojaFixa ? true : loja === "todas" || r.store_id === loja))
+      .filter((r) => (statusFiltro === "todas" ? true : r.status === statusFiltro))
       .filter((r) => {
         if (periodo === "todos") return true;
         const dias = diasDesde(r.retorno_em);
@@ -114,21 +171,43 @@ function RetornoAsLojas() {
       .filter((r) =>
         !s
           ? true
-          : [r.produto?.descricao, r.produto?.codigo, r.produto?.gtin, r.reported_by_name]
+          : [
+              r.produto?.descricao,
+              r.produto?.codigo,
+              r.produto?.gtin,
+              r.reported_by_name,
+              r.responsavel_nome,
+            ]
               .filter(Boolean)
               .some((v) => normalize(String(v)).includes(s)),
       );
-  }, [rows, busca, loja, lojaFixa, periodo]);
+  }, [rows, busca, loja, lojaFixa, periodo, statusFiltro]);
+
+  const disponiveisStatus = useMemo(() => {
+    const set = new Set(rows.map((r) => r.status));
+    return Array.from(set);
+  }, [rows]);
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="Retorno às Lojas"
-        description={`Painel de consulta dos retornos de Compras para os produtos apontados em falta. O histórico recente fica visível por ${prazo} dias.`}
+        description={
+          lojaFixa
+            ? `Retornos de Compras das faltas solicitadas pela ${lojaFixa}. Exibição dos últimos ${prazo} dias.`
+            : `Painel de consulta dos retornos de Compras para os produtos em falta. Exibição dos últimos ${prazo} dias.`
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline">{rows.length} no período</Badge>
+        <Badge variant="secondary" className="px-3 py-1 font-semibold text-xs">
+          {filtradas.length} retornos exibidos
+        </Badge>
+        {lojaFixa && (
+          <Badge variant="outline" className="border-primary/40 text-primary font-medium">
+            <Building2 className="mr-1.5 h-3.5 w-3.5" /> Loja: {lojaFixa}
+          </Badge>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -141,17 +220,31 @@ function RetornoAsLojas() {
         </Button>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Filtros */}
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <div className="relative sm:col-span-2 lg:col-span-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Pesquisar produto, código ou colaborador"
+            placeholder="Buscar produto, código ou solicitante..."
             className="h-11 pl-9"
-            inputMode="search"
           />
         </div>
+
+        <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+          <SelectTrigger className="h-11">
+            <SelectValue placeholder="Filtrar por status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todos os Status</SelectItem>
+            {disponiveisStatus.map((st) => (
+              <SelectItem key={st} value={st}>
+                {st}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <Select value={periodo} onValueChange={setPeriodo}>
           <SelectTrigger className="h-11">
@@ -182,78 +275,158 @@ function RetornoAsLojas() {
         )}
       </div>
 
+      {/* Conteúdo */}
       {loading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando retornos…
+        <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-muted-foreground bg-card rounded-xl border border-border/60 shadow-sm">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p>Carregando retornos de Compras...</p>
         </div>
       ) : filtradas.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-14 text-center">
-          <PackageCheck className="h-8 w-8 text-muted-foreground/60" />
-          <p className="text-sm text-muted-foreground">
-            Nenhum retorno de Compras no momento para os filtros aplicados.
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center bg-card/50">
+          <PackageCheck className="h-10 w-10 text-muted-foreground/50" />
+          <p className="font-medium text-foreground">Nenhum retorno encontrado</p>
+          <p className="text-xs text-muted-foreground max-w-sm">
+            Não há retornos de Compras registrados no período ou para os filtros selecionados.
           </p>
         </div>
       ) : (
-        <ul className="space-y-2">
+        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filtradas.map((r) => {
-            const dias = diasDesde(r.retorno_em);
             const visual = visualDe(r.status);
+            const isCiente = Boolean(r.ciente_at);
+
             return (
-              <li
+              <Card
                 key={r.id}
-                className="rounded-xl border border-border bg-card p-3 sm:p-4"
+                className={`flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md border-l-4 ${isCiente ? "border-l-emerald-500 bg-card" : "border-l-amber-500 bg-card"}`}
               >
-                <div className="flex flex-wrap items-start gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge
-                        variant="outline"
-                        className={`text-[11px] font-semibold uppercase tracking-wide ${visual.classe}`}
-                      >
-                        {visual.emoji} {r.status}
-                      </Badge>
+                <CardHeader className="pb-3 space-y-2">
+                  {/* Badges de Topo: Loja e Status */}
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <Badge variant="outline" className="text-[11px] font-semibold bg-muted/50">
+                      <Building2 className="mr-1 h-3 w-3 text-muted-foreground" />
+                      {r.store_id}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={`text-[11px] uppercase tracking-wide px-2.5 py-0.5 shadow-sm ${visual.classe}`}
+                    >
+                      {visual.emoji} {r.status}
+                    </Badge>
+                  </div>
+
+                  {/* Nome do Produto */}
+                  <div>
+                    <h3 className="font-bold text-navy leading-snug text-base line-clamp-2">
+                      {r.produto?.descricao ?? "Produto não identificado"}
+                    </h3>
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground font-mono">
+                      {r.produto?.codigo && (
+                        <span className="inline-flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded">
+                          <Tag className="h-3 w-3" /> Cód: {r.produto.codigo}
+                        </span>
+                      )}
+                      {r.produto?.gtin && (
+                        <span className="inline-flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded">
+                          EAN: {r.produto.gtin}
+                        </span>
+                      )}
                     </div>
-                    <p className="mt-1.5 truncate text-sm font-semibold text-navy">
-                      {r.produto?.descricao ?? "Produto"}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {r.produto?.codigo ? `Cód. ${r.produto.codigo}` : ""}
-                      {r.produto?.gtin ? ` · EAN ${r.produto.gtin}` : ""} · {r.store_id}
-                    </p>
                   </div>
-                </div>
+                </CardHeader>
 
-                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs sm:grid-cols-4">
-                  <div>
-                    <dt className="text-muted-foreground">Solicitado por</dt>
-                    <dd className="truncate font-medium">{r.reported_by_name}</dd>
+                <CardContent className="flex-1 space-y-3 pb-3 text-xs">
+                  {/* Informações detalhadas */}
+                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-2.5 border border-border/50">
+                    <div>
+                      <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                        Solicitante
+                      </span>
+                      <span className="font-semibold text-foreground truncate flex items-center gap-1 mt-0.5">
+                        <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                        {r.reported_by_name || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                        Data Solicitação
+                      </span>
+                      <span className="font-medium text-foreground flex items-center gap-1 mt-0.5">
+                        <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                        {fmtHora(r.reported_at)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                        Tratado por
+                      </span>
+                      <span className="font-semibold text-foreground truncate flex items-center gap-1 mt-0.5">
+                        <UserCheck className="h-3 w-3 text-sky-600 shrink-0" />
+                        {r.responsavel_nome || "Compras"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                        Data Tratativa
+                      </span>
+                      <span className="font-medium text-foreground flex items-center gap-1 mt-0.5">
+                        <Clock className="h-3 w-3 text-sky-600 shrink-0" />
+                        {fmtHora(r.retorno_em)}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <dt className="text-muted-foreground">Solicitado em</dt>
-                    <dd className="font-medium">{fmt(r.reported_at)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Retorno de Compras em</dt>
-                    <dd className="font-medium">{fmtHora(r.retorno_em)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Há</dt>
-                    <dd className="font-medium">{dias === 0 ? "hoje" : `${dias} dia(s)`}</dd>
-                  </div>
-                </dl>
 
-                {r.management_observation && (
-                  <div className="mt-3 rounded-lg border border-muted bg-muted/30 p-2.5 text-sm">
-                    <p className="mb-0.5 text-xs font-semibold text-foreground/80">Resposta de Compras:</p>
-                    <p className="text-muted-foreground font-medium">
-                      {r.management_observation}
-                    </p>
-                  </div>
-                )}
-              </li>
+                  {/* Resposta/Observação de Compras */}
+                  {r.management_observation ? (
+                    <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-2.5 text-sky-950 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-200">
+                      <div className="flex items-center gap-1 font-semibold text-[11px] text-sky-800 dark:text-sky-300 mb-1">
+                        <MessageSquare className="h-3.5 w-3.5" /> Resposta de Compras:
+                      </div>
+                      <p className="text-xs leading-relaxed font-normal whitespace-pre-wrap">
+                        {r.management_observation}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground italic px-1">
+                      Sem observações adicionais de Compras.
+                    </div>
+                  )}
+                </CardContent>
+
+                <CardFooter className="pt-2 pb-3 border-t border-border/60 bg-muted/10 flex items-center justify-between">
+                  {isCiente ? (
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-2.5 py-1.5 rounded-md w-full">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <span className="truncate">
+                        Ciente por {r.ciente_by_name || "Loja"} em {fmtHora(r.ciente_at)}
+                      </span>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs h-9 shadow-sm"
+                      disabled={marcandoId === r.id}
+                      onClick={() => void handleMarcarCiente(r.id)}
+                    >
+                      {marcandoId === r.id ? (
+                        <>
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          Registrando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                          Marcar como Ciente
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );
