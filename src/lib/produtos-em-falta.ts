@@ -262,20 +262,151 @@ export function traduzErroLancamento(e: unknown): string {
   return msg || "Não foi possível registrar.";
 }
 
+/** Usuário logado: id e nome de exibição (usado na liberação e no histórico). */
+async function usuarioAtualComNome() {
+  const user = await currentUser();
+  return {
+    id: (user?.id ?? null) as string | null,
+    nome:
+      (user?.user_metadata?.["name"] as string) ??
+      (user?.user_metadata?.["username"] as string) ??
+      user?.email ??
+      "Administrador",
+  };
+}
+
 /** Liberação administrativa do bloqueio ("Produto ativo"). Restrita a admin no banco. */
 export async function liberarBloqueio(bloqueioId: string, motivo: string) {
-  const user = await currentUser();
-  const nome =
-    (user?.user_metadata?.["name"] as string) ??
-    (user?.user_metadata?.["username"] as string) ??
-    user?.email ??
-    "Administrador";
+  const { nome } = await usuarioAtualComNome();
   const { error } = await supabase.rpc("liberar_produto_bloqueado" as any, {
     _bloqueio_id: bloqueioId,
     _nome: nome,
     _motivo: motivo.trim(),
   });
   if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Alteração da condição de bloqueio + histórico (produto + loja)
+// ---------------------------------------------------------------------------
+
+export interface ProdutoBloqueioAtivo extends ProdutoBloqueio {
+  produto?: { id: string; descricao: string; codigo: string | null; gtin: string | null } | null;
+}
+
+export interface ProdutoBloqueioHistorico {
+  id: string;
+  bloqueio_id: string | null;
+  product_id: string;
+  store_id: string;
+  status_anterior: string | null;
+  status_novo: string;
+  changed_by: string | null;
+  changed_by_name: string;
+  motivo: string;
+  created_at: string;
+  produto?: { id: string; descricao: string } | null;
+}
+
+const bloqueiosHistTable = () => supabase.from("produto_bloqueios_historico" as any);
+
+async function descreverProdutos(ids: string[]) {
+  const map = new Map<
+    string,
+    { id: string; descricao: string; codigo: string | null; gtin: string | null }
+  >();
+  const unicos = Array.from(new Set(ids.filter(Boolean)));
+  if (unicos.length === 0) return map;
+  const { data } = await supabase
+    .from("produtos")
+    .select("id, descricao, codigo, gtin")
+    .in("id", unicos);
+  for (const p of (data ?? []) as any[]) map.set(String(p.id), p);
+  return map;
+}
+
+/** Bloqueios ativos (de todas as lojas ou de uma loja), com o produto carregado. */
+export async function listBloqueiosAtivosTodos(
+  opts: { loja?: string | null } = {},
+): Promise<ProdutoBloqueioAtivo[]> {
+  let q = bloqueiosTable()
+    .select("id, product_id, store_id, status, permanente, motivo, tratado_em")
+    .eq("ativo", true)
+    .order("tratado_em", { ascending: false })
+    .limit(300);
+  if (opts.loja) q = q.eq("store_id", opts.loja);
+  const { data, error } = await q;
+  if (error) throw error;
+  const rows = (data ?? []) as unknown as ProdutoBloqueioAtivo[];
+  const map = await descreverProdutos(rows.map((r) => r.product_id));
+  return rows.map((r) => ({ ...r, produto: map.get(r.product_id) ?? null }));
+}
+
+/**
+ * Histórico das alterações de condição de bloqueio, do mais recente para o
+ * mais antigo. Se a tabela de histórico ainda não existir no banco, devolve
+ * lista vazia em vez de derrubar a tela.
+ */
+export async function listHistoricoBloqueios(limite = 50): Promise<ProdutoBloqueioHistorico[]> {
+  try {
+    const { data, error } = await bloqueiosHistTable()
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limite);
+    if (error) throw error;
+    const rows = (data ?? []) as unknown as ProdutoBloqueioHistorico[];
+    const map = await descreverProdutos(rows.map((r) => r.product_id));
+    return rows.map((r) => ({ ...r, produto: map.get(r.product_id) ?? null }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Altera a condição de bloqueio de um produto em uma loja e registra a ação no
+ * histórico (produto, loja, status anterior, novo status, usuário, data/hora e
+ * motivo). "Produto ativo" libera o produto para novos lançamentos pelo RPC
+ * administrativo; qualquer outro status apenas troca a condição, mantendo o
+ * bloqueio. Devolve true quando o histórico foi gravado.
+ */
+export async function alterarCondicaoBloqueio(input: {
+  bloqueio: ProdutoBloqueio;
+  novoStatus: string;
+  motivo: string;
+}): Promise<boolean> {
+  const motivo = input.motivo.trim();
+  if (!motivo) throw new Error("Informe o motivo da alteração.");
+
+  if (input.novoStatus === "Produto ativo") {
+    await liberarBloqueio(input.bloqueio.id, motivo);
+  } else {
+    const { error } = await bloqueiosTable()
+      .update({
+        status: input.novoStatus,
+        motivo,
+        tratado_em: new Date().toISOString(),
+      })
+      .eq("id", input.bloqueio.id);
+    if (error) throw error;
+  }
+
+  try {
+    const { id, nome } = await usuarioAtualComNome();
+    const { error } = await bloqueiosHistTable().insert({
+      bloqueio_id: input.bloqueio.id,
+      product_id: input.bloqueio.product_id,
+      store_id: input.bloqueio.store_id,
+      status_anterior: input.bloqueio.status,
+      status_novo: input.novoStatus,
+      changed_by: id,
+      changed_by_name: nome,
+      motivo,
+    });
+    if (error) throw error;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------

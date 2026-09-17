@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Search, RefreshCw, Flame } from "lucide-react";
+import { Loader2, Search, RefreshCw, Flame, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
@@ -18,8 +18,9 @@ import {
 import { useAuth } from "@/lib/auth";
 import {
   listFaltas, updateFaltaStatus, listHistoricoMany, podeGerenciarFaltas, FALTA_STATUS, LOJAS,
-  getBloqueioAtivo, liberarBloqueio,
+  getBloqueioAtivo, alterarCondicaoBloqueio, listBloqueiosAtivosTodos, listHistoricoBloqueios,
   type FaltaStatus, type FaltaHistorico, type ProdutoEmFalta, type ProdutoBloqueio,
+  type ProdutoBloqueioAtivo, type ProdutoBloqueioHistorico,
 } from "@/lib/produtos-em-falta";
 
 const STATUS_EMOJI: Record<FaltaStatus, string> = {
@@ -112,6 +113,18 @@ function CentralProdutosEmFalta() {
   const [bloqueio, setBloqueio] = useState<ProdutoBloqueio | null>(null);
   const [motivoLiberacao, setMotivoLiberacao] = useState("");
   const [liberando, setLiberando] = useState(false);
+
+  // Alteração da condição de bloqueio (administrador)
+  const [gerirBloqueios, setGerirBloqueios] = useState(false);
+  const [listaBloqueios, setListaBloqueios] = useState<ProdutoBloqueioAtivo[]>([]);
+  const [carregandoBloqueios, setCarregandoBloqueios] = useState(false);
+  const [buscaBloqueio, setBuscaBloqueio] = useState("");
+  const [lojaBloqueio, setLojaBloqueio] = useState("todas");
+  const [selecionado, setSelecionado] = useState<ProdutoBloqueioAtivo | null>(null);
+  const [novaCondicao, setNovaCondicao] = useState<string>("Produto ativo");
+  const [motivoAlteracao, setMotivoAlteracao] = useState("");
+  const [alterando, setAlterando] = useState(false);
+  const [historicoBloqueios, setHistoricoBloqueios] = useState<ProdutoBloqueioHistorico[]>([]);
 
 
   const carregar = async () => {
@@ -247,8 +260,16 @@ function CentralProdutosEmFalta() {
     }
     setLiberando(true);
     try {
-      await liberarBloqueio(bloqueio.id, motivoLiberacao);
-      toast.success("Bloqueio liberado", { description: "O produto voltou a poder ser solicitado nesta loja." });
+      const registrado = await alterarCondicaoBloqueio({
+        bloqueio,
+        novoStatus: "Produto ativo",
+        motivo: motivoLiberacao,
+      });
+      toast.success("Bloqueio liberado", {
+        description: registrado
+          ? "O produto voltou a poder ser solicitado nesta loja e a alteração foi registrada no histórico."
+          : "O produto voltou a poder ser solicitado nesta loja. O histórico não pôde ser gravado agora.",
+      });
       setBloqueio(null);
       setMotivoLiberacao("");
     } catch (e) {
@@ -257,6 +278,78 @@ function CentralProdutosEmFalta() {
       setLiberando(false);
     }
   };
+
+  const carregarBloqueios = async (loja: string) => {
+    setCarregandoBloqueios(true);
+    try {
+      setListaBloqueios(await listBloqueiosAtivosTodos({ loja: loja === "todas" ? null : loja }));
+    } catch (e) {
+      toast.error("Falha ao carregar os bloqueios", { description: (e as Error).message });
+    } finally {
+      setCarregandoBloqueios(false);
+    }
+  };
+
+  const carregarHistoricoBloqueios = async () => {
+    setHistoricoBloqueios(await listHistoricoBloqueios(50));
+  };
+
+  const abrirGestaoBloqueios = () => {
+    setGerirBloqueios(true);
+    setSelecionado(null);
+    setMotivoAlteracao("");
+    setNovaCondicao("Produto ativo");
+    void carregarBloqueios(lojaBloqueio);
+    void carregarHistoricoBloqueios();
+  };
+
+  const confirmarAlteracao = async () => {
+    if (!selecionado) return;
+    if (!motivoAlteracao.trim()) {
+      toast.error("Informe o motivo da alteração.");
+      return;
+    }
+    setAlterando(true);
+    try {
+      const registrado = await alterarCondicaoBloqueio({
+        bloqueio: selecionado,
+        novoStatus: novaCondicao,
+        motivo: motivoAlteracao,
+      });
+      if (registrado) {
+        toast.success("Condição de bloqueio alterada", {
+          description: `“${selecionado.status}” → “${novaCondicao}” registrado no histórico.`,
+        });
+      } else {
+        toast.warning("Condição alterada, mas o histórico não foi gravado", {
+          description: "A alteração valeu; o registro no histórico ficou pendente.",
+        });
+      }
+      setSelecionado(null);
+      setMotivoAlteracao("");
+      await Promise.all([
+        carregar(),
+        carregarBloqueios(lojaBloqueio),
+        carregarHistoricoBloqueios(),
+      ]);
+    } catch (e) {
+      toast.error("Não foi possível alterar a condição", { description: (e as Error).message });
+    } finally {
+      setAlterando(false);
+    }
+  };
+
+  const bloqueiosFiltrados = useMemo(() => {
+    const termo = normalize(buscaBloqueio);
+    if (!termo) return listaBloqueios;
+    return listaBloqueios.filter((b) =>
+      [b.produto?.descricao, b.produto?.codigo, b.produto?.gtin, b.store_id, b.status]
+        .filter(Boolean)
+        .map((v) => normalize(String(v)))
+        .join(" ")
+        .includes(termo),
+    );
+  }, [listaBloqueios, buscaBloqueio]);
 
   const aplicarStatus = async () => {
     if (!aberto) return;
@@ -292,9 +385,14 @@ function CentralProdutosEmFalta() {
         title="🚨 Central de Produtos em Falta"
         description="Fila de trabalho de Compras e Gestão a partir dos apontamentos do chão de loja."
         actions={
-          <Button variant="outline" size="sm" onClick={() => void carregar()} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={abrirGestaoBloqueios}>
+              <Lock className="mr-2 h-4 w-4" /> Bloqueios
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void carregar()} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
+            </Button>
+          </div>
         }
       />
 
@@ -608,6 +706,184 @@ function CentralProdutosEmFalta() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Alteração da condição de bloqueio (administrador) */}
+      <Dialog
+        open={gerirBloqueios}
+        onOpenChange={(o) => {
+          setGerirBloqueios(o);
+          if (!o) setSelecionado(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-left">Alterar condição de bloqueio</DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-muted-foreground">
+            Produtos bloqueados para novos lançamentos na Lista de Faltas. Um administrador pode alterar a
+            condição — por exemplo, de “Produto descontinuado” para “Produto ativo” — informando o motivo da
+            alteração. A ação fica registrada no histórico e o produto volta a poder ser lançado.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={buscaBloqueio}
+                onChange={(e) => setBuscaBloqueio(e.target.value)}
+                placeholder="Pesquisar produto, código ou loja…"
+                className="pl-9"
+              />
+            </div>
+            <Select
+              value={lojaBloqueio}
+              onValueChange={(v) => {
+                setLojaBloqueio(v);
+                setSelecionado(null);
+                void carregarBloqueios(v);
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="Loja" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as lojas</SelectItem>
+                {LOJAS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-border">
+            {carregandoBloqueios ? (
+              <p className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Carregando bloqueios…
+              </p>
+            ) : bloqueiosFiltrados.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                Nenhum produto bloqueado com os filtros atuais.
+              </p>
+            ) : (
+              <ul className="max-h-64 divide-y divide-border/70 overflow-y-auto">
+                {bloqueiosFiltrados.map((b) => (
+                  <li key={b.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelecionado(b);
+                        setNovaCondicao("Produto ativo");
+                        setMotivoAlteracao("");
+                      }}
+                      className={`w-full px-4 py-3 text-left transition-colors hover:bg-muted/60 ${
+                        selecionado?.id === b.id ? "bg-accent" : ""
+                      }`}
+                    >
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {b.produto?.descricao ?? "Produto"}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[
+                          b.store_id,
+                          b.produto?.codigo && `Cód. ${b.produto.codigo}`,
+                          b.permanente && "bloqueio permanente",
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                      <p className="mt-1 text-xs font-medium text-destructive">
+                        {b.status} · desde {new Date(b.tratado_em).toLocaleString("pt-BR")}
+                      </p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {selecionado && (
+            <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-sm font-semibold text-navy">
+                {selecionado.produto?.descricao ?? "Produto"} · {selecionado.store_id}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Situação anterior: <span className="font-semibold">{STATUS_EMOJI[selecionado.status]} {selecionado.status}</span>
+              </p>
+              {user?.isAdmin ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Nova condição</Label>
+                    <Select value={novaCondicao} onValueChange={setNovaCondicao}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Produto ativo">
+                          ✅ Produto ativo (libera o lançamento na Lista de Faltas)
+                        </SelectItem>
+                        {FALTA_STATUS.filter((s) => s !== selecionado.status).map((s) => (
+                          <SelectItem key={s} value={s}>{STATUS_EMOJI[s]} {s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Motivo da alteração (obrigatório)</Label>
+                    <Textarea
+                      rows={2}
+                      value={motivoAlteracao}
+                      onChange={(e) => setMotivoAlteracao(e.target.value)}
+                      placeholder="Ex.: produto voltou a ser trabalhado pelo fornecedor"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setSelecionado(null)}>
+                      Cancelar
+                    </Button>
+                    <Button size="sm" onClick={() => void confirmarAlteracao()} disabled={alterando}>
+                      {alterando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Confirmar alteração
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Somente um administrador pode alterar a condição de bloqueio. Sua conta tem acesso apenas
+                  para consulta.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div>
+            <p className="mb-2 text-sm font-semibold text-navy">Histórico de alterações de bloqueio</p>
+            {historicoBloqueios.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma alteração registrada ainda.</p>
+            ) : (
+              <ol className="max-h-64 space-y-3 overflow-y-auto border-l border-border pl-4">
+                {historicoBloqueios.map((h) => (
+                  <li key={h.id} className="relative">
+                    <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(h.created_at).toLocaleString("pt-BR")}
+                    </p>
+                    <p className="text-sm text-foreground">
+                      <span className="font-semibold">{h.produto?.descricao ?? "Produto"}</span> · {h.store_id}
+                    </p>
+                    <p className="text-sm text-foreground">
+                      {h.status_anterior ? `“${h.status_anterior}”` : "—"} →{" "}
+                      <span className="font-semibold">“{h.status_novo}”</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      por {h.changed_by_name || "Administrador"}
+                      {h.motivo ? ` · Motivo: ${h.motivo}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGerirBloqueios(false)}>Fechar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
