@@ -30,7 +30,6 @@ import {
   SOLICITACAO_STATUS,
   listHistoricoSolicitacoesMany,
   listSolicitacoes,
-  podeGerenciarSolicitacoes,
   tratarSolicitacao,
   type SolicitacaoHistorico,
   type SolicitacaoNovoProduto,
@@ -101,7 +100,7 @@ interface CamposForm {
 
 function SolicitacoesProdutosPage() {
   const { user } = useAuth();
-  const podeGerenciar = podeGerenciarSolicitacoes(user);
+  const podeGerenciar = !!user?.isAdmin;
   const lojaFixa = lojaDoUsuario(user);
 
   const [rows, setRows] = useState<SolicitacaoNovoProduto[]>([]);
