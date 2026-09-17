@@ -144,15 +144,6 @@ function UsuariosPage() {
     const name = form.name.trim();
     const username = form.username.trim();
 
-    /* ANÁLISE SOLICITADA:
-     * Motivo pelo qual os botões pareciam não fazer nada (além de faltar feedback/loading):
-     * O backend em users.functions.ts retorna um padrão de Result { ok: false, error: string }
-     * em falhas da base de dados (como usuário duplicado), em vez de lançar um throw real (exceção livre).
-     * Como o bloco try/catch do frontend falhava em reconhecer e validar essa assinatura, o fluxo fingia
-     * que a request era um sucesso, exibia o toast dizendo que deu tudo certo e simplesmente fechava
-     * a janela pop-up, ignorando o erro embutido no payload sem de fato aplicar modificações.
-     */
-
     if (!name) return toast.error("Informe o nome.");
     if (!username) return toast.error("Informe o nome de usuário (login).");
     if (!/^[a-zA-Z0-9._-]+$/.test(username))
@@ -181,14 +172,10 @@ function UsuariosPage() {
         };
         if (form.password) patch.password = form.password;
         
-        const res = await updateUser(editing.id, patch) as any;
-        if (res && (res.ok === false || res.error)) {
-           toast.error(res.error || "Erro ao atualizar usuário.");
-           return;
-        }
+        await updateUser(editing.id, patch);
         toast.success("Usuário atualizado.");
       } else {
-        const res = await createUser({
+        await createUser({
           name,
           username,
           password: form.password,
@@ -197,12 +184,7 @@ function UsuariosPage() {
           permissions: form.isAdmin ? ALL_PERMISSIONS : form.permissions,
           isAdmin: form.isAdmin,
           readOnly: !form.isAdmin && form.readOnly,
-        }) as any;
-        
-        if (res && (res.ok === false || res.error)) {
-           toast.error(res.error || "Erro ao cadastrar usuário.");
-           return;
-        }
+        });
         toast.success("Usuário cadastrado.");
       }
       setDialogOpen(false);
@@ -218,11 +200,7 @@ function UsuariosPage() {
     if (!confirmDelete) return;
     setIsSubmitting(true);
     try {
-      const res = await deleteUser(confirmDelete.id) as any;
-      if (res && res.ok === false) {
-          toast.error(res.error || "Erro ao remover usuário.");
-          return;
-      }
+      await deleteUser(confirmDelete.id);
       toast.success("Usuário removido.");
       setConfirmDelete(null);
     } catch (err) {
