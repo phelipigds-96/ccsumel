@@ -694,12 +694,13 @@ function CentralProdutosEmFalta() {
               )}
 
               {podeGerenciar && (
-                <div className="space-y-3 rounded-lg border border-border p-3">
-                  <p className="text-sm font-semibold text-navy">Tratativa da gestão</p>
+                <div className="space-y-3 rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm font-bold uppercase tracking-wide text-primary">TRATATIVA DE COMPRAS</p>
+                  <p className="text-xs text-muted-foreground">O status selecionado servirá como retorno para a loja.</p>
                   <div className="space-y-2">
-                    <Label className="text-xs">Nova situação</Label>
+                    <Label className="text-xs font-semibold">Nova situação</Label>
                     <Select value={novoStatus} onValueChange={(v) => setNovoStatus(v as FaltaStatus)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {FALTA_STATUS.map((s) => (
                           <SelectItem key={s} value={s}>{STATUS_EMOJI[s]} {s}</SelectItem>
@@ -708,8 +709,8 @@ function CentralProdutosEmFalta() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Observação da gestão</Label>
-                    <Textarea rows={2} value={obsGestao} onChange={(e) => setObsGestao(e.target.value)} />
+                    <Label className="text-xs font-semibold">Observação da gestão</Label>
+                    <Textarea className="bg-background" rows={2} value={obsGestao} onChange={(e) => setObsGestao(e.target.value)} />
                   </div>
                 </div>
               )}
