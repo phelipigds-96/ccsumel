@@ -642,35 +642,72 @@ function CentralProdutosEmFalta() {
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-semibold text-navy">Linha do tempo da situação</p>
+                <p className="mb-3 text-sm font-semibold text-navy flex items-center justify-between">
+                  <span>Linha do tempo (Histórico de alterações)</span>
+                </p>
                 {timelineLoading ? (
                   <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando linha do tempo…
+                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando histórico…
                   </p>
                 ) : timeline.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma movimentação registrada.</p>
+                  <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50">Nenhuma movimentação registrada no histórico.</p>
                 ) : (
-                  <ol className="space-y-3 border-l border-border pl-4">
-                    {timeline.map((h) => (
-                      <li key={h.id} className="relative">
-                        <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(h.created_at).toLocaleString("pt-BR", {
-                            day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
-                          })}
-                        </p>
-                        <p className="text-sm text-foreground">
-                          <span className="font-semibold">{h.changed_by_name || "Sistema"}</span>{" "}
-                          {h.status_anterior
-                            ? <>alterou para “{STATUS_EMOJI[h.status_novo]} {h.status_novo}”</>
-                            : <>registrou a falta</>}
-                        </p>
+                  <div className="space-y-3 border-l-2 border-primary/20 ml-1.5 pl-5">
+                    {timeline.filter((h, i, arr) => {
+                      if (i === 0) return true;
+                      const prev = arr[i - 1];
+                      return !(
+                        prev.status_novo === h.status_novo &&
+                        prev.observation === h.observation &&
+                        prev.changed_by_name === h.changed_by_name &&
+                        Math.abs(new Date(h.created_at).getTime() - new Date(prev.created_at).getTime()) < 60000
+                      );
+                    }).map((h) => (
+                      <div key={h.id} className="relative rounded-lg border border-border/60 bg-muted/10 p-3 shadow-sm hover:bg-muted/30 transition-colors">
+                        <span className="absolute -left-[27px] top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full bg-primary border-2 border-background" />
+                        
+                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 mb-2">
+                          <span className="font-semibold text-sm text-foreground">{h.changed_by_name || "Sistema"}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(h.created_at).toLocaleString("pt-BR", {
+                              day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        
+                        <div className="text-sm text-foreground mb-1 shadow-none bg-transparent p-0">
+                          {h.status_anterior && h.status_anterior !== h.status_novo ? (
+                            <span className="flex items-center flex-wrap gap-1">
+                              Alterou o status para 
+                              <Badge variant="outline" className={`text-xs ml-1 font-medium ${STATUS_TONE[h.status_novo] || ''}`}>
+                                {STATUS_EMOJI[h.status_novo]} {h.status_novo}
+                              </Badge>
+                            </span>
+                          ) : h.status_anterior && h.status_anterior === h.status_novo ? (
+                            <span className="flex items-center flex-wrap gap-1">
+                              Atualizou a tratativa mantendo o status 
+                              <Badge variant="outline" className={`text-[10px] ml-1 font-medium ${STATUS_TONE[h.status_novo] || ''}`}>
+                                {h.status_novo}
+                              </Badge>
+                            </span>
+                          ) : (
+                            <span className="flex items-center flex-wrap gap-1">
+                              Registrou a falta inicial 
+                              <Badge variant="outline" className={`text-[10px] ml-1 font-medium ${STATUS_TONE[h.status_novo] || ''}`}>
+                                {h.status_novo}
+                              </Badge>
+                            </span>
+                          )}
+                        </div>
+                        
                         {h.observation && (
-                          <p className="text-sm text-muted-foreground">Observação: {h.observation}</p>
+                          <div className="mt-2 text-sm bg-background p-2.5 rounded border border-border/50 text-foreground italic flex items-start gap-2">
+                            <span className="text-muted-foreground">↳</span> {h.observation}
+                          </div>
                         )}
-                      </li>
+                      </div>
                     ))}
-                  </ol>
+                  </div>
                 )}
               </div>
 
