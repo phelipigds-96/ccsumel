@@ -1,19 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Building2,
+  Calendar,
   CheckCircle2,
   Clock,
+  History,
   Loader2,
+  MessageSquare,
   PackageCheck,
   RefreshCw,
   Search,
+  Tag,
   User,
   UserCheck,
-  Building2,
-  Tag,
-  Calendar,
-  MessageSquare,
-  History,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -140,7 +141,7 @@ function RetornoAsLojas() {
   const [prazo, setPrazo] = useState(7);
   const [loading, setLoading] = useState(true);
   const [marcandoId, setMarcandoId] = useState<string | null>(null);
-  
+
   // Filtros
   const [busca, setBusca] = useState("");
   const [loja, setLoja] = useState<string>(lojaFixa ?? "todas");
@@ -211,9 +212,24 @@ function RetornoAsLojas() {
     }
   };
 
+  const limparFiltros = () => {
+    setBusca("");
+    setStatusFiltro("todas");
+    setLeituraFiltro("todos");
+    setPeriodo("todos");
+    if (!lojaFixa) setLoja("todas");
+  };
+
+  const temFiltroAtivo =
+    busca.trim() !== "" ||
+    statusFiltro !== "todas" ||
+    leituraFiltro !== "todos" ||
+    periodo !== "todos" ||
+    (!lojaFixa && loja !== "todas");
+
   const filtradas = useMemo(() => {
     const s = normalize(busca);
-    let result = rows
+    const result = rows
       .filter((r) =>
         lojaFixa ? true : loja === "todas" || r.store_id === loja
       )
@@ -225,7 +241,7 @@ function RetornoAsLojas() {
       })
       .filter((r) => {
         if (periodo === "todos") return true;
-        const dias = diasDesde(r.retorno_em);
+        const dias = diasDesde(r.ciente_at ?? r.retorno_em);
         return periodo === "hoje" ? dias === 0 : dias <= Number(periodo);
       })
       .filter((r) =>
@@ -247,7 +263,7 @@ function RetornoAsLojas() {
       const aLido = !!a.ciente_at;
       const bLido = !!b.ciente_at;
       if (aLido !== bLido) return aLido ? 1 : -1; // Não lido vem primeiro (-1)
-      
+
       const aData = new Date(a.retorno_em || 0).getTime();
       const bData = new Date(b.retorno_em || 0).getTime();
       return bData - aData;
@@ -262,7 +278,7 @@ function RetornoAsLojas() {
   }, [rows]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-6">
       <PageHeader
         title="Retorno às Lojas"
         description={
@@ -272,35 +288,37 @@ function RetornoAsLojas() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary" className="px-3 py-1 font-semibold text-xs">
-          {filtradas.length} retornos exibidos
-        </Badge>
-        {lojaFixa && (
-          <Badge
-            variant="outline"
-            className="border-primary/40 text-primary font-medium"
-          >
-            <Building2 className="mr-1.5 h-3.5 w-3.5" /> Loja: {lojaFixa}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="px-3 py-1 text-xs font-semibold">
+            {filtradas.length} retornos exibidos
           </Badge>
-        )}
+          {lojaFixa && (
+            <Badge
+              variant="outline"
+              className="border-primary/40 font-medium text-primary"
+            >
+              <Building2 className="mr-1.5 h-3.5 w-3.5" /> Loja: {lojaFixa}
+            </Badge>
+          )}
+        </div>
         <Button
           variant="outline"
           size="sm"
-          className="ml-auto"
+          className="h-11 w-full sm:ml-auto sm:h-9 sm:w-auto"
           onClick={() => void carregar()}
           disabled={loading}
         >
           <RefreshCw
-            className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+            className={`mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5 ${loading ? "animate-spin" : ""}`}
           />
           Atualizar
         </Button>
       </div>
 
       {/* Filtros */}
-      <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6">
-        <div className="relative sm:col-span-2 lg:col-span-2 xl:col-span-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="relative sm:col-span-2 lg:col-span-1 xl:col-span-2">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={busca}
@@ -311,7 +329,7 @@ function RetornoAsLojas() {
         </div>
 
         <Select value={leituraFiltro} onValueChange={setLeituraFiltro}>
-          <SelectTrigger className="h-11">
+          <SelectTrigger className="h-11 w-full">
             <SelectValue placeholder="Status de Leitura" />
           </SelectTrigger>
           <SelectContent>
@@ -322,7 +340,7 @@ function RetornoAsLojas() {
         </Select>
 
         <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-          <SelectTrigger className="h-11">
+          <SelectTrigger className="h-11 w-full">
             <SelectValue placeholder="Status Compras" />
           </SelectTrigger>
           <SelectContent>
@@ -336,7 +354,7 @@ function RetornoAsLojas() {
         </Select>
 
         <Select value={periodo} onValueChange={setPeriodo}>
-          <SelectTrigger className="h-11">
+          <SelectTrigger className="h-11 w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -349,7 +367,7 @@ function RetornoAsLojas() {
 
         {!lojaFixa && (
           <Select value={loja} onValueChange={setLoja}>
-            <SelectTrigger className="h-11">
+            <SelectTrigger className="h-11 w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -362,24 +380,57 @@ function RetornoAsLojas() {
             </SelectContent>
           </Select>
         )}
+
+        {temFiltroAtivo && (
+          <Button
+            variant="ghost"
+            className="h-11 w-full text-xs text-muted-foreground hover:text-foreground"
+            onClick={limparFiltros}
+          >
+            <X className="mr-1.5 h-3.5 w-3.5" /> Limpar filtros
+          </Button>
+        )}
       </div>
 
       {/* Conteúdo */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-muted-foreground bg-card rounded-xl border border-border/60 shadow-sm">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/60 bg-card py-16 text-sm text-muted-foreground shadow-sm">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
           <p>Carregando retornos de Compras...</p>
         </div>
-      ) : filtradas.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center bg-card/50">
-          <PackageCheck className="h-10 w-10 text-muted-foreground/50" />
-          <p className="font-medium text-foreground">Nenhum retorno encontrado</p>
-          <p className="text-xs text-muted-foreground max-w-sm">
-            Não há retornos encontrados com os filtros selecionados.
+      ) : rows.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-emerald-300/80 bg-emerald-50/40 px-6 py-14 text-center dark:border-emerald-900/60 dark:bg-emerald-950/20">
+          <div className="rounded-full bg-emerald-100 p-3 dark:bg-emerald-900/40">
+            <PackageCheck className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="text-base font-semibold text-foreground">
+            Tudo em dia por aqui!
+          </p>
+          <p className="max-w-md text-sm text-muted-foreground">
+            Nenhum retorno de Compras aguardando a loja nos últimos {prazo} dias.
+            {lojaFixa
+              ? ` Os retornos já confirmados pela ${lojaFixa} saem desta lista automaticamente depois de ${prazo} dias do ciente.`
+              : ` Os retornos já confirmados saem desta lista automaticamente depois de ${prazo} dias do ciente.`}
           </p>
         </div>
+      ) : filtradas.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card/50 px-6 py-14 text-center">
+          <PackageCheck className="h-10 w-10 text-muted-foreground/50" />
+          <p className="font-medium text-foreground">
+            Nenhum retorno encontrado com os filtros atuais
+          </p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            Existem retornos no período, mas nenhum corresponde aos filtros
+            selecionados. Ajuste a busca ou limpe os filtros para ver tudo.
+          </p>
+          {temFiltroAtivo && (
+            <Button variant="outline" size="sm" className="h-10" onClick={limparFiltros}>
+              <X className="mr-1.5 h-3.5 w-3.5" /> Limpar filtros
+            </Button>
+          )}
+        </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtradas.map((r) => {
             const visual = visualDe(r.status);
             const isCiente = Boolean(r.ciente_at);
@@ -387,32 +438,32 @@ function RetornoAsLojas() {
             return (
               <Card
                 key={r.id}
-                className={`relative flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md border border-l-4 ${
+                className={`relative flex flex-col overflow-hidden border border-l-4 transition-all duration-200 hover:shadow-md ${
                   isCiente
                     ? "border-border border-l-emerald-500 bg-muted/20 opacity-90"
                     : "border-amber-300/50 border-l-amber-500 bg-card shadow-sm shadow-amber-500/10"
                 }`}
               >
                 {!isCiente && (
-                  <span className="absolute top-0 right-0 flex h-3 w-3 -translate-x-3 translate-y-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 shadow-sm"></span>
+                  <span className="absolute right-0 top-0 flex h-3 w-3 -translate-x-3 translate-y-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500 shadow-sm"></span>
                   </span>
                 )}
 
-                <CardHeader className="pb-3 space-y-2">
+                <CardHeader className="space-y-2 pb-3">
                   {/* Badges de Topo: Loja e Status */}
                   <div className="flex flex-wrap items-center justify-between gap-1.5 pr-4">
                     <Badge
                       variant="outline"
-                      className="text-[11px] font-semibold bg-muted/50"
+                      className="bg-muted/50 text-[11px] font-semibold"
                     >
                       <Building2 className="mr-1 h-3 w-3 text-muted-foreground" />
                       {r.store_id}
                     </Badge>
                     <Badge
                       variant="outline"
-                      className={`text-[11px] uppercase tracking-wide px-2.5 py-0.5 shadow-sm ${visual.classe}`}
+                      className={`px-2.5 py-0.5 text-[11px] uppercase tracking-wide shadow-sm ${visual.classe}`}
                     >
                       {visual.emoji} {r.status}
                     </Badge>
@@ -420,17 +471,17 @@ function RetornoAsLojas() {
 
                   {/* Nome do Produto */}
                   <div>
-                    <h3 className="font-bold text-navy leading-snug text-base line-clamp-2">
+                    <h3 className="text-base font-bold leading-snug text-navy line-clamp-2">
                       {r.produto?.descricao ?? "Produto não identificado"}
                     </h3>
-                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground font-mono">
+                    <div className="mt-1 flex flex-wrap gap-2 font-mono text-xs text-muted-foreground">
                       {r.produto?.codigo && (
-                        <span className="inline-flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5">
                           <Tag className="h-3 w-3" /> Cód: {r.produto.codigo}
                         </span>
                       )}
                       {r.produto?.gtin && (
-                        <span className="inline-flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5">
                           EAN: {r.produto.gtin}
                         </span>
                       )}
@@ -440,40 +491,40 @@ function RetornoAsLojas() {
 
                 <CardContent className="flex-1 space-y-3 pb-3 text-xs">
                   {/* Informações detalhadas */}
-                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-2.5 border border-border/50">
-                    <div>
-                      <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                  <div className="grid grid-cols-1 gap-2.5 rounded-lg border border-border/50 bg-muted/30 p-2.5 sm:grid-cols-2 sm:gap-2">
+                    <div className="min-w-0">
+                      <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                         Solicitante
                       </span>
-                      <span className="font-semibold text-foreground truncate flex items-center gap-1 mt-0.5">
-                        <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="mt-0.5 flex items-center gap-1 truncate font-semibold text-foreground">
+                        <User className="h-3 w-3 shrink-0 text-muted-foreground" />
                         {r.reported_by_name || "—"}
                       </span>
                     </div>
-                    <div>
-                      <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                    <div className="min-w-0">
+                      <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                         Data Solicitação
                       </span>
-                      <span className="font-medium text-foreground flex items-center gap-1 mt-0.5">
-                        <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="mt-0.5 flex items-center gap-1 font-medium text-foreground">
+                        <Calendar className="h-3 w-3 shrink-0 text-muted-foreground" />
                         {fmtHora(r.reported_at)}
                       </span>
                     </div>
-                    <div>
-                      <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                    <div className="min-w-0">
+                      <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                         Tratado por
                       </span>
-                      <span className="font-semibold text-foreground truncate flex items-center gap-1 mt-0.5">
-                        <UserCheck className="h-3 w-3 text-sky-600 shrink-0" />
+                      <span className="mt-0.5 flex items-center gap-1 truncate font-semibold text-foreground">
+                        <UserCheck className="h-3 w-3 shrink-0 text-sky-600" />
                         {r.responsavel_nome || "Compras"}
                       </span>
                     </div>
-                    <div>
-                      <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                    <div className="min-w-0">
+                      <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                         Data Tratativa
                       </span>
-                      <span className="font-medium text-foreground flex items-center gap-1 mt-0.5">
-                        <Clock className="h-3 w-3 text-sky-600 shrink-0" />
+                      <span className="mt-0.5 flex items-center gap-1 font-medium text-foreground">
+                        <Clock className="h-3 w-3 shrink-0 text-sky-600" />
                         {fmtHora(r.retorno_em)}
                       </span>
                     </div>
@@ -482,35 +533,35 @@ function RetornoAsLojas() {
                   {/* Resposta/Observação de Compras */}
                   {r.management_observation ? (
                     <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-2.5 text-sky-950 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-200">
-                      <div className="flex items-center gap-1 font-semibold text-[11px] text-sky-800 dark:text-sky-300 mb-1">
+                      <div className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-sky-800 dark:text-sky-300">
                         <MessageSquare className="h-3.5 w-3.5" /> Resposta de
                         Compras:
                       </div>
-                      <p className="text-xs leading-relaxed font-normal whitespace-pre-wrap">
+                      <p className="whitespace-pre-wrap text-xs font-normal leading-relaxed">
                         {r.management_observation}
                       </p>
                     </div>
                   ) : (
-                    <div className="text-[11px] text-muted-foreground italic px-1 gap-1 flex items-center">
-                      <MessageSquare className="h-3 w-3 opacity-50"/> Sem observações adicionais gravadas.
+                    <div className="flex items-center gap-1 px-1 text-[11px] italic text-muted-foreground">
+                      <MessageSquare className="h-3 w-3 opacity-50" /> Sem observações adicionais gravadas.
                     </div>
                   )}
                 </CardContent>
 
-                <CardFooter className="pt-3 pb-3 border-t border-border/60 bg-muted/10 flex items-center gap-2 justify-between">
-                   <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void handleAbrirHistorico(r)}
-                      className="h-9 shrink-0 shadow-sm text-xs border-muted-foreground/30 hover:border-muted-foreground/50"
-                   >
-                      <History className="h-3.5 w-3.5 mr-1.5 opacity-70" />
-                      Histórico
-                   </Button>
+                <CardFooter className="flex flex-col items-stretch gap-2 border-t border-border/60 bg-muted/10 pb-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleAbrirHistorico(r)}
+                    className="h-11 w-full shrink-0 border-muted-foreground/30 text-xs shadow-sm hover:border-muted-foreground/50 sm:h-9 sm:w-auto"
+                  >
+                    <History className="mr-1.5 h-3.5 w-3.5 opacity-70" />
+                    Histórico
+                  </Button>
 
                   {isCiente ? (
-                    <div className="flex-1 flex items-center gap-1.5 text-xs text-emerald-700 font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-2.5 py-1.5 rounded-md min-w-0">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                       <span className="truncate">
                         Ciente em {fmtHora(r.ciente_at)}
                       </span>
@@ -519,7 +570,7 @@ function RetornoAsLojas() {
                     <Button
                       variant="default"
                       size="sm"
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs h-9 shadow-sm"
+                      className="h-11 w-full flex-1 bg-emerald-600 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 sm:h-9"
                       disabled={marcandoId === r.id}
                       onClick={() => void handleMarcarCiente(r.id)}
                     >
@@ -548,7 +599,7 @@ function RetornoAsLojas() {
         open={!!modalHistBase}
         onOpenChange={(open) => !open && setModalHistBase(null)}
       >
-        <DialogContent className="sm:max-w-[550px] bg-background">
+        <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] overflow-y-auto bg-background sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <History className="h-5 w-5 text-primary" />
@@ -565,20 +616,20 @@ function RetornoAsLojas() {
           </DialogHeader>
 
           <div className="mt-2 space-y-4">
-            <div className="relative border-l-2 border-border/60 ml-3 pl-5 space-y-6 max-h-[50vh] overflow-y-auto pr-2 py-1">
+            <div className="relative ml-3 max-h-[55dvh] space-y-6 overflow-y-auto border-l-2 border-border/60 py-1 pl-5 pr-2">
               {loadingHist ? (
-                <div className="flex items-center gap-2 text-sm text-primary py-4">
+                <div className="flex items-center gap-2 py-4 text-sm text-primary">
                   <Loader2 className="h-4 w-4 animate-spin" /> Carregando registro...
                 </div>
               ) : historico.length === 0 ? (
-                <div className="text-sm text-muted-foreground py-4 italic">
+                <div className="py-4 text-sm italic text-muted-foreground">
                   Nenhum evento registrado no histórico para esta falta.
                 </div>
               ) : (
                 historico.map((h) => (
                   <div key={h.id} className="relative">
-                    <span className="absolute -left-[27px] top-1.5 h-3 w-3 rounded-full bg-primary/20 ring-4 ring-background border-2 border-primary" />
-                    <div className="flex items-center gap-2 mb-1.5">
+                    <span className="absolute -left-[27px] top-1.5 h-3 w-3 rounded-full border-2 border-primary bg-primary/20 ring-4 ring-background" />
+                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
                       <span className="text-sm font-bold text-foreground">
                         {h.changed_by_name || "Sistema"}
                       </span>
@@ -587,28 +638,28 @@ function RetornoAsLojas() {
                       </span>
                     </div>
                     {h.status_anterior !== h.status_novo && (
-                      <div className="flex items-center gap-1.5 flex-wrap my-1.5">
+                      <div className="my-1.5 flex flex-wrap items-center gap-1.5">
                         {h.status_anterior && (
                           <Badge
                             variant="outline"
-                            className="text-[10px] bg-muted/40 text-muted-foreground line-through opacity-70 px-1.5 py-0 uppercase border-[0.5px]"
+                            className="border-[0.5px] bg-muted/40 px-1.5 py-0 text-[10px] uppercase text-muted-foreground line-through opacity-70"
                           >
                             {h.status_anterior}
                           </Badge>
                         )}
-                        <span className="text-muted-foreground/50 text-[10px]">
+                        <span className="text-[10px] text-muted-foreground/50">
                           →
                         </span>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] font-semibold shadow-sm px-1.5 py-0 uppercase ${visualDe(h.status_novo).classe}`}
+                          className={`px-1.5 py-0 text-[10px] font-semibold uppercase shadow-sm ${visualDe(h.status_novo).classe}`}
                         >
                           {visualDe(h.status_novo).emoji} {h.status_novo}
                         </Badge>
                       </div>
                     )}
                     {h.observation && (
-                      <div className="mt-2 rounded bg-muted/30 px-3 py-2 text-[13px] leading-relaxed text-muted-foreground border border-border/40">
+                      <div className="mt-2 rounded border border-border/40 bg-muted/30 px-3 py-2 text-[13px] leading-relaxed text-muted-foreground">
                         {h.observation}
                       </div>
                     )}

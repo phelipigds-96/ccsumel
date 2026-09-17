@@ -507,18 +507,34 @@ export async function listRetornoLojas(opts: { loja?: string | null } = {}) {
   const prazo = await getPrazoRetornoDias();
   const limite = new Date(Date.now() - prazo * 24 * 60 * 60 * 1000).toISOString();
 
-  let q = table()
-    .select("*, produto:produtos(id, descricao, codigo, gtin)")
-    .neq("status", "Pendente")
-    .gte("retorno_em", limite)
-    .order("retorno_em", { ascending: false })
-    .limit(300);
+  const baseQuery = () =>
+    table()
+      .select("*, produto:produtos(id, descricao, codigo, gtin)")
+      .neq("status", "Pendente");
 
-  if (opts.loja) q = q.eq("store_id", opts.loja);
+  // Não confirmados: ficam visíveis até `prazo` dias contados da tratativa (retorno_em).
+  let qNaoCientes = baseQuery().is("ciente_at", null).gte("retorno_em", limite);
+  if (opts.loja) qNaoCientes = qNaoCientes.eq("store_id", opts.loja);
 
-  const { data, error } = await q;
-  if (error) throw error;
-  const rows = (data ?? []) as unknown as RetornoLoja[];
+  // Já marcados como Ciente: ficam visíveis até `prazo` dias contados da confirmação (ciente_at).
+  let qCientes = baseQuery().not("ciente_at", "is", null).gte("ciente_at", limite);
+  if (opts.loja) qCientes = qCientes.eq("store_id", opts.loja);
+
+  const [naoCientesRes, cientesRes] = await Promise.all([
+    qNaoCientes.order("retorno_em", { ascending: false }).limit(300),
+    qCientes.order("retorno_em", { ascending: false }).limit(300),
+  ]);
+  if (naoCientesRes.error) throw naoCientesRes.error;
+  if (cientesRes.error) throw cientesRes.error;
+
+  const rows = (
+    [...(naoCientesRes.data ?? []), ...(cientesRes.data ?? [])] as unknown as RetornoLoja[]
+  )
+    .sort(
+      (a, b) =>
+        new Date(b.retorno_em ?? 0).getTime() - new Date(a.retorno_em ?? 0).getTime(),
+    )
+    .slice(0, 300);
 
   if (rows.length > 0) {
     const ids = rows.map((r) => r.id);
