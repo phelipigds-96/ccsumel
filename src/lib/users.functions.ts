@@ -88,7 +88,7 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
       const username = data.username.trim().toLowerCase();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-      const attrs: Record<string, unknown> = { email: usernameToEmail(username) };
+      const attrs: Record<string, unknown> = { email: usernameToEmail(username), email_confirm: true };
       if (data.password) {
         if (data.password.length < 6) throw new Error("A senha deve ter ao menos 6 caracteres.");
         attrs.password = data.password;
@@ -98,6 +98,23 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
         throw new Error(
           /already/i.test(ae.message) ? "Já existe um usuário com esse login." : ae.message,
         );
+      }
+
+      if (!data.isAdmin) {
+        const { data: currentRole } = await (supabaseAdmin as any)
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.id)
+          .maybeSingle();
+        if (currentRole?.role === "admin") {
+          const { count } = await (supabaseAdmin as any)
+            .from("user_roles")
+            .select("user_id", { count: "exact", head: true })
+            .eq("role", "admin");
+          if ((count ?? 0) <= 1) {
+            throw new Error("Não é possível remover os privilégios do único administrador.");
+          }
+        }
       }
 
       const { error: pe } = await (supabaseAdmin as any)
