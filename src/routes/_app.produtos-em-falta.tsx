@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { SolicitacaoNovoProdutoDialog } from "@/components/solicitacao-novo-produto-dialog";
 import type { Produto } from "@/lib/produtos";
 import {
   createFalta,
@@ -96,6 +97,7 @@ function ProdutosEmFaltaPage() {
   }, [lojaFixa]);
   const [saving, setSaving] = useState(false);
   const [erroNome, setErroNome] = useState(false);
+  const [solicitarAberto, setSolicitarAberto] = useState(false);
 
   const [confirmacao, setConfirmacao] = useState<{
     produto: string;
@@ -496,7 +498,27 @@ function ProdutosEmFaltaPage() {
           <Loader2 className="h-4 w-4 animate-spin" /> Pesquisando…
         </p>
       ) : resultados.length === 0 ? (
-        <p className="mt-6 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</p>
+        <div className="mt-6 rounded-2xl border border-dashed border-border bg-card p-6 text-center">
+          <p className="text-sm font-semibold text-foreground">Nenhum produto encontrado.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Se o produto ainda não existe no catálogo, você pode pedir o cadastro para a equipe de Compras.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 h-12 w-full text-sm font-semibold"
+            onClick={() => setSolicitarAberto(true)}
+          >
+            Não encontrou o produto? + Solicitar novo produto
+          </Button>
+          <SolicitacaoNovoProdutoDialog
+            open={solicitarAberto}
+            onOpenChange={setSolicitarAberto}
+            loja={lojaFixa ?? loja}
+            nomePadrao={nome}
+            termoBusca={search}
+          />
+        </div>
       ) : (
         <ul className="mt-4 divide-y divide-border/70 overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
           {resultados.map((p) => {

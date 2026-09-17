@@ -21,6 +21,7 @@ import {
   Scale,
   ShoppingBasket,
   PackageCheck,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sidebar,
@@ -46,6 +47,8 @@ type Item = {
   url: string;
   icon: typeof LayoutDashboard;
   children?: { title: string; url: string; icon: typeof LayoutDashboard }[];
+  /** Visível também para administradores, mesmo sem a permissão explícita. */
+  adminAlways?: boolean;
 };
 
 const items: Item[] = [
@@ -61,6 +64,12 @@ const items: Item[] = [
   { title: "Produtos em Falta", url: "/produtos-em-falta", icon: ShoppingBasket },
   { title: "Central de Produtos em Falta", url: "/central-produtos-em-falta", icon: ShoppingBasket },
   { title: "Retorno às Lojas", url: "/retorno-as-lojas", icon: PackageCheck },
+  {
+    title: "Solicitações de Novos Produtos",
+    url: "/solicitacoes-produtos",
+    icon: ClipboardList,
+    adminAlways: true,
+  },
   { title: "Catálogo de Produtos", url: "/catalogo-de-produtos", icon: Package },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Usuários", url: "/usuarios", icon: Users },
@@ -78,7 +87,8 @@ export function AppSidebar() {
   const visibleItems = items
     .map((item) => {
       const filteredChildren = item.children?.filter((c) => allowed.has(c.url));
-      const parentAllowed = allowed.has(item.url);
+      const parentAllowed =
+        allowed.has(item.url) || (item.adminAlways === true && !!user?.isAdmin);
       // Show the parent if it's allowed OR any of its children are allowed.
       if (!parentAllowed && !(filteredChildren && filteredChildren.length > 0)) return null;
       return { ...item, children: filteredChildren };
