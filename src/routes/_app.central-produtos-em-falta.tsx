@@ -560,25 +560,41 @@ function CentralProdutosEmFalta() {
           {aberto && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-left leading-snug">{aberto.produtoNome}</DialogTitle>
+                <DialogTitle className="text-left leading-snug">Detalhes da solicitação</DialogTitle>
               </DialogHeader>
 
-              <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-muted/40 p-3 text-sm sm:grid-cols-4">
+              <div className="grid gap-3 rounded-lg border border-border bg-muted/40 p-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                <div className="col-span-full">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Produto</p>
+                  <p className="font-semibold text-base">{aberto.produtoNome}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">EAN / Código</p>
+                  <p className="font-semibold">{aberto.produtoInfo || "—"}</p>
+                </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Loja</p>
                   <p className="font-semibold">{aberto.loja}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Apontamentos</p>
-                  <p className="font-semibold">{aberto.total}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Situação atual</p>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Status atual</p>
                   <p className="font-semibold">{aberto.status}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Produto</p>
-                  <p className="font-semibold">{aberto.produtoInfo || "—"}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Colaborador (recente)</p>
+                  <p className="font-semibold">{aberto.ultimo.reported_by_name}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Data e hora (recente)</p>
+                  <p className="font-semibold">
+                    {new Date(aberto.ultimo.reported_at).toLocaleString("pt-BR", {
+                      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total de apontamentos</p>
+                  <p className="font-semibold">{aberto.total}</p>
                 </div>
               </div>
 
