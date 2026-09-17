@@ -28,16 +28,25 @@ function fail(err: unknown, fallback: string): { ok: false; error: string } {
   return { ok: false, error: message };
 }
 
+function unwrapInput<T>(input: any): T {
+  if (input && typeof input === "object" && "data" in input && input.data) {
+    return input.data as T;
+  }
+  return input as T;
+}
+
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: UpsertInput) => input)
+  .inputValidator((input: any) => unwrapInput<UpsertInput>(input))
   .handler(async ({ data, context }): Promise<Result<{ id: string }>> => {
     try {
       await assertAdmin(context as any);
       if (!data.password || data.password.length < 6) {
         throw new Error("A senha deve ter ao menos 6 caracteres.");
       }
-      const username = data.username.trim().toLowerCase();
+      const username = (data.username ?? "").trim().toLowerCase();
+      if (!username) throw new Error("Informe o nome de usuário (login).");
+
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
@@ -60,8 +69,8 @@ export const adminCreateUser = createServerFn({ method: "POST" })
         username,
         status: data.status,
         notes: data.notes ?? "",
-        permissions: data.permissions,
-        read_only: data.readOnly,
+        permissions: data.permissions ?? [],
+        read_only: !!data.readOnly,
       });
       if (pe) {
         await supabaseAdmin.auth.admin.deleteUser(id);
@@ -69,9 +78,15 @@ export const adminCreateUser = createServerFn({ method: "POST" })
           pe.code === "23505" ? "Já existe um usuário com esse login." : pe.message,
         );
       }
-      await (supabaseAdmin as any)
+
+      const { error: re } = await (supabaseAdmin as any)
         .from("user_roles")
         .insert({ user_id: id, role: data.isAdmin ? "admin" : "user" });
+      if (re) {
+        await (supabaseAdmin as any).from("profiles").delete().eq("id", id);
+        await supabaseAdmin.auth.admin.deleteUser(id);
+        throw new Error(re.message);
+      }
 
       return { ok: true, data: { id } };
     } catch (err) {
@@ -81,7 +96,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
 
 export const adminUpdateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: UpsertInput & { id: string }) => input)
+  .inputValidator((input: any) => unwrapInput<UpsertInput & { id: string }>(input))
   .handler(async ({ data, context }): Promise<Result<{ id: string }>> => {
     try {
       await assertAdmin(context as any);
@@ -95,13 +110,11 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-      // 1) O usuário precisa existir no auth antes de qualquer alteração.
       const { data: existing, error: ge } = await supabaseAdmin.auth.admin.getUserById(data.id);
       if (ge || !existing?.user) {
         throw new Error("Usuário não encontrado no sistema de autenticação.");
       }
 
-      // 2) Validações antes de mutar qualquer coisa.
       const { data: currentRole } = await (supabaseAdmin as any)
         .from("user_roles")
         .select("role")
@@ -117,7 +130,6 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
         }
       }
 
-      // 3) Login e senha: envia ao auth apenas o que realmente mudou.
       const nextEmail = usernameToEmail(username);
       const currentEmail = (existing.user.email ?? "").toLowerCase();
       const authAttrs: Record<string, unknown> = {};
@@ -141,14 +153,13 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
         }
       }
 
-      // 4) Perfil: confirma que a linha realmente foi gravada.
       const profile = {
         name: data.name,
         username,
         status: data.status,
         notes: data.notes ?? "",
         permissions: data.permissions ?? [],
-        read_only: data.readOnly,
+        read_only: !!data.readOnly,
       };
       const { data: updated, error: ue } = await (supabaseAdmin as any)
         .from("profiles")
@@ -167,7 +178,6 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
         }
       }
 
-      // 5) Perfil de acesso: atualiza sem apagar antes, para não deixar o usuário sem role.
       const nextRole = data.isAdmin ? "admin" : "user";
       if (currentRole?.role !== nextRole) {
         const { data: roleRows, error: rpe } = await (supabaseAdmin as any)
@@ -196,7 +206,7 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
 
 export const adminDeleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => input)
+  .inputValidator((input: any) => unwrapInput<{ id: string }>(input))
   .handler(async ({ data, context }): Promise<Result<{ id: string }>> => {
     try {
       await assertAdmin(context as any);
