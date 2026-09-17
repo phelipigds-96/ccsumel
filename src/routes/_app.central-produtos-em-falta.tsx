@@ -573,6 +573,17 @@ function CentralProdutosEmFalta() {
                   <p className="font-semibold">{aberto.produtoInfo || "—"}</p>
                 </div>
                 <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Fornecedor</p>
+                  <p className="font-semibold truncate" title={aberto.ultimo.produto?.fornecedor}>{aberto.ultimo.produto?.fornecedor || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Custo / Preço de Venda</p>
+                  <p className="font-semibold">
+                    {aberto.ultimo.produto?.custo ? aberto.ultimo.produto.custo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"} /{" "}
+                    {aberto.ultimo.produto?.preco_venda ? aberto.ultimo.produto.preco_venda.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"}
+                  </p>
+                </div>
+                <div>
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Loja</p>
                   <p className="font-semibold">{aberto.loja}</p>
                 </div>
@@ -590,6 +601,16 @@ function CentralProdutosEmFalta() {
                     {new Date(aberto.ultimo.reported_at).toLocaleString("pt-BR", {
                       day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
                     })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Data do Pedido</p>
+                  <p className="font-semibold">
+                    {aberto.ultimo.pedido_realizado_em
+                      ? new Date(aberto.ultimo.pedido_realizado_em).toLocaleString("pt-BR", {
+                          day: "2-digit", month: "2-digit", year: "numeric"
+                        })
+                      : "—"}
                   </p>
                 </div>
                 <div>

@@ -55,9 +55,10 @@ export interface ProdutoEmFalta {
   management_observation: string;
   managed_by: string | null;
   managed_at: string | null;
+  pedido_realizado_em: string | null;
   created_at: string;
   updated_at: string;
-  produto?: { id: string; descricao: string; codigo: string | null; gtin: string | null } | null;
+  produto?: { id: string; descricao: string; codigo: string | null; gtin: string | null; fornecedor: string; custo: number; preco_venda: number } | null;
 }
 
 export interface FaltaHistorico {
@@ -86,7 +87,7 @@ const historicoTable = () => supabase.from("produtos_em_falta_historico" as any)
 
 export async function listFaltas(opts: { status?: FaltaStatus | "todos"; loja?: string; busca?: string } = {}) {
   let q = table()
-    .select("*, produto:produtos(id, descricao, codigo, gtin)")
+    .select("*, produto:produtos(id, descricao, codigo, gtin, fornecedor, custo, preco_venda)")
     .order("reported_at", { ascending: false })
     .limit(300);
 
