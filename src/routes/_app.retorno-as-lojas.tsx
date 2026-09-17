@@ -445,10 +445,15 @@ function RetornoAsLojas() {
                 }`}
               >
                 {!isCiente && (
-                  <span className="absolute right-0 top-0 flex h-3 w-3 -translate-x-3 translate-y-3">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500 shadow-sm"></span>
-                  </span>
+                  <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex h-full w-full rounded-full bg-amber-500"></span>
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400">
+                      Novo
+                    </span>
+                  </div>
                 )}
 
                 <CardHeader className="space-y-2 pb-3">
