@@ -216,6 +216,30 @@ export interface ProdutoBloqueio {
 
 const bloqueiosTable = () => supabase.from("produto_bloqueios" as any);
 
+export async function listFaltasPendentes(productIds: string[], loja: string) {
+  const set = new Set<string>();
+  if (productIds.length === 0 || !loja) return set;
+  const { data, error } = await table()
+    .select("product_id")
+    .in("product_id", productIds)
+    .eq("store_id", loja)
+    .eq("status", "Pendente");
+  if (error) throw error;
+  for (const r of (data ?? []) as any[]) set.add(r.product_id);
+  return set;
+}
+
+export async function checkFaltaPendente(productId: string, loja: string) {
+  const { data, error } = await table()
+    .select("id")
+    .eq("product_id", productId)
+    .eq("store_id", loja)
+    .eq("status", "Pendente")
+    .maybeSingle();
+  if (error) throw error;
+  return data != null;
+}
+
 /** Bloqueios ativos para uma lista de produtos em uma loja (uso na pesquisa). */
 export async function listBloqueiosAtivos(productIds: string[], loja: string) {
   const map = new Map<string, ProdutoBloqueio>();

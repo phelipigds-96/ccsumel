@@ -21,6 +21,8 @@ import {
   getBloqueioAtivo,
   listBloqueiosAtivos,
   traduzErroLancamento,
+  listFaltasPendentes,
+  checkFaltaPendente,
   LOJAS,
   lojaDoUsuario,
   type ProdutoBloqueio,
@@ -80,7 +82,9 @@ function ProdutosEmFaltaPage() {
 
   const [produto, setProduto] = useState<Produto | null>(null);
   const [bloqueios, setBloqueios] = useState<Map<string, ProdutoBloqueio>>(new Map());
+  const [pendentes, setPendentes] = useState<Set<string>>(new Set());
   const [bloqueioRegistro, setBloqueioRegistro] = useState<ProdutoBloqueio | null>(null);
+  const [pendenteRegistro, setPendenteRegistro] = useState(false);
   const [checandoBloqueio, setChecandoBloqueio] = useState(false);
   const [nome, setNome] = useState("");
   const [obs, setObs] = useState("");
@@ -106,6 +110,7 @@ function ProdutosEmFaltaPage() {
     if (termo.length < 2) {
       setResultados([]);
       setBloqueios(new Map());
+      setPendentes(new Set());
       setBuscando(false);
       return;
     }
@@ -141,11 +146,20 @@ function ProdutosEmFaltaPage() {
           .slice(0, 60);
         setResultados(rows);
         try {
-          const bl = await listBloqueiosAtivos(
-            rows.map((p) => p.id),
-            loja,
-          );
-          if (id === reqId.current) setBloqueios(bl);
+          const [bl, pends] = await Promise.all([
+            listBloqueiosAtivos(
+              rows.map((p) => p.id),
+              loja,
+            ),
+            listFaltasPendentes(
+              rows.map((p) => p.id),
+              loja,
+            ),
+          ]);
+          if (id === reqId.current) {
+            setBloqueios(bl);
+            setPendentes(pends);
+          }
         } catch {
           /* pesquisa continua mesmo se a checagem de bloqueio falhar; o banco revalida ao salvar */
         }
@@ -162,11 +176,21 @@ function ProdutosEmFaltaPage() {
   const nomeRef = useRef<HTMLInputElement>(null);
 
   const selecionar = async (p: Produto) => {
-    const conhecido = bloqueios.get(p.id);
+    const conhecido = bloqueios.get(p.id) || pendentes.has(p.id);
     if (conhecido) return;
 
     setChecandoBloqueio(true);
     try {
+      const isPendente = await checkFaltaPendente(p.id, loja);
+      if (isPendente) {
+        setPendentes((atuais) => new Set(atuais).add(p.id));
+        toast.error("⚠️ PRODUTO JÁ SOLICITADO", {
+          description: "Este produto já possui uma solicitação pendente para esta loja.",
+          duration: 8000,
+        });
+        return;
+      }
+
       const bloqueioAtual = await getBloqueioAtivo(p.id, loja);
       if (bloqueioAtual) {
         setBloqueios((atuais) => new Map(atuais).set(p.id, bloqueioAtual));
@@ -178,13 +202,14 @@ function ProdutosEmFaltaPage() {
       }
       setProduto(p);
       setBloqueioRegistro(null);
+      setPendenteRegistro(false);
       setErroNome(false);
       setStep("registro");
       setTimeout(() => nomeRef.current?.focus(), 80);
     } catch {
-      // O gatilho do banco continua sendo a proteção final caso esta consulta falhe.
       setProduto(p);
       setBloqueioRegistro(null);
+      setPendenteRegistro(false);
       setErroNome(false);
       setStep("registro");
       setTimeout(() => nomeRef.current?.focus(), 80);
@@ -203,11 +228,24 @@ function ProdutosEmFaltaPage() {
     setSaving(true);
     try {
       let bloqueioAtual: ProdutoBloqueio | null = null;
+      let isPendente = false;
       try {
-        bloqueioAtual = await getBloqueioAtivo(produto.id, loja);
+        isPendente = await checkFaltaPendente(produto.id, loja);
+        if (!isPendente) bloqueioAtual = await getBloqueioAtivo(produto.id, loja);
       } catch {
-        // Se a consulta preventiva falhar, o gatilho do banco ainda valida o lançamento.
+        // Fallback para trigger do banco
       }
+
+      if (isPendente) {
+        setPendenteRegistro(true);
+        setPendentes((atuais) => new Set(atuais).add(produto.id));
+        toast.error("⚠️ PRODUTO JÁ SOLICITADO", {
+          description: "Este produto já possui uma solicitação pendente para esta loja.",
+          duration: 8000,
+        });
+        return;
+      }
+
       if (bloqueioAtual) {
         setBloqueioRegistro(bloqueioAtual);
         setBloqueios((atuais) => new Map(atuais).set(produto.id, bloqueioAtual));
@@ -233,7 +271,6 @@ function ProdutosEmFaltaPage() {
           description: msg,
           duration: 8000,
         });
-        // Volta à pesquisa para o colaborador ver o selo de bloqueio do produto
         setProduto(null);
         setStep("busca");
       } else {
@@ -247,6 +284,7 @@ function ProdutosEmFaltaPage() {
   const recomecar = () => {
     setProduto(null);
     setBloqueioRegistro(null);
+    setPendenteRegistro(false);
     setObs("");
     setSearch("");
     setResultados([]);
@@ -330,6 +368,21 @@ function ProdutosEmFaltaPage() {
           </div>
         )}
 
+        {pendenteRegistro && (
+          <div
+            role="alert"
+            className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4"
+          >
+            <p className="font-bold text-amber-600">⚠️ PRODUTO JÁ SOLICITADO</p>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              Produto: {produto.descricao}
+            </p>
+            <p className="mt-2 text-sm text-foreground">
+              Este produto já possui uma solicitação pendente para esta loja.
+            </p>
+          </div>
+        )}
+
         <div className="mt-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="pf-nome" className="text-sm font-semibold">
@@ -393,14 +446,16 @@ function ProdutosEmFaltaPage() {
           <Button
             className="h-14 w-full text-base font-bold"
             onClick={registrar}
-            disabled={saving || checandoBloqueio || Boolean(bloqueioRegistro)}
+            disabled={saving || checandoBloqueio || Boolean(bloqueioRegistro) || pendenteRegistro}
           >
             {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-            {bloqueioRegistro
-              ? "PRODUTO BLOQUEADO"
-              : saving
-                ? "Registrando…"
-                : "🚨 REGISTRAR FALTA"}
+            {pendenteRegistro
+              ? "JÁ SOLICITADO"
+              : bloqueioRegistro
+                ? "PRODUTO BLOQUEADO"
+                : saving
+                  ? "Registrando…"
+                  : "🚨 REGISTRAR FALTA"}
           </Button>
         </div>
       </div>
@@ -464,6 +519,33 @@ function ProdutosEmFaltaPage() {
                         Bloqueio permanente definido por Compras.
                       </span>
                     )}
+                  </Button>
+                </li>
+              );
+            }
+            const pendente = pendentes.has(p.id);
+            if (pendente) {
+              return (
+                <li key={p.id} className="bg-amber-500/10">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled
+                    className="h-auto w-full cursor-not-allowed flex-col items-start rounded-none px-4 py-3 text-left opacity-100"
+                    aria-label={`${p.descricao}, produto já solicitado`}
+                  >
+                    <span className="block max-w-full truncate text-sm font-semibold text-muted-foreground">
+                      {p.descricao}
+                    </span>
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {p.codigo ? `Cód. ${p.codigo}` : (p.gtin ?? "")}
+                    </span>
+                    <span className="mt-1.5 whitespace-normal text-[11px] font-bold text-amber-600">
+                      ⚠️ PRODUTO JÁ SOLICITADO
+                    </span>
+                    <span className="mt-0.5 whitespace-normal text-[11px] font-normal text-muted-foreground">
+                      Este produto já possui uma solicitação pendente para esta loja.
+                    </span>
                   </Button>
                 </li>
               );
