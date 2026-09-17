@@ -210,25 +210,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUser: AuthContextValue["updateUser"] = async (id, patch) => {
-    const current = users.find((x) => x.id === id);
-    if (!current) throw new Error("Usuário não encontrado.");
+    // BUG CORRIGIDO: antes, a função abortava com "Usuário não encontrado." sempre
+    // que o id não estava no state `users` — lista vazia ou desatualizada, o que
+    // acontece quando o refresh inicial falha em silêncio (RLS / não-admin) ou é
+    // recarregado depois de um logout/login. Como o backend exige o registro
+    // completo (name, username, status, permissions, isAdmin, readOnly), a edição
+    // nunca chegava a ser enviada e nada era salvo.
+    // Agora buscamos a versão mais recente do usuário direto do banco antes de
+    // montar o payload, mesclamos com o patch do formulário e só então chamamos
+    // a server function de atualização.
+    let current = users.find((x) => x.id === id);
+    if (!current) {
+      try {
+        const fresh = await fetchUsers();
+        setUsers(fresh);
+        current = fresh.find((x) => x.id === id);
+      } catch (err) {
+        console.error("[auth.updateUser] não foi possível recarregar a lista de usuários", err);
+      }
+    }
+
+    const name = (patch.name ?? current?.name ?? "").trim();
+    const username = (patch.username ?? current?.username ?? "").trim().toLowerCase();
+    if (!name) throw new Error("Informe o nome.");
+    if (!username) {
+      throw new Error(
+        "Não foi possível identificar o usuário a ser atualizado. Recarregue a página e tente novamente.",
+      );
+    }
+
     const res = await adminUpdateUser({
       data: {
         id,
-        name: patch.name ?? current.name,
-        username: patch.username ?? current.username,
+        name,
+        username,
         password: patch.password || undefined,
-        status: patch.status ?? current.status,
-        notes: patch.notes ?? current.notes ?? "",
-        permissions: patch.permissions ?? current.permissions,
-        isAdmin: patch.isAdmin ?? !!current.isAdmin,
-        readOnly: patch.readOnly ?? !!current.readOnly,
+        status: patch.status ?? current?.status ?? "ativo",
+        notes: patch.notes ?? current?.notes ?? "",
+        permissions: patch.permissions ?? current?.permissions ?? [],
+        isAdmin: patch.isAdmin ?? !!current?.isAdmin,
+        readOnly: patch.readOnly ?? !!current?.readOnly,
       },
     });
     unwrap(res, "Não foi possível salvar o usuário.");
+
+    // Só recarregamos depois da confirmação do backend.
     await refresh();
+
     if (user && user.id === id) {
       const session = await loadSessionUser(id);
+      if (!session) {
+        // O próprio usuário logado ficou inativo ou sem perfil: encerra a sessão.
+        await supabase.auth.signOut();
+        setUser(null);
+        setUsers([]);
+        return;
+      }
       setUser(session);
     }
   };
