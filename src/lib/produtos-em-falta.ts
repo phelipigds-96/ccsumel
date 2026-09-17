@@ -185,6 +185,53 @@ export async function updateFaltaStatus(input: {
     observation: input.observation?.trim() ?? "",
   });
   if (histError) throw histError;
+
+  // Insere gatilho de bloqueio permanente para o status descontinuado
+  if (input.status === "Produto descontinuado") {
+    const { data: falta } = await table().select("product_id, store_id").eq("id", input.id).maybeSingle();
+    if (falta) {
+      const bloqTable = supabase.from("produto_bloqueios" as any);
+      const { data: bloq } = await bloqTable.select("id, status").eq("product_id", falta.product_id).eq("store_id", falta.store_id).eq("ativo", true).maybeSingle();
+      
+      if (!bloq || bloq.status !== "Produto descontinuado") {
+        let bpId = bloq?.id;
+        if (bloq) {
+          await bloqTable.update({
+            status: "Produto descontinuado", 
+            permanente: true, 
+            motivo: "Tratativa: Produto descontinuado", 
+            falta_id: input.id, 
+            tratado_em: new Date().toISOString() 
+          }).eq("id", bloq.id);
+        } else {
+          const { data: novo } = await bloqTable.insert({
+            product_id: falta.product_id, 
+            store_id: falta.store_id, 
+            status: "Produto descontinuado", 
+            permanente: true, 
+            ativo: true, 
+            motivo: "Tratativa: Produto descontinuado", 
+            falta_id: input.id, 
+            tratado_em: new Date().toISOString() 
+          }).select("id").single();
+          bpId = novo?.id;
+        }
+
+        await supabase.from("produto_bloqueios_historico" as any).insert({
+          bloqueio_id: bpId || null,
+          product_id: falta.product_id,
+          store_id: falta.store_id,
+          status_anterior: bloq ? bloq.status : null,
+          status_novo: "Produto descontinuado",
+          ativo_anterior: bloq ? true : null,
+          ativo_novo: true,
+          changed_by: user?.id ?? null,
+          changed_by_name: input.changed_by_name,
+          motivo: "Tratativa: Produto descontinuado"
+        });
+      }
+    }
+  }
 }
 
 export async function listHistoricoMany(faltaIds: string[]): Promise<FaltaHistorico[]> {
