@@ -31,7 +31,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 function createSupabaseAdminClient() {
   const getEnv = (key: string) => typeof process !== 'undefined' && process.env ? process.env[key] : undefined;
-  const SUPABASE_URL = getEnv('SUPABASE_URL') || getEnv('VITE_SUPABASE_URL');
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY');
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
