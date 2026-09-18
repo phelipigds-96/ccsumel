@@ -186,15 +186,16 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const [fStatus, setFStatus] = useState("todos");
 
   // Visualização e Ordenação
-  const { visible: viewPrefs, toggle: toggleView } = useColumnPrefs("campanhas.list", ["grid", "list"], { grid: true, list: false });
-  const viewMode = viewPrefs.grid ? "grid" : "list";
+  const [viewMode, setViewModeLocal] = useState<"grid" | "list">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("campanhas.viewMode") as "grid" | "list") || "grid";
+    }
+    return "grid";
+  });
   const setViewMode = (mode: "grid" | "list") => {
-    if (mode === "grid" && !viewPrefs.grid) {
-      toggleView("grid");
-      toggleView("list");
-    } else if (mode === "list" && !viewPrefs.list) {
-      toggleView("list");
-      toggleView("grid");
+    setViewModeLocal(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("campanhas.viewMode", mode);
     }
   };
 
