@@ -185,11 +185,13 @@ export async function updateFaltaStatus(input: {
   if (histError) throw histError;
 
   if (input.status === "Produto descontinuado") {
-    const { data: falta } = await table().select("product_id, store_id").eq("id", input.id).maybeSingle();
+    const { data: faltaData } = await table().select("product_id, store_id").eq("id", input.id).maybeSingle();
+    const falta = faltaData as unknown as { product_id: string; store_id: string } | null;
     if (falta) {
       const bloqTable = supabase.from("produto_bloqueios" as any);
-      const { data: bloq } = await bloqTable.select("id, status").eq("product_id", falta.product_id).eq("store_id", falta.store_id).eq("ativo", true).maybeSingle();
-      
+      const { data: bloqData } = await bloqTable.select("id, status").eq("product_id", falta.product_id).eq("store_id", falta.store_id).eq("ativo", true).maybeSingle();
+      const bloq = bloqData as unknown as { id: string; status: string } | null;
+
       if (!bloq || bloq.status !== "Produto descontinuado") {
         let bpId = bloq?.id;
         if (bloq) {
