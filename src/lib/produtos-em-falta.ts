@@ -480,6 +480,56 @@ export interface RetornoLoja extends ProdutoEmFalta {
   responsavel_nome?: string;
 }
 
+export interface RetornoLojaGrupo extends RetornoLoja {
+  grupoId: string;
+  faltaIds: string[];
+  faltaIdsNaoCientes: string[];
+  apontamentos: RetornoLoja[];
+  quantidade: number;
+  primeiro_apontamento_em: string;
+  ultimo_apontamento_em: string;
+}
+
+export function agruparRetornos(rows: RetornoLoja[]): RetornoLojaGrupo[] {
+  const grupos = new Map<string, RetornoLoja[]>();
+  for (const row of rows) {
+    const key = JSON.stringify([row.product_id, row.store_id]);
+    const grupo = grupos.get(key) ?? [];
+    if (!grupo.some((r) => r.id === row.id)) grupo.push(row);
+    grupos.set(key, grupo);
+  }
+  return Array.from(grupos, ([grupoId, apontamentos]) => {
+    apontamentos.sort((a, b) =>
+      new Date(b.retorno_em ?? 0).getTime() - new Date(a.retorno_em ?? 0).getTime() || a.id.localeCompare(b.id));
+    const recente = apontamentos[0];
+    const datas = apontamentos.map((r) => r.reported_at).sort();
+    const faltaIdsNaoCientes = apontamentos.filter((r) => !r.ciente_at).map((r) => r.id);
+    const ultimaConfirmacao = [...apontamentos].sort((a, b) =>
+      new Date(b.ciente_at ?? 0).getTime() - new Date(a.ciente_at ?? 0).getTime())[0];
+    return {
+      ...recente,
+      grupoId,
+      apontamentos,
+      faltaIds: apontamentos.map((r) => r.id),
+      faltaIdsNaoCientes,
+      quantidade: apontamentos.length,
+      primeiro_apontamento_em: datas[0],
+      ultimo_apontamento_em: datas[datas.length - 1],
+      ciente_at: faltaIdsNaoCientes.length ? null : ultimaConfirmacao.ciente_at,
+      ciente_by: faltaIdsNaoCientes.length ? null : ultimaConfirmacao.ciente_by,
+      ciente_by_name: faltaIdsNaoCientes.length ? "" : ultimaConfirmacao.ciente_by_name,
+    };
+  });
+}
+
+export async function marcarGrupoCiente(grupo: RetornoLojaGrupo, nome: string) {
+  const resultados = await Promise.allSettled(
+    grupo.faltaIdsNaoCientes.map((id) => marcarCiente(id, nome)),
+  );
+  const falha = resultados.find((r) => r.status === "rejected");
+  if (falha?.status === "rejected") throw falha.reason;
+}
+
 export async function getPrazoRetornoDias(): Promise<number> {
   const { data } = await supabase
     .from("app_settings" as any)
@@ -558,7 +608,7 @@ export async function listRetornoLojas(opts: { loja?: string | null } = {}) {
     }
   }
 
-  return { prazo, rows };
+  return { prazo, rows: agruparRetornos(rows) };
 }
 
 export async function contarRetornosNaoCientes(loja?: string | null) {
