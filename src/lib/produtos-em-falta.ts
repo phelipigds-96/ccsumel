@@ -213,7 +213,7 @@ export async function updateFaltaStatus(input: {
             falta_id: input.id, 
             tratado_em: new Date().toISOString() 
           }).select("id").single();
-          bpId = novo?.id;
+          bpId = (novoData as unknown as { id: string } | null)?.id;
         }
 
         await supabase.from("produto_bloqueios_historico" as any).insert({
