@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVerbasCooperadasRouteImport } from './routes/_app.verbas-cooperadas'
 import { Route as AppUsuariosRouteImport } from './routes/_app.usuarios'
+import { Route as AppSolicitacoesProdutosRouteImport } from './routes/_app.solicitacoes-produtos'
 import { Route as AppSellOutRouteImport } from './routes/_app.sell-out'
 import { Route as AppRetornoAsLojasRouteImport } from './routes/_app.retorno-as-lojas'
 import { Route as AppRelatoriosRouteImport } from './routes/_app.relatorios'
@@ -53,6 +54,11 @@ const AppVerbasCooperadasRoute = AppVerbasCooperadasRouteImport.update({
 const AppUsuariosRoute = AppUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSolicitacoesProdutosRoute = AppSolicitacoesProdutosRouteImport.update({
+  id: '/solicitacoes-produtos',
+  path: '/solicitacoes-produtos',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSellOutRoute = AppSellOutRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/relatorios': typeof AppRelatoriosRoute
   '/retorno-as-lojas': typeof AppRetornoAsLojasRoute
   '/sell-out': typeof AppSellOutRouteWithChildren
+  '/solicitacoes-produtos': typeof AppSolicitacoesProdutosRoute
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
   '/sell-out/acertos': typeof AppSellOutAcertosRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/produtos-em-falta': typeof AppProdutosEmFaltaRoute
   '/relatorios': typeof AppRelatoriosRoute
   '/retorno-as-lojas': typeof AppRetornoAsLojasRoute
+  '/solicitacoes-produtos': typeof AppSolicitacoesProdutosRoute
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
   '/sell-out/acertos': typeof AppSellOutAcertosRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/_app/relatorios': typeof AppRelatoriosRoute
   '/_app/retorno-as-lojas': typeof AppRetornoAsLojasRoute
   '/_app/sell-out': typeof AppSellOutRouteWithChildren
+  '/_app/solicitacoes-produtos': typeof AppSolicitacoesProdutosRoute
   '/_app/usuarios': typeof AppUsuariosRoute
   '/_app/verbas-cooperadas': typeof AppVerbasCooperadasRoute
   '/_app/sell-out/acertos': typeof AppSellOutAcertosRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/retorno-as-lojas'
     | '/sell-out'
+    | '/solicitacoes-produtos'
     | '/usuarios'
     | '/verbas-cooperadas'
     | '/sell-out/acertos'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/produtos-em-falta'
     | '/relatorios'
     | '/retorno-as-lojas'
+    | '/solicitacoes-produtos'
     | '/usuarios'
     | '/verbas-cooperadas'
     | '/sell-out/acertos'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/_app/relatorios'
     | '/_app/retorno-as-lojas'
     | '/_app/sell-out'
+    | '/_app/solicitacoes-produtos'
     | '/_app/usuarios'
     | '/_app/verbas-cooperadas'
     | '/_app/sell-out/acertos'
@@ -314,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof AppUsuariosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/solicitacoes-produtos': {
+      id: '/_app/solicitacoes-produtos'
+      path: '/solicitacoes-produtos'
+      fullPath: '/solicitacoes-produtos'
+      preLoaderRoute: typeof AppSolicitacoesProdutosRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/sell-out': {
@@ -460,6 +479,7 @@ interface AppRouteChildren {
   AppRelatoriosRoute: typeof AppRelatoriosRoute
   AppRetornoAsLojasRoute: typeof AppRetornoAsLojasRoute
   AppSellOutRoute: typeof AppSellOutRouteWithChildren
+  AppSolicitacoesProdutosRoute: typeof AppSolicitacoesProdutosRoute
   AppUsuariosRoute: typeof AppUsuariosRoute
   AppVerbasCooperadasRoute: typeof AppVerbasCooperadasRoute
 }
@@ -479,6 +499,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppRelatoriosRoute: AppRelatoriosRoute,
   AppRetornoAsLojasRoute: AppRetornoAsLojasRoute,
   AppSellOutRoute: AppSellOutRouteWithChildren,
+  AppSolicitacoesProdutosRoute: AppSolicitacoesProdutosRoute,
   AppUsuariosRoute: AppUsuariosRoute,
   AppVerbasCooperadasRoute: AppVerbasCooperadasRoute,
 }

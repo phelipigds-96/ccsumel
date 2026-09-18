@@ -732,6 +732,127 @@ export type Database = {
         }
         Relationships: []
       }
+      solicitacoes_novos_produtos: {
+        Row: {
+          categoria: string
+          created_at: string
+          gramagem_volume: string
+          gtin: string | null
+          id: string
+          managed_at: string | null
+          managed_by: string | null
+          management_observation: string | null
+          marca: string
+          motivo: string | null
+          nome: string
+          observacao: string | null
+          product_id: string | null
+          quantidade_solicitada: number
+          reported_at: string
+          reported_by_name: string
+          reported_by_user_id: string | null
+          status: string
+          store_id: string
+          updated_at: string
+          urgencia: string
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          gramagem_volume: string
+          gtin?: string | null
+          id?: string
+          managed_at?: string | null
+          managed_by?: string | null
+          management_observation?: string | null
+          marca: string
+          motivo?: string | null
+          nome: string
+          observacao?: string | null
+          product_id?: string | null
+          quantidade_solicitada?: number
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+          urgencia?: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          gramagem_volume?: string
+          gtin?: string | null
+          id?: string
+          managed_at?: string | null
+          managed_by?: string | null
+          management_observation?: string | null
+          marca?: string
+          motivo?: string | null
+          nome?: string
+          observacao?: string | null
+          product_id?: string | null
+          quantidade_solicitada?: number
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+          urgencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_novos_produtos_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solicitacoes_novos_produtos_historico: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string
+          created_at: string
+          id: string
+          observation: string | null
+          solicitacao_id: string
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string
+          created_at?: string
+          id?: string
+          observation?: string | null
+          solicitacao_id: string
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string
+          created_at?: string
+          id?: string
+          observation?: string | null
+          solicitacao_id?: string
+          status_anterior?: string | null
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_novos_produtos_historico_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacoes_novos_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -759,6 +880,7 @@ export type Database = {
     }
     Functions: {
       can_write: { Args: never; Returns: boolean }
+      check_is_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -766,6 +888,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
       is_read_only: { Args: { _user_id: string }; Returns: boolean }
       liberar_produto_bloqueado: {
         Args: { _bloqueio_id: string; _motivo?: string; _nome: string }
