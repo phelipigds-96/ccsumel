@@ -203,7 +203,7 @@ export async function updateFaltaStatus(input: {
             tratado_em: new Date().toISOString() 
           }).eq("id", bloq.id);
         } else {
-          const { data: novo } = await bloqTable.insert({
+          const { data: novoData } = await bloqTable.insert({
             product_id: falta.product_id, 
             store_id: falta.store_id, 
             status: "Produto descontinuado", 
