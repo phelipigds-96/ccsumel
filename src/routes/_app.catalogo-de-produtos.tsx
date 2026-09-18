@@ -20,6 +20,7 @@ import {
 } from "@/lib/produtos";
 import { parseProdutosCsv } from "@/lib/produtos-csv-parser";
 import { useAuth } from "@/lib/auth";
+import { TableSkeleton } from "@/components/table-skeleton";
 
 export const Route = createFileRoute("/_app/catalogo-de-produtos")({
   head: () => ({
@@ -270,11 +271,7 @@ function CatalogoProdutos() {
             </TableHeader>
             <TableBody>
               {loading && produtos.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    Carregando...
-                  </TableCell>
-                </TableRow>
+                <TableSkeleton columns={8} rows={5} />
               )}
               {!loading && produtos.length === 0 && (
                 <TableRow>

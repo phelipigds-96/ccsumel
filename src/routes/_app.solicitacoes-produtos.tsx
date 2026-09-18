@@ -4,6 +4,7 @@ import { Loader2, Plus, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -317,9 +318,11 @@ function SolicitacoesProdutosPage() {
       </div>
 
       {loading ? (
-        <p className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando solicitações…
-        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-xl" />
+          ))}
+        </div>
       ) : filtrados.length === 0 ? (
         <div className="mt-6 rounded-xl border border-dashed border-border bg-card p-10 text-center">
           <p className="text-sm font-semibold text-foreground">Nenhuma solicitação encontrada.</p>

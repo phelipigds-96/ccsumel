@@ -19,6 +19,7 @@ import {
   listFornecedores, upsertFornecedor, deleteFornecedor,
   type FornecedorComContagem,
 } from "@/lib/fornecedores";
+import { TableSkeleton } from "@/components/table-skeleton";
 
 export const Route = createFileRoute("/_app/fornecedores")({
   head: () => ({
@@ -143,6 +144,9 @@ function FornecedoresPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {loading && rows.length === 0 && (
+                <TableSkeleton columns={4} rows={5} />
+              )}
               {!loading && rows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
