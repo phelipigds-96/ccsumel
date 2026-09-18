@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2, FileText } from "lucide-react";
 import { gerarRelatorioSelloutPDF } from "@/components/sellout-report-generator";
+import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -103,19 +104,68 @@ function AcertosSellOut() {
     setQuantidades((prev) => ({ ...prev, [id]: v }));
   };
 
-  const salvar = (id: string) => {
+  const salvar = async (id: string) => {
     const qtd = getQtd(id);
+    const current = acertos[id];
+    
+    const { error } = await supabase.from('acertos').upsert({
+      oferta_id: id,
+      quantidade_vendida: qtd,
+      baixado: current?.baixado ?? false,
+      baixado_em: current?.baixadoEm ?? null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'oferta_id' });
+
+    if (error) {
+      console.error(error);
+      toast.error("Erro ao salvar no banco");
+      return;
+    }
+
     campanhasStore.setAcerto(id, qtd);
     toast.success("Acerto salvo", { description: `Quantidade registrada: ${qtd}` });
   };
 
-  const darBaixa = (id: string) => {
-    campanhasStore.setAcerto(id, getQtd(id));
+  const darBaixa = async (id: string) => {
+    const qtd = getQtd(id);
+    const baixadoEm = new Date().toISOString();
+
+    const { error } = await supabase.from('acertos').upsert({
+      oferta_id: id,
+      quantidade_vendida: qtd,
+      baixado: true,
+      baixado_em: baixadoEm,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'oferta_id' });
+
+    if (error) {
+      console.error(error);
+      toast.error("Erro ao dar baixa no banco");
+      return;
+    }
+
+    campanhasStore.setAcerto(id, qtd);
     campanhasStore.setBaixaAcerto(id, true);
     toast.success("Baixa registrada", { description: "O produto foi movido para o histórico de acertos." });
   };
 
-  const reabrir = (id: string) => {
+  const reabrir = async (id: string) => {
+    const qtd = getQtd(id);
+
+    const { error } = await supabase.from('acertos').upsert({
+      oferta_id: id,
+      quantidade_vendida: qtd,
+      baixado: false,
+      baixado_em: null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'oferta_id' });
+
+    if (error) {
+      console.error(error);
+      toast.error("Erro ao reabrir no banco");
+      return;
+    }
+
     campanhasStore.setBaixaAcerto(id, false);
     toast.success("Acerto reaberto", { description: "O produto voltou para os pendentes." });
   };
