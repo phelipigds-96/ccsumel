@@ -565,21 +565,14 @@ export async function contarRetornosNaoCientes(loja?: string | null) {
 }
 
 export async function marcarCiente(faltaId: string, nome: string) {
-  const user = await currentUser();
-  const payload = {
-    ciente_at: new Date().toISOString(),
-    ciente_by: user?.id ?? null,
-    ciente_by_name: nome,
-  };
-
-  const { error } = await table().update(payload).eq("id", faltaId);
-  if (error) {
-    const { error: rpcError } = await supabase.rpc("marcar_retorno_ciente" as any, {
-      _falta_id: faltaId,
-      _nome: nome,
-    });
-    if (rpcError) throw rpcError;
-  }
+  // Sempre via RPC SECURITY DEFINER: o update direto é filtrado silenciosamente
+  // pelo RLS para usuários não-admin (zero linhas afetadas, sem erro), o que
+  // fazia o "Ciente" parecer salvo sem persistir nada.
+  const { error } = await supabase.rpc("marcar_retorno_ciente" as any, {
+    _falta_id: faltaId,
+    _nome: nome,
+  });
+  if (error) throw error;
 }
 
 export interface RegraStatus {
