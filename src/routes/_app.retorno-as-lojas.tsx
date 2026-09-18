@@ -46,10 +46,10 @@ import { useAuth } from "@/lib/auth";
 import {
   listRetornoLojas,
   lojaDoUsuario,
-  marcarCiente,
-  listHistorico,
+  marcarGrupoCiente,
+  listHistoricoMany,
   LOJAS,
-  type RetornoLoja,
+  type RetornoLojaGrupo,
   type FaltaHistorico,
 } from "@/lib/produtos-em-falta";
 
@@ -137,7 +137,7 @@ function RetornoAsLojas() {
   const { user } = useAuth();
   const lojaFixa = lojaDoUsuario(user);
 
-  const [rows, setRows] = useState<RetornoLoja[]>([]);
+  const [rows, setRows] = useState<RetornoLojaGrupo[]>([]);
   const [prazo, setPrazo] = useState(7);
   const [loading, setLoading] = useState(true);
   const [marcandoId, setMarcandoId] = useState<string | null>(null);
@@ -150,7 +150,7 @@ function RetornoAsLojas() {
   const [leituraFiltro, setLeituraFiltro] = useState<string>("todos");
 
   // Modal de Histórico
-  const [modalHistBase, setModalHistBase] = useState<RetornoLoja | null>(null);
+  const [modalHistBase, setModalHistBase] = useState<RetornoLojaGrupo | null>(null);
   const [historico, setHistorico] = useState<FaltaHistorico[]>([]);
   const [loadingHist, setLoadingHist] = useState(false);
 
@@ -173,37 +173,26 @@ function RetornoAsLojas() {
     void carregar();
   }, [carregar]);
 
-  const handleMarcarCiente = async (id: string) => {
+  const handleMarcarCiente = async (grupo: RetornoLojaGrupo) => {
     const nomeUsuario = user?.name || user?.username || "Gerente de Loja";
-    setMarcandoId(id);
+    setMarcandoId(grupo.grupoId);
     try {
-      await marcarCiente(id, nomeUsuario);
-      toast.success("Ciente registrado com sucesso!");
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                ciente_at: new Date().toISOString(),
-                ciente_by_name: nomeUsuario,
-              }
-            : r
-        )
-      );
+      await marcarGrupoCiente(grupo, nomeUsuario);
+      toast.success("Ciente registrado para todos os apontamentos!");
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Não foi possível registrar o ciente."
-      );
+      toast.error(e instanceof Error ? e.message : "Não foi possível confirmar todos os apontamentos. Tente novamente.");
     } finally {
+      await carregar();
       setMarcandoId(null);
     }
   };
 
-  const handleAbrirHistorico = async (r: RetornoLoja) => {
+  const handleAbrirHistorico = async (r: RetornoLojaGrupo) => {
     setModalHistBase(r);
     setLoadingHist(true);
+    setHistorico([]);
     try {
-      const hist = await listHistorico(r.id);
+      const hist = await listHistoricoMany(r.faltaIds);
       setHistorico(hist);
     } catch (e) {
       toast.error("Erro ao carregar o histórico da tratativa.");
@@ -251,7 +240,7 @@ function RetornoAsLojas() {
               r.produto?.descricao,
               r.produto?.codigo,
               r.produto?.gtin,
-              r.reported_by_name,
+              ...r.apontamentos.map((a) => a.reported_by_name),
               r.responsavel_nome,
             ]
               .filter(Boolean)
@@ -437,7 +426,7 @@ function RetornoAsLojas() {
 
             return (
               <Card
-                key={r.id}
+                key={r.grupoId}
                 className={`relative flex flex-col overflow-hidden border border-l-4 transition-all duration-200 hover:shadow-md ${ 
                  isCiente
                     ? "border-border border-l-emerald-500 bg-muted/10 opacity-95"
@@ -473,6 +462,9 @@ function RetornoAsLojas() {
                     </Badge>
                   </div>
 
+                  {r.quantidade > 1 && (
+                    <Badge variant="secondary" className="w-fit">{r.quantidade} apontamentos</Badge>
+                  )}
                   <div>
                     <h3 className="text-[13px] sm:text-sm font-bold leading-tight text-foreground line-clamp-2">
                       {r.produto?.descricao ?? "Produto não identificado"}
@@ -499,8 +491,8 @@ function RetornoAsLojas() {
                       <span className="mt-0.5 block truncate font-medium text-foreground">{r.reported_by_name || "—"}</span>
                     </div>
                     <div className="min-w-0">
-                      <span className="block text-[9px] font-semibold uppercase text-muted-foreground">Data Solicit.</span>
-                      <span className="mt-0.5 block truncate text-muted-foreground">{fmtHora(r.reported_at)}</span>
+                      <span className="block text-[9px] font-semibold uppercase text-muted-foreground">Primeiro apontamento</span>
+                      <span className="mt-0.5 block truncate text-muted-foreground">{fmtHora(r.primeiro_apontamento_em)}</span>
                     </div>
                     <div className="min-w-0">
                       <span className="block text-[9px] font-semibold uppercase text-muted-foreground">Tratado por</span>
@@ -512,6 +504,7 @@ function RetornoAsLojas() {
                     </div>
                   </div>
 
+                  {r.quantidade > 1 && <p className="text-muted-foreground">Último apontamento: {fmtHora(r.ultimo_apontamento_em)}</p>}
                   {r.management_observation ? (
                     <div className="rounded-md border border-sky-200/60 bg-sky-50/50 p-2 text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-200">
                       <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold text-sky-800 dark:text-sky-300">
@@ -549,10 +542,10 @@ function RetornoAsLojas() {
                       variant="default"
                       size="sm"
                       className="h-8 bg-emerald-600 px-3 text-[11px] font-medium text-white hover:bg-emerald-700"
-                      disabled={marcandoId === r.id}
-                      onClick={() => void handleMarcarCiente(r.id)}
+                      disabled={marcandoId !== null}
+                      onClick={() => void handleMarcarCiente(r)}
                     >
-                      {marcandoId === r.id ? (
+                      {marcandoId === r.grupoId ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
