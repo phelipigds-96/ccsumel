@@ -52,13 +52,13 @@ const fmtData = (iso: string) => {
   return `${d}/${m}/${y}`;
 };
 
-type SortKey = "produto" | "fornecedor" | "total-desc" | "total-asc" | "qtd-desc";
+type SortKey = "data-desc" | "data-asc" | "produto" | "fornecedor" | "total-desc" | "total-asc" | "qtd-desc";
 
 function AcertosSellOut() {
   const { campanhas, ofertas, acertos } = useCampanhasStore();
   const [busca, setBusca] = useState("");
   const [fornecedorFiltro, setFornecedorFiltro] = useState<string>("__todos");
-  const [sortKey, setSortKey] = useState<SortKey>("total-desc");
+  const [sortKey, setSortKey] = useState<SortKey>("data-desc");
   const [quantidades, setQuantidades] = useState<Record<string, string>>({});
   const [fornecedoresAbertos, setFornecedoresAbertos] = useState<Record<string, boolean>>({});
   const [aba, setAba] = useState<"pendentes" | "historico">("pendentes");
@@ -203,11 +203,16 @@ function AcertosSellOut() {
       const totalB = getQtd(b.oferta.id) * (b.oferta.selloutValor || 0);
       const fornA = a.oferta.selloutFornecedor || a.oferta.fornecedor || "";
       const fornB = b.oferta.selloutFornecedor || b.oferta.fornecedor || "";
+      
       switch (sortKey) {
         case "produto":
           return a.oferta.descricao.localeCompare(b.oferta.descricao);
         case "fornecedor":
           return fornA.localeCompare(fornB);
+        case "data-desc":
+          return (b.campanha?.dataInicial || "0000").localeCompare(a.campanha?.dataInicial || "0000");
+        case "data-asc":
+          return (a.campanha?.dataInicial || "9999").localeCompare(b.campanha?.dataInicial || "9999");
         case "total-asc":
           return totalA - totalB;
         case "qtd-desc":
@@ -358,7 +363,7 @@ Central de Campanhas Sumel`;
       </div>
 
       <div className="mb-4 inline-flex rounded-lg border bg-card p-1">
-        {(["pendentes", "historico"] as const).map((k) => (
+        {("pendentes", "historico"] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -376,7 +381,7 @@ Central de Campanhas Sumel`;
         <div className="relative w-full sm:flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por produto, código, campanha..."
+            placeholder="Buscar por produto, código..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="pl-9"
@@ -399,6 +404,8 @@ Central de Campanhas Sumel`;
             <SelectValue placeholder="Ordenar" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="data-desc">Campanha mais recente</SelectItem>
+            <SelectItem value="data-asc">Campanha mais antiga</SelectItem>
             <SelectItem value="total-desc">Maior total a cobrar</SelectItem>
             <SelectItem value="total-asc">Menor total a cobrar</SelectItem>
             <SelectItem value="qtd-desc">Maior quantidade vendida</SelectItem>
@@ -408,7 +415,103 @@ Central de Campanhas Sumel`;
         </Select>
       </div>
 
-      <div className="rounded-xl border bg-card overflow-x-auto">
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {filtradas.length === 0 && (
+          <div className="text-center text-sm text-muted-foreground py-10 bg-card rounded-xl border">
+            {aba === "pendentes" ? "Nenhum sell out pendente com os filtros atuais." : "Nenhum acerto no histórico ainda."}
+          </div>
+        )}
+        {filtradas.map((item) => {
+          const { oferta, campanha, ultimaCampanha, ultimaQtd } = item;
+          const qtd = getQtd(oferta.id);
+          const total = qtd * (oferta.selloutValor || 0);
+
+          return (
+            <Card key={oferta.id} className="p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <div className="font-medium text-navy leading-tight">{oferta.descricao}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {oferta.codigo || "—"}{oferta.gtin ? ` · ${oferta.gtin}` : ""}
+                  </div>
+                </div>
+                {aba === "pendentes" ? (
+                  <Button size="sm" onClick={() => darBaixa(oferta.id)} className="h-8 shrink-0">
+                    Dar baixa
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={() => reabrir(oferta.id)} className="h-8 shrink-0">
+                    Reabrir
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm mt-1">
+                <div>
+                  <span className="text-muted-foreground block text-xs">Fornecedor</span>
+                  <span className="truncate font-medium">{oferta.selloutFornecedor || oferta.fornecedor || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-xs">Campanha</span>
+                  <span className="truncate font-medium">{campanha?.nome ?? "—"}</span>
+                  {campanha && (
+                    <div className="text-[10px] text-muted-foreground">
+                      {fmtData(campanha.dataInicial)} a {fmtData(campanha.dataFinal)}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mt-2 bg-muted/30 p-2 rounded-lg">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Verba / un</div>
+                  <div className="font-medium text-sm">{brl(oferta.selloutValor || 0)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Qtd. vendida</div>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={quantidades[oferta.id] ?? (acertos[oferta.id]?.quantidadeVendida ?? "")}
+                    onChange={(e) => setQtd(oferta.id, e.target.value)}
+                    onBlur={() => salvar(oferta.id)}
+                    className="h-8 w-full bg-background"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-sm font-semibold">Total a cobrar:</span>
+                <span className="font-bold text-primary">{brl(total)}</span>
+              </div>
+
+              <div className="mt-1 text-xs border-t pt-2 border-border/50">
+                <span className="text-muted-foreground block mb-1 font-medium">Histórico e ref:</span>
+                {ultimaCampanha ? (
+                  <span className="text-muted-foreground">
+                    Na {ultimaCampanha.nome} vendeu {ultimaQtd} un.
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Nenhum registro de campanhas passadas.</span>
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copiarTexto(item)}
+                className="w-full gap-2 mt-1 h-8"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copiar texto do produto
+              </Button>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="hidden md:block rounded-xl border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -519,81 +622,70 @@ Central de Campanhas Sumel`;
               const aberto = fornecedoresAbertos[grupo.fornecedor] ?? false;
               return (
                 <div key={grupo.fornecedor} className="rounded-lg border bg-card">
-                  <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 gap-3">
                     <button
                       type="button"
                       onClick={() => toggleFornecedor(grupo.fornecedor)}
                       className="flex flex-1 items-center gap-2 text-left"
                     >
                       {aberto ? (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                       ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                       )}
-                      <span className="text-sm font-semibold text-navy">{grupo.fornecedor}</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {grupo.itens.length} produto{grupo.itens.length > 1 ? "s" : ""}
+                      <span className="text-sm font-semibold text-navy truncate">{grupo.fornecedor}</span>
+                      <Badge variant="secondary" className="text-[10px] shrink-0">
+                        {grupo.itens.length} prod{grupo.itens.length > 1 ? "s" : ""}
                       </Badge>
                     </button>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-primary">{brl(grupo.total)}</span>
+                    <div className="flex items-center gap-3 pl-6 sm:pl-0">
+                      <span className="text-sm font-bold text-primary mr-2">{brl(grupo.total)}</span>
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
+                        title="Baixar relatório em PDF"
                         onClick={() => imprimirRelatorio(grupo)}
-                        className="gap-2"
+                        className="shrink-0 h-8 w-8"
                       >
-                        <FileText className="h-3.5 w-3.5" />
-                        Relatório PDF
+                        <FileText className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => copiarFornecedor(grupo)}
-                        className="gap-2"
+                        className="gap-2 h-8 whitespace-nowrap"
                       >
                         <Copy className="h-3.5 w-3.5" />
-                        Copiar mensagem
+                        <span className="hidden sm:inline">Copiar msg</span>
                       </Button>
                     </div>
                   </div>
                   {aberto && (
-                    <div className="border-t px-4 py-2">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Produto</TableHead>
-                            <TableHead>Campanha</TableHead>
-                            <TableHead className="text-right">Qtd.</TableHead>
-                            <TableHead className="text-right">Verba/un</TableHead>
-                            <TableHead className="text-right">Total</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {grupo.itens.map((it) => {
-                            const qtd = getQtd(it.oferta.id);
-                            const total = qtd * (it.oferta.selloutValor || 0);
-                            return (
-                              <TableRow key={it.oferta.id}>
-                                <TableCell>
-                                  <div className="text-sm font-medium">{it.oferta.descricao}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {it.oferta.codigo || "—"}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-sm">{it.campanha?.nome ?? "—"}</TableCell>
-                                <TableCell className="text-right text-sm">{qtd}</TableCell>
-                                <TableCell className="text-right text-sm">
-                                  {brl(it.oferta.selloutValor || 0)}
-                                </TableCell>
-                                <TableCell className="text-right text-sm font-semibold text-primary">
-                                  {brl(total)}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
+                    <div className="border-t border-border/50">
+                      {grupo.itens.map((it) => {
+                        const qtd = getQtd(it.oferta.id);
+                        const total = qtd * (it.oferta.selloutValor || 0);
+                        return (
+                          <div key={it.oferta.id} className="p-3 px-4 border-b border-border/50 last:border-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-navy leading-tight">{it.oferta.descricao}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {it.oferta.codigo || "—"}
+                                {it.campanha && ` · ${it.campanha.nome}`}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between md:justify-end gap-6 md:w-64">
+                              <div className="text-sm text-right bg-muted/30 px-2 py-1 rounded">
+                                <span className="text-muted-foreground md:hidden text-xs mr-2">Qtd x Verba:</span>
+                                {qtd} x {brl(it.oferta.selloutValor || 0)}
+                              </div>
+                              <div className="text-sm font-semibold text-primary text-right w-24">
+                                {brl(total)}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
