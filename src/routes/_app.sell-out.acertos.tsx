@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2, FileText } from "lucide-react";
+import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2, FileText, DollarSign, Building2, ClipboardList, CalendarDays } from "lucide-react";
 import { gerarRelatorioSelloutPDF } from "@/components/sellout-report-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
@@ -210,9 +210,9 @@ function AcertosSellOut() {
         case "fornecedor":
           return fornA.localeCompare(fornB);
         case "data-desc":
-          return (b.campanha?.dataInicial || "0000").localeCompare(a.campanha?.dataInicial || "0000");
+          return (b.campanha?.dataInicial || "0000-00-00").localeCompare(a.campanha?.dataInicial || "0000-00-00");
         case "data-asc":
-          return (a.campanha?.dataInicial || "9999").localeCompare(b.campanha?.dataInicial || "9999");
+          return (a.campanha?.dataInicial || "9999-99-99").localeCompare(b.campanha?.dataInicial || "9999-99-99");
         case "total-asc":
           return totalA - totalB;
         case "qtd-desc":
@@ -335,84 +335,101 @@ Central de Campanhas Sumel`;
   };
 
   return (
-    <div>
+    <div className="space-y-6 flex flex-col pb-8">
       <PageHeader
         title="Acertos de Sell Out"
         description="Registre a quantidade vendida por produto e calcule a verba a cobrar de cada fornecedor."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">{aba === "pendentes" ? "Pendentes de acerto" : "Acertos realizados"}</div>
-            <div className="mt-1 text-2xl font-bold text-navy">{ofertasSellOut.filter((o) => (aba === "pendentes" ? !o.baixado : o.baixado)).length}</div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="shadow-sm border-border/60">
+          <CardContent className="p-5 flex flex-row items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">{aba === "pendentes" ? "Pendentes de acerto" : "Acertos realizados"}</span>
+              <div className="text-3xl font-bold text-navy">{ofertasSellOut.filter((o) => (aba === "pendentes" ? !o.baixado : o.baixado)).length}</div>
+            </div>
+            <div className="h-10 w-10 shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
+              <ClipboardList className="h-5 w-5 text-primary" />
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Total geral a cobrar (filtro atual)</div>
-            <div className="mt-1 text-2xl font-bold text-primary">{brl(totalGeral)}</div>
+        <Card className="shadow-sm border-border/60">
+          <CardContent className="p-5 flex flex-row items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total geral a cobrar (filtro)</span>
+              <div className="text-3xl font-bold text-primary">{brl(totalGeral)}</div>
+            </div>
+            <div className="h-10 w-10 shrink-0 bg-emerald-500/10 rounded-full flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Fornecedores (filtro atual)</div>
-            <div className="mt-1 text-2xl font-bold text-navy">{resumoPorFornecedor.length}</div>
+        <Card className="shadow-sm border-border/60">
+          <CardContent className="p-5 flex flex-row items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Fornecedores (filtro)</span>
+              <div className="text-3xl font-bold text-navy">{resumoPorFornecedor.length}</div>
+            </div>
+            <div className="h-10 w-10 shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-primary" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="mb-4 inline-flex rounded-lg border bg-card p-1">
-        {("pendentes", "historico"] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setAba(k)}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-              aba === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {k === "pendentes" ? "Sell out pendentes" : "Histórico de acertos"}
-          </button>
-        ))}
-      </div>
-
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative w-full sm:flex-1 sm:max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por produto, código..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="pl-9"
-          />
+      <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-card p-4 rounded-xl shadow-sm border border-border/60">
+        <div className="inline-flex rounded-lg border border-border/60 bg-muted/30 p-1 w-full xl:w-auto">
+          {(["pendentes", "historico"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setAba(k)}
+              className={`flex-1 xl:flex-none rounded-md px-5 py-2 text-sm font-semibold transition-all ${
+                aba === k ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              {k === "pendentes" ? "Sell out pendentes" : "Histórico de acertos"}
+            </button>
+          ))}
         </div>
-        <Select value={fornecedorFiltro} onValueChange={setFornecedorFiltro}>
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Fornecedor" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__todos">Todos os fornecedores</SelectItem>
-            {fornecedoresDisponiveis.map((f) => (
-              <SelectItem key={f} value={f}>{f}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-          <SelectTrigger className="w-full sm:w-56">
-            <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
-            <SelectValue placeholder="Ordenar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="data-desc">Campanha mais recente</SelectItem>
-            <SelectItem value="data-asc">Campanha mais antiga</SelectItem>
-            <SelectItem value="total-desc">Maior total a cobrar</SelectItem>
-            <SelectItem value="total-asc">Menor total a cobrar</SelectItem>
-            <SelectItem value="qtd-desc">Maior quantidade vendida</SelectItem>
-            <SelectItem value="fornecedor">Fornecedor (A–Z)</SelectItem>
-            <SelectItem value="produto">Produto (A–Z)</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <div className="flex flex-col w-full xl:w-auto xl:flex-row gap-3">
+          <div className="relative w-full xl:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar (produto, fornecedor...)"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="pl-9 h-10 w-full"
+            />
+          </div>
+          <Select value={fornecedorFiltro} onValueChange={setFornecedorFiltro}>
+            <SelectTrigger className="w-full xl:w-[220px] h-10">
+              <SelectValue placeholder="Fornecedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__todos">Todos os fornecedores</SelectItem>
+              {fornecedoresDisponiveis.map((f) => (
+                <SelectItem key={f} value={f}>{f}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+            <SelectTrigger className="w-full xl:w-[250px] h-10 border-primary/30 hover:border-primary/60 transition-colors">
+              <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Ordenar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="data-desc">Data da campanha (Mais recente)</SelectItem>
+              <SelectItem value="data-asc">Data da campanha (Mais antiga)</SelectItem>
+              <SelectItem value="total-desc">Maior total a cobrar</SelectItem>
+              <SelectItem value="total-asc">Menor total a cobrar</SelectItem>
+              <SelectItem value="qtd-desc">Maior quantidade vendida</SelectItem>
+              <SelectItem value="fornecedor">Fornecedor (A–Z)</SelectItem>
+              <SelectItem value="produto">Produto (A–Z)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:hidden">
@@ -427,7 +444,7 @@ Central de Campanhas Sumel`;
           const total = qtd * (oferta.selloutValor || 0);
 
           return (
-            <Card key={oferta.id} className="p-4 flex flex-col gap-3">
+            <Card key={oferta.id} className="p-4 flex flex-col gap-3 shadow-sm border-border/60">
               <div className="flex justify-between items-start gap-2">
                 <div>
                   <div className="font-medium text-navy leading-tight">{oferta.descricao}</div>
@@ -511,7 +528,7 @@ Central de Campanhas Sumel`;
         })}
       </div>
 
-      <div className="hidden md:block rounded-xl border bg-card overflow-x-auto">
+      <div className="hidden md:block rounded-xl border border-border/60 shadow-sm bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -616,12 +633,12 @@ Central de Campanhas Sumel`;
 
       {resumoPorFornecedor.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-sm font-semibold text-navy mb-3">Resumo por fornecedor</h3>
+          <h3 className="text-sm font-semibold text-navy mb-3 px-1">Resumo por fornecedor</h3>
           <div className="space-y-3">
             {resumoPorFornecedor.map((grupo) => {
               const aberto = fornecedoresAbertos[grupo.fornecedor] ?? false;
               return (
-                <div key={grupo.fornecedor} className="rounded-lg border bg-card">
+                <div key={grupo.fornecedor} className="rounded-xl shadow-sm border border-border/60 bg-card overflow-hidden">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 gap-3">
                     <button
                       type="button"
