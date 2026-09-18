@@ -377,14 +377,14 @@ Central de Campanhas Sumel`;
         </Card>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-card p-4 rounded-xl shadow-sm border border-border/60">
-        <div className="inline-flex rounded-lg border border-border/60 bg-muted/30 p-1 w-full xl:w-auto">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-card p-4 rounded-xl shadow-sm border border-border/60">
+        <div className="inline-flex rounded-lg border border-border/60 bg-muted/30 p-1 w-full lg:w-auto overflow-x-auto shrink-0">
           {(["pendentes", "historico"] as const).map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => setAba(k)}
-              className={`flex-1 xl:flex-none rounded-md px-5 py-2 text-sm font-semibold transition-all ${
+              className={`flex-1 lg:flex-none whitespace-nowrap rounded-md px-5 py-2 text-sm font-semibold transition-all ${
                 aba === k ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
@@ -393,8 +393,8 @@ Central de Campanhas Sumel`;
           ))}
         </div>
 
-        <div className="flex flex-col w-full xl:w-auto xl:flex-row gap-3">
-          <div className="relative w-full xl:w-64">
+        <div className="flex flex-col w-full lg:w-auto md:flex-row gap-3">
+          <div className="relative w-full md:flex-1 lg:w-56 xl:w-64 lg:flex-none">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar (produto, fornecedor...)"
@@ -404,7 +404,7 @@ Central de Campanhas Sumel`;
             />
           </div>
           <Select value={fornecedorFiltro} onValueChange={setFornecedorFiltro}>
-            <SelectTrigger className="w-full xl:w-[220px] h-10">
+            <SelectTrigger className="w-full md:flex-1 lg:w-[200px] xl:w-[220px] lg:flex-none h-10">
               <SelectValue placeholder="Fornecedor" />
             </SelectTrigger>
             <SelectContent>
@@ -415,7 +415,7 @@ Central de Campanhas Sumel`;
             </SelectContent>
           </Select>
           <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-            <SelectTrigger className="w-full xl:w-[250px] h-10 border-primary/30 hover:border-primary/60 transition-colors">
+            <SelectTrigger className="w-full md:flex-1 lg:w-[220px] xl:w-[250px] lg:flex-none h-10 border-primary/30 hover:border-primary/60 transition-colors">
               <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
               <SelectValue placeholder="Ordenar" />
             </SelectTrigger>
