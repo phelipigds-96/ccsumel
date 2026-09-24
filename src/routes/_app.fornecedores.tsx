@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Search, Plus, Pencil, Trash2, Building2 } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Building2, Upload, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import {
   listFornecedores, upsertFornecedor, deleteFornecedor,
   type FornecedorComContagem,
 } from "@/lib/fornecedores";
+import { upsertFornecedoresBatch, type FornecedorBatchResult } from "@/lib/fornecedores-batch";
+import { parseFornecedoresCsv, decodeFile } from "@/lib/fornecedores-csv-parser";
 import { TableSkeleton } from "@/components/table-skeleton";
 import { EmptyModule } from "@/components/page-header";
 
@@ -42,6 +44,12 @@ function FornecedoresPage() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Partial<FornecedorComContagem> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<FornecedorComContagem | null>(null);
+
+  // Import CSV state
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<(FornecedorBatchResult & { arquivo?: string; validos: number; ignorados: number }) | null>(null);
+  const [showImportResult, setShowImportResult] = useState(false);
+  const fileRef = useState<React.RefObject<HTMLInputElement | null>>(() => ({ current: null }))[0];
 
   const load = async (term = busca) => {
     setLoading(true);
@@ -91,6 +99,26 @@ function FornecedoresPage() {
     }
   };
 
+  const handleImportFile = async (file: File) => {
+    setImporting(true);
+    const toastId = toast.loading("Lendo arquivo...");
+    try {
+      const buf = await file.arrayBuffer();
+      const text = decodeFile(buf);
+      const parseResult = parseFornecedoresCsv(text);
+      toast.loading(`Importando ${parseResult.fornecedores.length.toLocaleString("pt-BR")} fornecedores...`, { id: toastId });
+      const result = await upsertFornecedoresBatch(parseResult.fornecedores);
+      toast.success("Importação concluída", { id: toastId });
+      setImportResult({ ...result, arquivo: file.name, validos: parseResult.validos, ignorados: parseResult.ignorados });
+      setShowImportResult(true);
+      await load();
+    } catch (e) {
+      toast.error("Falha na importação", { id: toastId, description: (e as Error).message });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const totalProdutos = rows.reduce((acc, r) => acc + r.produtos, 0);
 
   return (
@@ -99,9 +127,31 @@ function FornecedoresPage() {
         title="Fornecedores"
         description="Parceiros comerciais — cadastrados manualmente ou criados automaticamente na importação do catálogo de produtos."
         actions={
-          <Button className="gap-2" onClick={() => setEditing({ nome: "", observacoes: "" })}>
-            <Plus className="h-4 w-4" /> Novo Fornecedor
-          </Button>
+          <div className="flex gap-2">
+            <input
+              ref={fileRef as unknown as React.RefObject<HTMLInputElement>}
+              type="file"
+              accept=".csv,.txt"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleImportFile(f);
+                if (e.target) (e.target as HTMLInputElement).value = "";
+              }}
+            />
+            <Button
+              variant="outline"
+              onClick={() => (fileRef as unknown as React.RefObject<HTMLInputElement>).current?.click()}
+              disabled={importing}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              {importing ? "Importando..." : "Importar CSV"}
+            </Button>
+            <Button className="gap-2" onClick={() => setEditing({ nome: "", observacoes: "" })}>
+              <Plus className="h-4 w-4" /> Novo Fornecedor
+            </Button>
+          </div>
         }
       />
 
@@ -221,6 +271,44 @@ function FornecedoresPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showImportResult} onOpenChange={setShowImportResult}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              Importação concluída
+            </DialogTitle>
+          </DialogHeader>
+          {importResult && (
+            <div className="space-y-4">
+              {importResult.arquivo && (
+                <p className="text-sm text-muted-foreground">Arquivo: {importResult.arquivo}</p>
+              )}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Stat label="Fornecedores válidos no arquivo" value={importResult.validos} />
+                <Stat label="Novos cadastrados" value={importResult.novos} />
+                <Stat label="Já existiam" value={importResult.existentes} />
+                <Stat label="Linhas inválidas ignoradas" value={importResult.ignorados} />
+                {importResult.erros > 0 && <Stat label="Erros" value={importResult.erros} />}
+                <Stat label="Tempo (segundos)" value={(importResult.duracao_ms / 1000).toFixed(1)} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setShowImportResult(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-lg border bg-muted/40 p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-xl font-bold text-navy">{value}</div>
     </div>
   );
 }
