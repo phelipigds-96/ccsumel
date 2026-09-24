@@ -13,25 +13,41 @@ export interface FornecedorComContagem extends Fornecedor {
   produtos: number;
 }
 
-export async function listFornecedores(search = ""): Promise<FornecedorComContagem[]> {
-  let q = supabase.from("fornecedores").select("*").order("nome", { ascending: true });
+export async function listFornecedores(
+  search = "",
+  page = 1,
+  pageSize = 10,
+): Promise<{ rows: FornecedorComContagem[]; total: number }> {
+  let q = supabase
+    .from("fornecedores")
+    .select("*", { count: "exact" })
+    .order("nome", { ascending: true });
   const s = search.trim();
   if (s) q = q.ilike("nome", `%${s}%`);
-  const { data, error } = await q;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const { data, error, count } = await q.range(from, to);
   if (error) throw error;
   const fornecedores = (data ?? []) as Fornecedor[];
 
-  const contagens = await Promise.all(
-    fornecedores.map(async (f) => {
-      const { count } = await supabase
-        .from("produtos")
-        .select("*", { count: "exact", head: true })
-        .eq("fornecedor", f.nome);
-      return count ?? 0;
-    }),
-  );
+  // Uma única consulta que busca todos os fornecedores dos produtos,
+  // conta no código e aplica aos fornecedores da página atual.
+  const contagens = new Map<string, number>();
+  const { data: prodRows } = await supabase
+    .from("produtos")
+    .select("fornecedor");
+  for (const row of prodRows ?? []) {
+    const k = (row.fornecedor ?? "").toUpperCase();
+    if (k) contagens.set(k, (contagens.get(k) ?? 0) + 1);
+  }
 
-  return fornecedores.map((f, i) => ({ ...f, produtos: contagens[i] }));
+  return {
+    rows: fornecedores.map((f) => ({
+      ...f,
+      produtos: contagens.get(f.nome.toUpperCase()) ?? 0,
+    })),
+    total: count ?? 0,
+  };
 }
 
 export async function upsertFornecedor(input: {
