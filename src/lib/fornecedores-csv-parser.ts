@@ -14,10 +14,12 @@ export interface FornecedoresCsvResult {
 
 const CNPJ_REGEX = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/;
 const CPF_REGEX = /\d{3}\.\d{3}\.\d{3}-\d{2}/;
-const DOC_REGEX = /\d{3}\.\d{3}\.\d{3}[-\/]\d{2}/;
 
 function hasDocument(cols: string[]): boolean {
-  return cols.some((c) => DOC_REGEX.test(c.trim()));
+  return cols.some((c) => {
+    const trimmed = c.trim();
+    return CNPJ_REGEX.test(trimmed) || CPF_REGEX.test(trimmed);
+  });
 }
 
 function detectDelimiter(line: string): string {
