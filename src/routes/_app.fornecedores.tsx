@@ -20,6 +20,7 @@ import {
   type FornecedorComContagem,
 } from "@/lib/fornecedores";
 import { TableSkeleton } from "@/components/table-skeleton";
+import { EmptyModule } from "@/components/page-header";
 
 export const Route = createFileRoute("/_app/fornecedores")({
   head: () => ({
@@ -149,8 +150,8 @@ function FornecedoresPage() {
               )}
               {!loading && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    Nenhum fornecedor. Importe o CSV no Catálogo de Produtos ou cadastre manualmente.
+                  <TableCell colSpan={4}>
+                    <EmptyModule name="Fornecedores" />
                   </TableCell>
                 </TableRow>
               )}
