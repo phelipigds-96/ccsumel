@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { syncFornecedores } from "@/lib/fornecedores";
 
 export interface Produto {
   id: string;
@@ -99,7 +98,6 @@ export interface ImportResult {
   sem_barras: number;
   erros: number;
   duracao_ms: number;
-  fornecedores_novos?: number;
 }
 
 /**
@@ -157,14 +155,6 @@ export async function importProdutosByCodigo(
 
   const sem_barras = list.filter((r) => !r.gtin).length;
 
-  // Alimenta o módulo de fornecedores com os nomes encontrados no arquivo.
-  let fornecedores_novos = 0;
-  try {
-    fornecedores_novos = await syncFornecedores(list.map((r) => r.fornecedor));
-  } catch {
-    fornecedores_novos = 0;
-  }
-
   return {
     processados: total,
     novos,
@@ -172,7 +162,6 @@ export async function importProdutosByCodigo(
     sem_barras,
     erros,
     duracao_ms: Date.now() - started,
-    fornecedores_novos,
   };
 }
 

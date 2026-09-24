@@ -353,7 +353,6 @@ function CatalogoProdutos() {
               <Stat label="Novos produtos" value={result.novos} />
               <Stat label="Produtos atualizados" value={result.atualizados} />
               <Stat label="Sem código de barras" value={result.sem_barras} />
-              <Stat label="Fornecedores novos" value={result.fornecedores_novos ?? 0} />
               <Stat label="Erros encontrados" value={result.erros} />
               <Stat label="Tempo (segundos)" value={(result.duracao_ms / 1000).toFixed(1)} />
             </div>
