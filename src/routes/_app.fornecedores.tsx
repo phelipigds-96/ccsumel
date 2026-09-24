@@ -14,6 +14,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   listFornecedores, upsertFornecedor, deleteFornecedor,
@@ -38,6 +41,8 @@ export const Route = createFileRoute("/_app/fornecedores")({
   component: FornecedoresPage,
 });
 
+const PAGE_SIZE_OPTIONS = [20, 30, 50, 100, 500];
+
 function FornecedoresPage() {
   const [rows, setRows] = useState<FornecedorComContagem[]>([]);
   const [busca, setBusca] = useState("");
@@ -45,16 +50,25 @@ function FornecedoresPage() {
   const [editing, setEditing] = useState<Partial<FornecedorComContagem> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<FornecedorComContagem | null>(null);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState(0);
+
   // Import CSV state
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<(FornecedorBatchResult & { arquivo?: string; validos: number; ignorados: number }) | null>(null);
   const [showImportResult, setShowImportResult] = useState(false);
   const fileRef = useState<React.RefObject<HTMLInputElement | null>>(() => ({ current: null }))[0];
 
-  const load = async (term = busca) => {
+  const effectivePageSize = pageSize; // "Todos" não é mais uma opção separada
+
+  const load = async (term = busca, p = page, ps = effectivePageSize) => {
     setLoading(true);
     try {
-      setRows(await listFornecedores(term));
+      const result = await listFornecedores(term, p, ps);
+      setRows(result.rows);
+      setTotal(result.total);
     } catch (e) {
       toast.error("Falha ao carregar fornecedores", { description: (e as Error).message });
     } finally {
@@ -62,11 +76,27 @@ function FornecedoresPage() {
     }
   };
 
+  // Carrega ao montar e quando busca/paginação mudam
   useEffect(() => {
-    const t = setTimeout(() => load(busca), 250);
+    const t = setTimeout(() => {
+      setPage(1);
+      load(busca, 1, effectivePageSize);
+    }, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busca]);
+
+  useEffect(() => {
+    load(busca, page, effectivePageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  // Reseta para página 1 quando o tamanho de página muda
+  const handlePageSizeChange = (value: number) => {
+    setPageSize(value);
+    setPage(1);
+    load(busca, 1, value);
+  };
 
   const onSave = async () => {
     if (!editing?.nome?.trim()) {
@@ -81,7 +111,7 @@ function FornecedoresPage() {
       });
       toast.success("Fornecedor salvo");
       setEditing(null);
-      load();
+      load(busca, page, effectivePageSize);
     } catch (e) {
       toast.error("Falha ao salvar", { description: (e as Error).message });
     }
@@ -93,7 +123,7 @@ function FornecedoresPage() {
       await deleteFornecedor(confirmDelete.id);
       toast.success("Fornecedor excluído");
       setConfirmDelete(null);
-      load();
+      load(busca, page, effectivePageSize);
     } catch (e) {
       toast.error("Falha ao excluir", { description: (e as Error).message });
     }
@@ -111,7 +141,7 @@ function FornecedoresPage() {
       toast.success("Importação concluída", { id: toastId });
       setImportResult({ ...result, arquivo: file.name, validos: parseResult.validos, ignorados: parseResult.ignorados });
       setShowImportResult(true);
-      await load();
+      load(busca, page, effectivePageSize);
     } catch (e) {
       toast.error("Falha na importação", { id: toastId, description: (e as Error).message });
     } finally {
@@ -119,7 +149,9 @@ function FornecedoresPage() {
     }
   };
 
-  const totalProdutos = rows.reduce((acc, r) => acc + r.produtos, 0);
+  const totalPages = Math.max(1, Math.ceil(total / effectivePageSize));
+  const rangeStart = total === 0 ? 0 : (page - 1) * effectivePageSize + 1;
+  const rangeEnd = Math.min(page * effectivePageSize, total);
 
   return (
     <div>
@@ -160,12 +192,12 @@ function FornecedoresPage() {
           <div className="text-xs uppercase text-muted-foreground">Fornecedores cadastrados</div>
           <div className="mt-2 flex items-center gap-2">
             <Building2 className="h-4 w-4 text-primary" />
-            <span className="text-2xl font-bold text-navy">{rows.length.toLocaleString("pt-BR")}</span>
+            <span className="text-2xl font-bold text-navy">{total.toLocaleString("pt-BR")}</span>
           </div>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <div className="text-xs uppercase text-muted-foreground">Produtos vinculados</div>
-          <div className="mt-2 text-2xl font-bold text-primary">{totalProdutos.toLocaleString("pt-BR")}</div>
+          <div className="mt-2 text-2xl font-bold text-primary">{rows.reduce((acc, r) => acc + r.produtos, 0).toLocaleString("pt-BR")}</div>
         </div>
       </div>
 
@@ -180,8 +212,28 @@ function FornecedoresPage() {
               className="pl-9 w-full"
             />
           </div>
-          <div className="ml-auto text-xs text-muted-foreground">
-            {loading ? "Buscando..." : `${rows.length.toLocaleString("pt-BR")} resultado(s)`}
+          <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span>Por página:</span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(v) => handlePageSizeChange(Number(v))}
+              >
+                <SelectTrigger className="w-20 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={String(s)}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              {loading ? "Buscando..." : `${rangeStart.toLocaleString("pt-BR")}–${rangeEnd.toLocaleString("pt-BR")} de ${total.toLocaleString("pt-BR")}`}
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -224,6 +276,30 @@ function FornecedoresPage() {
               ))}
             </TableBody>
           </Table>
+        </div>
+        <div className="flex flex-col gap-4 p-4 border-t sm:flex-row sm:items-center sm:justify-between text-sm">
+          <div className="text-xs text-muted-foreground order-2 sm:order-1" />
+          <div className="flex items-center justify-between gap-2 order-1 sm:order-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            <div className="text-xs text-muted-foreground">
+              Página {page} de {totalPages.toLocaleString("pt-BR")}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Próxima
+            </Button>
+          </div>
         </div>
       </div>
 
