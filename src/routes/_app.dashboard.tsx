@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Plus, ArrowRight, Eye, Megaphone, CalendarClock, Tags, CalendarDays } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Plus, ArrowRight, Eye, Megaphone, CalendarClock, Tags, CalendarDays, Sparkles } from "lucide-react";
 import { useCampanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView } from "@/components/campanha-quick-view";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { format, isSameDay, isWithinInterval, parseISO, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
@@ -52,10 +53,48 @@ function Panel({ className = "", children }: { className?: string; children: Rea
   );
 }
 
+function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenChange: (v: boolean) => void; userName: string }) {
+  const primeiroNome = userName.split(" ")[0];
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm gap-0 overflow-hidden p-0 text-left">
+        {/* Cabeçalho gradiente */}
+        <div className="bg-navy px-6 pb-8 pt-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
+            <Sparkles className="h-7 w-7 text-primary" />
+          </div>
+          <h2 className="font-display text-2xl font-bold text-white">
+            Bem-vindo de volta,{}\n{primeiroNome}! 👋
+          </h2>
+        </div>
+        {/* Corpo */}
+        <div className="bg-background px-6 pb-6 pt-6">
+          <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+            Que bom ter você aqui. Confira as novidades e o resumo do dia abaixo.
+          </p>
+          <Button onClick={() => onOpenChange(false)} className="w-full rounded-xl font-semibold">
+            Começar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DashboardPage() {
   const hoje = new Date();
   const { campanhas: rawCampanhas, ofertas: rawOfertas } = useCampanhasStore();
   const [quickView, setQuickView] = useState<Campanha | null>(null);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const { user } = useAuth();
+
+  // Exibe modal de boas-vindas uma única vez após login
+  useEffect(() => {
+    if (sessionStorage.getItem("justLoggedIn") === "1") {
+      sessionStorage.removeItem("justLoggedIn");
+      setWelcomeOpen(true);
+    }
+  }, []);
 
   const campanhas: CampanhaDash[] = useMemo(() => {
     return rawCampanhas.filter((c) => categoriaCampanha(c) !== "rascunho").map((c) => {
@@ -148,240 +187,246 @@ function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Cabeçalho */}
-      <div className="relative overflow-hidden rounded-3xl border bg-navy px-4 py-6 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(11,31,58,0.7)] sm:px-8 sm:py-9">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary/30 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-foreground/60">
-              {format(hoje, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-            </p>
-            <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Dashboard</h1>
-            <p className="mt-1 text-sm text-primary-foreground/70">
-              Bem-vindo à Central de Campanhas Sumel.
-            </p>
+    <>
+      <WelcomeModal
+        open={welcomeOpen}
+        onOpenChange={setWelcomeOpen}
+        userName={user?.name ?? ""}
+      />
+      <div className="space-y-6 sm:space-y-8">
+        {/* Cabeçalho */}
+        <div className="relative overflow-hidden rounded-3xl border bg-navy px-4 py-6 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(11,31,58,0.7)] sm:px-8 sm:py-9">
+          <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary/30 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-foreground/60">
+                {format(hoje, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+              </p>
+              <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Dashboard</h1>
+              <p className="mt-1 text-sm text-primary-foreground/70">
+                Bem-vindo à Central de Campanhas Sumel.
+              </p>
+            </div>
+            <Button asChild className="w-full sm:w-auto shrink-0 rounded-full shadow-lg">
+              <Link to="/campanhas">
+                <Plus className="mr-2 h-4 w-4" /> Nova campanha
+              </Link>
+            </Button>
           </div>
-          <Button asChild className="w-full sm:w-auto shrink-0 rounded-full shadow-lg">
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6">
+          {kpis.map((k, i) => (
+            <Panel
+              key={k.label}
+              className={`group relative overflow-hidden p-4 transition-shadow hover:shadow-[0_12px_30px_-18px_rgba(11,31,58,0.45)] sm:p-6 ${
+                i === 2 ? "col-span-2 sm:col-span-1" : ""
+              }`}
+            >
+              <span
+                className={`absolute inset-x-0 top-0 h-1 ${k.tone === "primary" ? "bg-primary" : "bg-navy"}`}
+              />
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {k.label}
+                </p>
+                <span
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
+                    k.tone === "primary" ? "bg-primary/10 text-primary" : "bg-navy/10 text-navy"
+                  }`}
+                >
+                  <k.icon className="h-4 w-4" />
+                </span>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="font-display text-3xl font-bold tabular-nums text-navy sm:text-4xl">{k.valor}</span>
+                <span className="text-xs font-medium text-muted-foreground">{k.sub}</span>
+              </div>
+            </Panel>
+          ))}
+        </div>
+
+        {/* Calendário em destaque */}
+        <Panel className="overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-secondary/30 p-4 sm:p-6">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-navy/10 text-navy">
+                <CalendarDays className="h-4 w-4" />
+              </span>
+              <h3 className="truncate font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary" /> Ativas
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-navy" /> Programadas
+              </span>
+            </div>
+          </div>
+          <div className="grid gap-6 p-3 sm:gap-8 sm:p-6 lg:grid-cols-[auto_1fr]">
+
+            <Calendar
+              mode="single"
+              locale={ptBR}
+              selected={diaSelecionado}
+              onSelect={setDiaSelecionado}
+              month={mesRef}
+              onMonthChange={setMesRef}
+              modifiers={{ ativa: diasAtivos, programada: diasProgramados }}
+              modifiersClassNames={{
+                ativa: "bg-primary/10 text-primary font-semibold rounded-md",
+                programada: "bg-navy/10 text-navy font-semibold rounded-md",
+              }}
+              components={{
+                DayButton: (props) => {
+                  const nomes = campanhasPorDia.get(format(props.day.date, "yyyy-MM-dd"));
+                  return (
+                    <CalendarDayButton
+                      {...props}
+                      title={
+                        nomes?.length
+                          ? `${format(props.day.date, "dd/MM/yyyy")}\n${nomes.map((n) => `• ${n}`).join("\n")}`
+                          : `${format(props.day.date, "dd/MM/yyyy")}\nSem campanhas`
+                      }
+                    />
+                  );
+                },
+              }}
+              className="pointer-events-auto w-full max-w-full rounded-xl border p-2 [--cell-size:min(2.4rem,10vw)] sm:p-4 sm:[--cell-size:2.6rem]"
+            />
+
+            <div className="min-w-0">
+              <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {diaSelecionado ? format(diaSelecionado, "PPP", { locale: ptBR }) : "Selecione um dia"}
+              </div>
+              {campanhasDoDia.length === 0 ? (
+                <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+                  Nenhuma campanha neste dia.
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {campanhasDoDia.map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:bg-secondary/50"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status]}`} />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} ofertas
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${STATUS_PILL[c.status]}`}>
+                          {c.status}
+                        </span>
+                        <EyeBtn id={c.id} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </Panel>
+
+        {/* Campanhas ativas e futuras em destaque */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Panel>
+            <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                <h3 className="font-display text-sm font-semibold text-navy">Campanhas ativas</h3>
+                <span className="text-xs text-muted-foreground">({ativas.length})</span>
+              </div>
+              <Link to="/campanhas" className="text-xs font-semibold text-muted-foreground hover:text-navy">
+                Ver todas
+              </Link>
+            </div>
+            <div className="p-2">
+              {ativas.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground">Nenhuma campanha ativa.</p>
+              ) : (
+                ativas.map((c) => {
+                  const restam = differenceInCalendarDays(parseISO(c.dataFinal), hoje);
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-secondary/60"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} produtos ·{" "}
+                          {restam <= 0 ? "encerra hoje" : `${restam} dia${restam > 1 ? "s" : ""} restantes`}
+                        </p>
+                      </div>
+                      <EyeBtn id={c.id} />
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Panel>
+
+          <Panel>
+            <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-navy" />
+                <h3 className="font-display text-sm font-semibold text-navy">Próximas campanhas</h3>
+                <span className="text-xs text-muted-foreground">({proximas.length})</span>
+              </div>
+              <Link to="/campanhas" className="text-xs font-semibold text-muted-foreground hover:text-navy">
+                Ver todas
+              </Link>
+            </div>
+            <div className="p-2">
+              {proximas.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground">Nenhuma campanha programada.</p>
+              ) : (
+                proximas.map((c) => {
+                  const dias = differenceInCalendarDays(parseISO(c.dataInicial), hoje);
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-secondary/60"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} produtos ·{" "}
+                          {dias <= 0 ? "inicia hoje" : `inicia em ${dias} dia${dias > 1 ? "s" : ""}`}
+                        </p>
+                      </div>
+                      <EyeBtn id={c.id} />
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        <CampanhaQuickView
+          campanha={quickView}
+          ofertas={quickView ? rawOfertas.filter((o) => o.campanhaId === quickView.id) : []}
+          onOpenChange={(v) => { if (!v) setQuickView(null); }}
+        />
+
+        <div className="flex justify-end">
+          <Button asChild variant="ghost" size="sm" className="text-navy">
             <Link to="/campanhas">
-              <Plus className="mr-2 h-4 w-4" /> Nova campanha
+              Ver todas as campanhas <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
           </Button>
         </div>
       </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6">
-        {kpis.map((k, i) => (
-          <Panel
-            key={k.label}
-            className={`group relative overflow-hidden p-4 transition-shadow hover:shadow-[0_12px_30px_-18px_rgba(11,31,58,0.45)] sm:p-6 ${
-              i === 2 ? "col-span-2 sm:col-span-1" : ""
-            }`}
-          >
-            <span
-              className={`absolute inset-x-0 top-0 h-1 ${k.tone === "primary" ? "bg-primary" : "bg-navy"}`}
-            />
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {k.label}
-              </p>
-              <span
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
-                  k.tone === "primary" ? "bg-primary/10 text-primary" : "bg-navy/10 text-navy"
-                }`}
-              >
-                <k.icon className="h-4 w-4" />
-              </span>
-            </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-display text-3xl font-bold tabular-nums text-navy sm:text-4xl">{k.valor}</span>
-              <span className="text-xs font-medium text-muted-foreground">{k.sub}</span>
-            </div>
-          </Panel>
-        ))}
-      </div>
-
-      {/* Calendário em destaque */}
-      <Panel className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-secondary/30 p-4 sm:p-6">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-navy/10 text-navy">
-              <CalendarDays className="h-4 w-4" />
-            </span>
-            <h3 className="truncate font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
-          </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-primary" /> Ativas
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-navy" /> Programadas
-            </span>
-          </div>
-        </div>
-        <div className="grid gap-6 p-3 sm:gap-8 sm:p-6 lg:grid-cols-[auto_1fr]">
-
-          <Calendar
-            mode="single"
-            locale={ptBR}
-            selected={diaSelecionado}
-            onSelect={setDiaSelecionado}
-            month={mesRef}
-            onMonthChange={setMesRef}
-            modifiers={{ ativa: diasAtivos, programada: diasProgramados }}
-            modifiersClassNames={{
-              ativa: "bg-primary/10 text-primary font-semibold rounded-md",
-              programada: "bg-navy/10 text-navy font-semibold rounded-md",
-            }}
-            components={{
-              DayButton: (props) => {
-                const nomes = campanhasPorDia.get(format(props.day.date, "yyyy-MM-dd"));
-                return (
-                  <CalendarDayButton
-                    {...props}
-                    title={
-                      nomes?.length
-                        ? `${format(props.day.date, "dd/MM/yyyy")}\n${nomes.map((n) => `• ${n}`).join("\n")}`
-                        : `${format(props.day.date, "dd/MM/yyyy")}\nSem campanhas`
-                    }
-                  />
-                );
-              },
-            }}
-            className="pointer-events-auto w-full max-w-full rounded-xl border p-2 [--cell-size:min(2.4rem,10vw)] sm:p-4 sm:[--cell-size:2.6rem]"
-          />
-
-          <div className="min-w-0">
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              {diaSelecionado ? format(diaSelecionado, "PPP", { locale: ptBR }) : "Selecione um dia"}
-            </div>
-            {campanhasDoDia.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-                Nenhuma campanha neste dia.
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {campanhasDoDia.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:bg-secondary/50"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status]}`} />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} ofertas
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${STATUS_PILL[c.status]}`}>
-                        {c.status}
-                      </span>
-                      <EyeBtn id={c.id} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </Panel>
-
-      {/* Campanhas ativas e futuras em destaque */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel>
-          <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              <h3 className="font-display text-sm font-semibold text-navy">Campanhas ativas</h3>
-              <span className="text-xs text-muted-foreground">({ativas.length})</span>
-            </div>
-            <Link to="/campanhas" className="text-xs font-semibold text-muted-foreground hover:text-navy">
-              Ver todas
-            </Link>
-          </div>
-          <div className="p-2">
-            {ativas.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Nenhuma campanha ativa.</p>
-            ) : (
-              ativas.map((c) => {
-                const restam = differenceInCalendarDays(parseISO(c.dataFinal), hoje);
-                return (
-                  <div
-                    key={c.id}
-                    className="flex items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-secondary/60"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} produtos ·{" "}
-                        {restam <= 0 ? "encerra hoje" : `${restam} dia${restam > 1 ? "s" : ""} restantes`}
-                      </p>
-                    </div>
-                    <EyeBtn id={c.id} />
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </Panel>
-
-        <Panel>
-          <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-navy" />
-              <h3 className="font-display text-sm font-semibold text-navy">Próximas campanhas</h3>
-              <span className="text-xs text-muted-foreground">({proximas.length})</span>
-            </div>
-            <Link to="/campanhas" className="text-xs font-semibold text-muted-foreground hover:text-navy">
-              Ver todas
-            </Link>
-          </div>
-          <div className="p-2">
-            {proximas.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Nenhuma campanha programada.</p>
-            ) : (
-              proximas.map((c) => {
-                const dias = differenceInCalendarDays(parseISO(c.dataInicial), hoje);
-                return (
-                  <div
-                    key={c.id}
-                    className="flex items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-secondary/60"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} produtos ·{" "}
-                        {dias <= 0 ? "inicia hoje" : `inicia em ${dias} dia${dias > 1 ? "s" : ""}`}
-                      </p>
-                    </div>
-                    <EyeBtn id={c.id} />
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </Panel>
-      </div>
-
-      <CampanhaQuickView
-        campanha={quickView}
-        ofertas={quickView ? rawOfertas.filter((o) => o.campanhaId === quickView.id) : []}
-        onOpenChange={(v) => { if (!v) setQuickView(null); }}
-      />
-
-      <div className="flex justify-end">
-        <Button asChild variant="ghost" size="sm" className="text-navy">
-          <Link to="/campanhas">
-            Ver todas as campanhas <ArrowRight className="ml-1 h-3 w-3" />
-          </Link>
-        </Button>
-      </div>
-    </div>
+    </>
   );
 }
-

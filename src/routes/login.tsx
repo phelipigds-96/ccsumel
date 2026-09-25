@@ -48,6 +48,7 @@ function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
+      sessionStorage.setItem("justLoggedIn", "1");
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       setError(
