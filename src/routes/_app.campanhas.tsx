@@ -218,7 +218,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const sortedVisiveis = useMemo(() => {
     return campanhas
       .filter((c) => categoriaCampanha(c) !== "encerrada")
-      .filter((c) => user?.isAdmin || statusCampanha(c) !== "Rascunho")
+      .filter((c) => user?.isAdmin || user?.canSeeDrafts || statusCampanha(c) !== "Rascunho")
       .slice()
       .sort((a, b) => {
         let valA: string = "";
@@ -396,7 +396,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
               <SelectItem value="todos">Todos status</SelectItem>
               <SelectItem value="Ativa">Ativa</SelectItem>
               <SelectItem value="Programada">Programada</SelectItem>
-              {user?.isAdmin && <SelectItem value="Rascunho">Rascunho</SelectItem>}
+              {(user?.isAdmin || user?.canSeeDrafts) && <SelectItem value="Rascunho">Rascunho</SelectItem>}
             </SelectContent>
           </Select>
           
