@@ -103,7 +103,7 @@
     }
   }
 
-  /* Left panel */
+  /* Left panel — gradiente navy proporcional */
   .login-panel-left {
     position: relative;
     overflow: hidden;
@@ -112,33 +112,6 @@
     justify-content: center;
     background-image: var(--gradient-auth);
     box-shadow: var(--shadow-auth);
-  }
-
-  /* Animated color overlay 1 — top-left red blob */
-  .login-panel-left::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(900px 700px at 15% 10%, oklch(0.535 0.211 27.5 / 0.50) 0%, transparent 60%);
-    animation: overlayFade 9s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  /* Animated color overlay 2 — bottom-right dark blob */
-  .login-panel-left::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(800px 600px at 85% 85%, oklch(0.45 0.16 20 / 0.42) 0%, transparent 60%);
-    animation: overlayFade 13s ease-in-out infinite reverse;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  @keyframes overlayFade {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.65; }
   }
 
   .login-left-inner {
