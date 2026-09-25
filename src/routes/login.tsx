@@ -62,17 +62,11 @@ function LoginPage() {
     <div className="login-root">
       {/* ── Left panel: branding + animated background ── */}
       <div className="login-panel-left">
-        <div className="login-left-inner">
-          <img
-            src={logoAsset}
-            alt="Sumel"
-            className="login-logo"
-          />
-          <p className="login-left-tagline">
-            Gestão completa de campanhas, ofertas, verbas cooperadas e sell-out
-            — tudo em um só lugar.
-          </p>
-        </div>
+        {/* decorative shapes */}
+        <div className="login-shape login-shape-1" />
+        <div className="login-shape login-shape-2" />
+        <div className="login-shape login-shape-3" />
+        <div className="login-shape login-shape-4" />
 
         {/* Animated floating icons */}
         <div className="login-animated-icons" aria-hidden="true">
@@ -96,11 +90,17 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* decorative shapes */}
-        <div className="login-shape login-shape-1" />
-        <div className="login-shape login-shape-2" />
-        <div className="login-shape login-shape-3" />
-        <div className="login-shape login-shape-4" />
+        <div className="login-left-inner">
+          <img
+            src={logoAsset}
+            alt="Sumel"
+            className="login-logo"
+          />
+          <p className="login-left-tagline">
+            Gestão completa de campanhas, ofertas, verbas cooperadas e sell-out
+            — tudo em um só lugar.
+          </p>
+        </div>
       </div>
 
       {/* ── Right panel: form ── */}

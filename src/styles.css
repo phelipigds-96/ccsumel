@@ -86,270 +86,310 @@
   --sidebar-border: oklch(0.31 0.05 258);
   --sidebar-ring: oklch(0.535 0.211 27.5);
 
-  /* Immersive auth backdrop — base sólida navy + overlay radial animado via ::before/::after */
+  /* Immersive auth backdrop */
   --gradient-auth: linear-gradient(160deg, oklch(0.20 0.04 258) 0%, oklch(0.26 0.05 258) 50%, oklch(0.32 0.08 20) 100%);
   --shadow-auth: 0 30px 80px -20px oklch(0.1 0.04 258 / 0.65);
 
-  /* ── Login layout ─────────────────────────────────── */
-  .login-root {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    min-height: 100dvh;
-  }
-
-  @media (max-width: 768px) {
-    .login-root {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Left panel — gradiente navy proporcional */
-  .login-panel-left {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-image: var(--gradient-auth);
-    box-shadow: var(--shadow-auth);
-  }
-
-  .login-left-inner {
-    position: relative;
-    z-index: 2;
-    max-width: 420px;
-    padding: 2.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .login-logo {
-    height: 180px;
-    width: auto;
-    object-fit: contain;
-    background: #ffffff;
-    border-radius: 1.25rem;
-    padding: 1rem;
-    box-shadow:
-      0 8px 32px oklch(0 0 0 / 0.18),
-      0 2px 8px oklch(0 0 0 / 0.10);
-    animation: logoFloat 6s ease-in-out infinite;
-  }
-
-  @keyframes logoFloat {
-    0%, 100% { transform: translateY(0px); }
-    50%       { transform: translateY(-12px); }
-  }
-
-  .login-left-tagline {
-    font-size: 0.9375rem;
-    color: oklch(1 0 0 / 0.68);
-    line-height: 1.65;
-  }
-
-  /* Animated floating icons */
-  .login-animated-icons {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 1;
-    overflow: hidden;
-  }
-
-  .login-animated-icon {
-    position: absolute;
-    color: oklch(1 0 0 / 0.055);
-    animation: floatIcon var(--duration, 8s) ease-in-out infinite;
-    animation-delay: var(--delay, 0s);
-  }
-
-  .login-icon-1 {
-    top: 14%;
-    left: 8%;
-    --duration: 9s;
-    --delay: 0s;
-  }
-
-  .login-icon-2 {
-    top: 28%;
-    right: 14%;
-    --duration: 7.5s;
-    --delay: 1.8s;
-  }
-
-  .login-icon-3 {
-    top: 52%;
-    left: 18%;
-    --duration: 10.5s;
-    --delay: 0.7s;
-  }
-
-  .login-icon-4 {
-    bottom: 32%;
-    right: 10%;
-    --duration: 8s;
-    --delay: 2.5s;
-  }
-
-  .login-icon-5 {
-    bottom: 12%;
-    left: 28%;
-    --duration: 7s;
-    --delay: 1.2s;
-  }
-
-  .login-icon-6 {
-    top: 38%;
-    right: 28%;
-    --duration: 11s;
-    --delay: 0.4s;
-  }
-
-  .login-left-title {
-    font-family: var(--font-display);
-    font-size: 2.25rem;
-    font-weight: 700;
-    color: oklch(1 0 0 / 0.92);
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-  }
-
-  .login-left-sub {
-    font-size: 0.9375rem;
-    color: oklch(1 0 0 / 0.65);
-    line-height: 1.65;
-  }
-
-  .login-left-features {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-
-  .login-left-features li {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 0.875rem;
-    color: oklch(1 0 0 / 0.78);
-  }
-
-  .login-left-features li::before {
-    content: "";
-    display: block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: oklch(0.72 0.19 27);
-    flex-shrink: 0;
-  }
-
-  /* Floating shapes */
-  .login-shape {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.45;
-    pointer-events: none;
-    animation: floatShape 8s ease-in-out infinite;
-  }
-
-  .login-shape-1 {
-    width: 360px;
-    height: 360px;
-    background: oklch(0.55 0.20 27);
-    top: -80px;
-    left: -60px;
-    animation-duration: 9s;
-    animation-delay: 0s;
-  }
-
-  .login-shape-2 {
-    width: 280px;
-    height: 280px;
-    background: oklch(0.40 0.16 258);
-    bottom: -40px;
-    right: 10%;
-    animation-duration: 11s;
-    animation-delay: -3s;
-  }
-
-  .login-shape-3 {
-    width: 200px;
-    height: 200px;
-    background: oklch(0.60 0.18 27);
-    top: 40%;
-    right: -40px;
-    animation-duration: 7s;
-    animation-delay: -5s;
-  }
-
-  .login-shape-4 {
-    width: 160px;
-    height: 160px;
-    background: oklch(0.50 0.14 258);
-    bottom: 20%;
-    left: 5%;
-    animation-duration: 13s;
-    animation-delay: -2s;
-  }
-
-  /* Right panel */
-  .login-panel-right {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--background);
-    padding: 2rem 1.5rem;
-  }
-
-  .login-form-wrap {
-    width: 100%;
-    max-width: 400px;
-    display: flex;
-    flex-direction: column;
-    gap: 1.75rem;
-  }
-
-  .login-mobile-logo {
-    display: none;
-  }
-
-  @media (max-width: 768px) {
-    .login-mobile-logo {
-      display: flex;
-      justify-content: center;
-    }
-  }
-
-  .login-form-header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .login-form-body {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .login-footer-link {
-    display: flex;
-    justify-content: center;
-  }
-
-  /* Sidebar / header polish */
+  /* Sidebar gradients */
   --gradient-sidebar: linear-gradient(175deg, oklch(0.26 0.055 258) 0%, oklch(0.21 0.045 258) 55%, oklch(0.185 0.05 262) 100%);
   --gradient-sidebar-active: linear-gradient(100deg, oklch(0.535 0.211 27.5 / 0.95) 0%, oklch(0.45 0.17 22 / 0.85) 100%);
   --shadow-sidebar-active: 0 8px 20px -10px oklch(0.535 0.211 27.5 / 0.9);
   --gradient-header: linear-gradient(90deg, oklch(1 0 0 / 0.9) 0%, oklch(0.99 0.004 258 / 0.85) 100%);
 }
 
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+/* ── Login layout ─────────────────────────────────── */
+.login-root {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100dvh;
+}
+
+@media (max-width: 768px) {
+  .login-root {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Left panel — gradiente navy */
+.login-panel-left {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: var(--gradient-auth);
+  box-shadow: var(--shadow-auth);
+}
+
+.login-left-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 420px;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: center;
+  text-align: center;
+}
+
+.login-logo {
+  height: 160px;
+  width: auto;
+  object-fit: contain;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow:
+    0 8px 32px oklch(0 0 0 / 0.18),
+    0 2px 8px oklch(0 0 0 / 0.10);
+  animation: logoFloat 6s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+
+.login-left-tagline {
+  font-size: 0.9375rem;
+  color: oklch(1 0 0 / 0.68);
+  line-height: 1.65;
+}
+
+/* Animated floating icons */
+.login-animated-icons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.login-animated-icon {
+  position: absolute;
+  color: oklch(1 0 0 / 0.055);
+  animation: floatIcon var(--duration, 8s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.login-icon-1 {
+  top: 14%;
+  left: 8%;
+  --duration: 9s;
+  --delay: 0s;
+}
+
+.login-icon-2 {
+  top: 28%;
+  right: 14%;
+  --duration: 7.5s;
+  --delay: 1.8s;
+}
+
+.login-icon-3 {
+  top: 52%;
+  left: 18%;
+  --duration: 10.5s;
+  --delay: 0.7s;
+}
+
+.login-icon-4 {
+  bottom: 32%;
+  right: 10%;
+  --duration: 8s;
+  --delay: 2.5s;
+}
+
+.login-icon-5 {
+  bottom: 12%;
+  left: 28%;
+  --duration: 7s;
+  --delay: 1.2s;
+}
+
+.login-icon-6 {
+  top: 38%;
+  right: 28%;
+  --duration: 11s;
+  --delay: 0.4s;
+}
+
+.login-left-title {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: oklch(1 0 0 / 0.92);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.login-left-sub {
+  font-size: 0.9375rem;
+  color: oklch(1 0 0 / 0.65);
+  line-height: 1.65;
+}
+
+.login-left-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.login-left-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  color: oklch(1 0 0 / 0.78);
+}
+
+.login-left-features li::before {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: oklch(0.72 0.19 27);
+  flex-shrink: 0;
+}
+
+/* Floating shapes */
+.login-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+  pointer-events: none;
+  animation: floatShape 8s ease-in-out infinite;
+}
+
+.login-shape-1 {
+  width: 360px;
+  height: 360px;
+  background: oklch(0.55 0.20 27);
+  top: -80px;
+  left: -60px;
+  animation-duration: 9s;
+  animation-delay: 0s;
+}
+
+.login-shape-2 {
+  width: 280px;
+  height: 280px;
+  background: oklch(0.40 0.16 258);
+  bottom: -40px;
+  right: 10%;
+  animation-duration: 11s;
+  animation-delay: -3s;
+}
+
+.login-shape-3 {
+  width: 200px;
+  height: 200px;
+  background: oklch(0.60 0.18 27);
+  top: 40%;
+  right: -40px;
+  animation-duration: 7s;
+  animation-delay: -5s;
+}
+
+.login-shape-4 {
+  width: 160px;
+  height: 160px;
+  background: oklch(0.50 0.14 258);
+  bottom: 20%;
+  left: 5%;
+  animation-duration: 13s;
+  animation-delay: -2s;
+}
+
+/* Right panel */
+.login-panel-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+  padding: 2rem 1.5rem;
+}
+
+.login-form-wrap {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.login-mobile-logo {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .login-mobile-logo {
+    display: flex;
+    justify-content: center;
+  }
+}
+
+.login-form-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.login-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.login-footer-link {
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Animations ───────────────────────────────────── */
+@keyframes scan {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(150px); }
+}
+
+@keyframes floatShape {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  33%       { transform: translateY(-22px) scale(1.04); }
+  66%       { transform: translateY(12px) scale(0.97); }
+}
+
+@keyframes floatIcon {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25%       { transform: translateY(-16px) rotate(3deg); }
+  75%       { transform: translateY(10px) rotate(-2deg); }
+}
+
+/* ── Sidebar ──────────────────────────────────────── */
 [data-sidebar="sidebar"] {
   background-image: var(--gradient-sidebar);
   border-right: 1px solid oklch(1 0 0 / 0.07);
@@ -378,8 +418,7 @@
   transform: translateX(2px);
 }
 
-
-
+/* ── Dark mode ─────────────────────────────────────── */
 .dark {
   --background: oklch(0.16 0.03 260);
   --foreground: oklch(0.98 0 0);
@@ -411,40 +450,3 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.6 0.22 27);
 }
-
-@keyframes scan {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(150px); }
-}
-
-@keyframes floatShape {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  33%       { transform: translateY(-22px) scale(1.04); }
-  66%       { transform: translateY(12px) scale(0.97); }
-}
-
-@keyframes floatIcon {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  25%       { transform: translateY(-16px) rotate(3deg); }
-  75%       { transform: translateY(10px) rotate(-2deg); }
-}
-
-@layer base {
-  * {
-    border-color: var(--color-border);
-  }
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-  }
-  h1,
-  h2,
-  h3,
-  h4 {
-    font-family: var(--font-display);
-    letter-spacing: -0.01em;
-  }
-}
-
