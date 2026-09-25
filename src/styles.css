@@ -127,11 +127,21 @@
   }
 
   .login-logo {
-    width: 8rem;
-    height: auto;
-    aspect-ratio: 4 / 1;
+    height: 180px;
+    width: auto;
     object-fit: contain;
-    filter: drop-shadow(0 4px 24px oklch(0 0 0 / 0.35));
+    background: #ffffff;
+    border-radius: 1.25rem;
+    padding: 1rem;
+    box-shadow:
+      0 8px 32px oklch(0 0 0 / 0.18),
+      0 2px 8px oklch(0 0 0 / 0.10);
+    animation: logoFloat 6s ease-in-out infinite;
+  }
+
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-12px); }
   }
 
   .login-left-tagline {
