@@ -69,7 +69,7 @@ function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenC
         </div>
         {/* Corpo */}
         <div className="bg-background px-6 pb-6 pt-6">
-          <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+          <p className="mb-6 text-center text-sm leading-relaxed text-muted-foreground">
             É sempre bom ver você por aqui.
           </p>
           <Button onClick={() => onOpenChange(false)} className="w-full rounded-xl font-semibold">
