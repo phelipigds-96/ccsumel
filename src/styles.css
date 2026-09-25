@@ -86,10 +86,8 @@
   --sidebar-border: oklch(0.31 0.05 258);
   --sidebar-ring: oklch(0.535 0.211 27.5);
 
-  /* Immersive auth backdrop */
-  --gradient-auth: radial-gradient(1200px 800px at 15% 10%, oklch(0.535 0.211 27.5 / 0.55) 0%, transparent 55%),
-    radial-gradient(1000px 700px at 85% 85%, oklch(0.45 0.16 20 / 0.45) 0%, transparent 55%),
-    linear-gradient(140deg, oklch(0.18 0.045 258) 0%, oklch(0.234 0.048 258) 45%, oklch(0.30 0.10 20) 100%);
+  /* Immersive auth backdrop — base sólida navy + overlay radial animado via ::before/::after */
+  --gradient-auth: linear-gradient(160deg, oklch(0.20 0.04 258) 0%, oklch(0.26 0.05 258) 50%, oklch(0.32 0.08 20) 100%);
   --shadow-auth: 0 30px 80px -20px oklch(0.1 0.04 258 / 0.65);
 
   /* ── Login layout ─────────────────────────────────── */
@@ -114,6 +112,33 @@
     justify-content: center;
     background-image: var(--gradient-auth);
     box-shadow: var(--shadow-auth);
+  }
+
+  /* Animated color overlay 1 — top-left red blob */
+  .login-panel-left::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(900px 700px at 15% 10%, oklch(0.535 0.211 27.5 / 0.50) 0%, transparent 60%);
+    animation: overlayFade 9s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Animated color overlay 2 — bottom-right dark blob */
+  .login-panel-left::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(800px 600px at 85% 85%, oklch(0.45 0.16 20 / 0.42) 0%, transparent 60%);
+    animation: overlayFade 13s ease-in-out infinite reverse;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  @keyframes overlayFade {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.65; }
   }
 
   .login-left-inner {
