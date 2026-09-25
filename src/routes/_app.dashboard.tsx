@@ -64,16 +64,16 @@ function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenC
             <Sparkles className="h-7 w-7 text-primary" />
           </div>
           <h2 className="font-display text-2xl font-bold text-white">
-            Bem-vindo de volta,{}\n{primeiroNome}! 👋
+            Bem-vindo de volta,<br />{primeiroNome}! 👋
           </h2>
         </div>
         {/* Corpo */}
         <div className="bg-background px-6 pb-6 pt-6">
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-            Que bom ter você aqui. Confira as novidades e o resumo do dia abaixo.
+            É sempre bom ver você por aqui.
           </p>
           <Button onClick={() => onOpenChange(false)} className="w-full rounded-xl font-semibold">
-            Começar
+            Bora lá!
           </Button>
         </div>
       </DialogContent>
