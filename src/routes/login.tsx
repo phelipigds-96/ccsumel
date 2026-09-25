@@ -4,13 +4,25 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  ShoppingBag,
+  Tag,
+  BarChart3,
+  Truck,
+  ShoppingCart,
+  ClipboardList,
+} from "lucide-react";
 import logoAsset from "@/assets/logo-sumel.png";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Central de Campanhas Sumel" },
-      { name: "description", content: "Acesse a Central de Campanhas Sumel — gestão de campanhas, ofertas e verbas." },
+      {
+        name: "description",
+        content:
+          "Acesse a Central de Campanhas Sumel — gestão de campanhas, ofertas e verbas.",
+      },
       { property: "og:title", content: "Central de Campanhas Sumel" },
       { property: "og:description", content: "Acesse a Central de Campanhas Sumel." },
     ],
@@ -38,7 +50,9 @@ function LoginPage() {
       await login(username, password);
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao entrar. Tente novamente.");
+      setError(
+        err instanceof Error ? err.message : "Falha ao entrar. Tente novamente."
+      );
     } finally {
       setLoading(false);
     }
@@ -49,21 +63,40 @@ function LoginPage() {
       {/* ── Left panel: branding + animated background ── */}
       <div className="login-panel-left">
         <div className="login-left-inner">
-          <img src={logoAsset} alt="Sumel" className="h-16 w-auto" />
-          <h2 className="login-left-title">Central de Campanhas</h2>
-          <p className="login-left-sub">
-            Gestão completa de campanhas, ofertas, verbas cooperadas e sell-out —
-            tudo em um só lugar.
+          <img
+            src={logoAsset}
+            alt="Sumel"
+            className="login-logo"
+          />
+          <p className="login-left-tagline">
+            Gestão completa de campanhas, ofertas, verbas cooperadas e sell-out
+            — tudo em um só lugar.
           </p>
-          <ul className="login-left-features">
-            <li>Campanhas com encartes digitais e checklist</li>
-            <li>Ofertas com preço, margem e corredor</li>
-            <li>Produtos em falta e oportunidades de compra</li>
-            <li>Sell-out e acertos com fornecedores</li>
-          </ul>
         </div>
 
-        {/* floating shapes */}
+        {/* Animated floating icons */}
+        <div className="login-animated-icons" aria-hidden="true">
+          <div className="login-animated-icon login-icon-1">
+            <ShoppingBag className="h-10 w-10" />
+          </div>
+          <div className="login-animated-icon login-icon-2">
+            <Tag className="h-8 w-8" />
+          </div>
+          <div className="login-animated-icon login-icon-3">
+            <BarChart3 className="h-9 w-9" />
+          </div>
+          <div className="login-animated-icon login-icon-4">
+            <Truck className="h-11 w-11" />
+          </div>
+          <div className="login-animated-icon login-icon-5">
+            <ShoppingCart className="h-8 w-8" />
+          </div>
+          <div className="login-animated-icon login-icon-6">
+            <ClipboardList className="h-10 w-10" />
+          </div>
+        </div>
+
+        {/* decorative shapes */}
         <div className="login-shape login-shape-1" />
         <div className="login-shape login-shape-2" />
         <div className="login-shape login-shape-3" />
@@ -131,7 +164,10 @@ function LoginPage() {
           </form>
 
           <p className="login-footer-link">
-            <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            <Link
+              to="/"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
               ← Voltar para início
             </Link>
           </p>
