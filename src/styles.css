@@ -2,16 +2,6 @@
 @source "../src";
 @import "tw-animate-css";
 
-@utility scan {
-  animation: scan 2s linear infinite;
-}
-
-@keyframes scan {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(150px); }
-}
-
-@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
@@ -228,12 +218,6 @@
     animation-delay: -2s;
   }
 
-  @keyframes floatShape {
-    0%, 100% { transform: translateY(0px) scale(1); }
-    33%       { transform: translateY(-22px) scale(1.04); }
-    66%       { transform: translateY(12px) scale(0.97); }
-  }
-
   /* Right panel */
   .login-panel-right {
     display: flex;
@@ -346,6 +330,17 @@
   --sidebar-accent-foreground: oklch(0.99 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.6 0.22 27);
+}
+
+@keyframes scan {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(150px); }
+}
+
+@keyframes floatShape {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  33%       { transform: translateY(-22px) scale(1.04); }
+  66%       { transform: translateY(12px) scale(0.97); }
 }
 
 @layer base {
