@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { Plus, ArrowRight, Eye, Megaphone, CalendarClock, Tags, CalendarDays, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ArrowRight, Eye, CalendarDays, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCampanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView } from "@/components/campanha-quick-view";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
@@ -70,9 +71,9 @@ function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenC
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+    <p className={cn("mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground", className)}>
       {children}
     </p>
   );
@@ -80,6 +81,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function DashboardPage() {
   const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
   const hora = hoje.getHours();
   const { campanhas: rawCampanhas, ofertas: rawOfertas } = useCampanhasStore();
   const [quickView, setQuickView] = useState<Campanha | null>(null);
@@ -144,7 +146,7 @@ function DashboardPage() {
     </button>
   );
 
-  // ── Timeline Gantt: próximos 30 dias ─────────────────────────────────────
+  // ── Timeline Gantt: 37 dias (−7 a +30 a partir de hoje) ───────────────
   const [tlOffset, setTlOffset] = useState(0);
 
   const tlDays = useMemo(() => {
@@ -154,6 +156,7 @@ function DashboardPage() {
     for (let i = 0; i < 37; i++) {
       const d = new Date(start);
       d.setDate(d.getDate() + i);
+      d.setHours(0, 0, 0, 0);
       days.push(d);
     }
     return days;
@@ -165,8 +168,9 @@ function DashboardPage() {
         const ini = parseISO(c.dataInicial);
         const fim = parseISO(c.dataFinal);
         return tlDays.some(
-          (d) => d >= new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()) &&
-                 d <= new Date(fim.getFullYear(), fim.getMonth(), fim.getDate()),
+          (d) =>
+            d >= new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()) &&
+            d <= new Date(fim.getFullYear(), fim.getMonth(), fim.getDate()),
         );
       }),
     [campanhas, tlDays],
@@ -180,6 +184,18 @@ function DashboardPage() {
       d.getDate() === hoje.getDate(),
   );
 
+  const MESES_ABREV = ["jan","fev","mar","abr","mai","jun"," jul","ago","set","out","nov","dez"];
+
+  // Primeira célula de cada mês no range
+  const mesLabels = useMemo(() => {
+    const m = new Map<string, number>();
+    tlDays.forEach((d, i) => {
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!m.has(key)) m.set(key, i);
+    });
+    return m;
+  }, [tlDays]);
+
   const barLeft = (ini: Date, fim: Date) => {
     const s = tlDays[0];
     const startDay = Math.max(0, Math.floor((ini.getTime() - s.getTime()) / 86400000));
@@ -187,6 +203,12 @@ function DashboardPage() {
     const left = startDay * cellW;
     const width = Math.max(cellW, (endDay - startDay + 1) * cellW);
     return { left, width };
+  };
+
+  // Dias que encerram em ≤3 dias
+  const endingSoon = (fim: string) => {
+    const diff = differenceInCalendarDays(parseISO(fim), hoje);
+    return diff >= 0 && diff <= 3;
   };
 
   return (
@@ -220,7 +242,7 @@ function DashboardPage() {
         {/* ── KPI barra compacta ── */}
         <div className="rounded-xl border bg-card px-6 py-4 shadow-sm">
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Resumo do dia
+            Visão geral
           </p>
           <div className="flex items-stretch divide-x divide-border">
             <div className="flex flex-1 flex-col items-center px-6 py-1">
@@ -241,9 +263,7 @@ function DashboardPage() {
         {/* ── Timeline Gantt ── */}
         <div className="rounded-xl border bg-card shadow-sm">
           <div className="flex items-center justify-between border-b px-4 py-3">
-            <div>
-              <SectionLabel>Timeline — próximas semanas</SectionLabel>
-            </div>
+            <SectionLabel>Timeline — próximas semanas</SectionLabel>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setTlOffset((p) => p - 7)}
@@ -252,7 +272,13 @@ function DashboardPage() {
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => setTlOffset((p) => Math.min(p + 7, 0))}
+                onClick={() => setTlOffset(0)}
+                className="grid h-7 min-w-[44px] place-items-center rounded-lg px-1.5 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                Hoje
+              </button>
+              <button
+                onClick={() => setTlOffset((p) => p + 7)}
                 className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -260,11 +286,24 @@ function DashboardPage() {
             </div>
           </div>
 
+          {/* Legenda */}
+          <div className="flex items-center gap-4 border-b border-border/50 px-4 py-1.5">
+            <span className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+              <span className="h-2 w-4 rounded-sm bg-primary" /> Ativa
+            </span>
+            <span className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+              <span className="h-2 w-4 rounded-sm bg-navy" /> Programada
+            </span>
+            <span className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+              <span className="h-2 w-0.5 bg-primary" /> Hoje
+            </span>
+          </div>
+
           <div className="overflow-x-auto">
-            <div style={{ minWidth: tlDays.length * cellW + 140 }}>
+            <div style={{ minWidth: tlDays.length * cellW + 160 }}>
               {/* Cabeçalho de datas */}
               <div className="flex h-8 items-center border-b bg-secondary/40 px-2">
-                <div className="w-[140px] shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="w-[160px] shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Campanha
                 </div>
                 <div className="flex">
@@ -273,17 +312,25 @@ function DashboardPage() {
                       d.getFullYear() === hoje.getFullYear() &&
                       d.getMonth() === hoje.getMonth() &&
                       d.getDate() === hoje.getDate();
+                    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                    const isMonthStart = Array.from(mesLabels.entries()).some(([, idx]) => idx === i);
                     return (
                       <div
                         key={i}
-                        className={`flex flex-col items-center justify-center border-l border-border/50 ${isToday ? "bg-primary/10" : ""}`}
+                        className={cn(
+                          "relative flex flex-col items-center justify-center border-l border-border/40",
+                          isToday ? "bg-primary/10" : "",
+                          isWeekend ? "bg-secondary/30" : "",
+                        )}
                         style={{ width: cellW, height: "100%" }}
                       >
-                        <span className={`text-[9px] font-semibold ${isToday ? "text-primary" : "text-muted-foreground/60"}`}>
+                        {isMonthStart && (
+                          <span className={cn("text-[9px] font-bold", isToday ? "text-primary" : "text-muted-foreground")}>
+                            {MESES_ABREV[d.getMonth()]}
+                          </span>
+                        )}
+                        <span className={cn("text-[9px] font-semibold", isToday ? "text-primary" : "text-muted-foreground/60")}>
                           {format(d, "dd")}
-                        </span>
-                        <span className={`text-[8px] ${isToday ? "text-primary" : "text-muted-foreground/40"}`}>
-                          {format(d, "MMM").slice(0, 1)}
                         </span>
                       </div>
                     );
@@ -297,7 +344,7 @@ function DashboardPage() {
                 {todayIdx >= 0 && (
                   <div
                     className="absolute top-0 z-10 h-full w-0.5 bg-primary"
-                    style={{ left: 140 + todayIdx * cellW + cellW / 2 }}
+                    style={{ left: 160 + todayIdx * cellW + cellW / 2 }}
                   />
                 )}
                 {tlCampanhas.length === 0 ? (
@@ -307,12 +354,13 @@ function DashboardPage() {
                     const ini = parseISO(c.dataInicial);
                     const fim = parseISO(c.dataFinal);
                     const { left, width } = barLeft(ini, fim);
+                    const soon = endingSoon(c.dataFinal);
                     return (
                       <div
                         key={c.id}
                         className="flex h-9 items-center border-b border-border/40 px-2 transition-colors hover:bg-secondary/30"
                       >
-                        <div className="w-[140px] shrink-0 pr-2">
+                        <div className="sticky left-0 w-[160px] shrink-0 bg-card pr-2">
                           <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
                         </div>
                         <div className="relative flex-1">
@@ -321,9 +369,11 @@ function DashboardPage() {
                             tabIndex={0}
                             onClick={() => abrirQuickView(c.id)}
                             onKeyDown={(e) => e.key === "Enter" && abrirQuickView(c.id)}
-                            className={`absolute top-1/2 -translate-y-1/2 cursor-pointer rounded px-2 py-0.5 text-[10px] font-semibold text-white transition-opacity hover:opacity-80 ${
-                              c.status === "Ativa" ? "bg-primary" : "bg-navy"
-                            }`}
+                            className={cn(
+                              "absolute top-1/2 -translate-y-1/2 cursor-pointer rounded px-2 py-0.5 text-[10px] font-semibold text-white transition-opacity hover:opacity-80",
+                              c.status === "Ativa" ? "bg-primary" : "bg-navy",
+                              soon && "ring-1 ring-amber-400",
+                            )}
                             style={{ left, width: Math.max(width - 4, 20) }}
                           >
                             <span className="block truncate">{c.nome}</span>
@@ -348,7 +398,11 @@ function DashboardPage() {
               <SectionLabel className="mb-0">Calendário</SectionLabel>
             </div>
             <div className="p-3">
-              <MiniCalendar campaigns={campanhas} onOpen={abrirQuickView} />
+              <MiniCalendar
+                campaigns={campanhas}
+                onOpen={abrirQuickView}
+                EyeBtn={EyeBtn}
+              />
             </div>
           </div>
 
@@ -367,6 +421,7 @@ function DashboardPage() {
               ) : (
                 ativas.map((c) => {
                   const restam = differenceInCalendarDays(parseISO(c.dataFinal), hoje);
+                  const soon = restam >= 0 && restam <= 3;
                   return (
                     <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-2.5 transition-colors hover:bg-secondary/40">
                       <div className="min-w-0 flex-1">
@@ -377,7 +432,10 @@ function DashboardPage() {
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-1.5">
-                        <span className={`text-[10px] font-semibold ${restam <= 0 ? "text-primary" : restam <= 3 ? "text-amber-600" : "text-muted-foreground"}`}>
+                        <span className={cn(
+                          "text-[10px] font-semibold",
+                          soon ? "text-amber-600" : restam <= 0 ? "text-primary" : "text-muted-foreground",
+                        )}>
                           {restam <= 0 ? "hoje" : `${restam}d`}
                         </span>
                         <EyeBtn id={c.id} />
@@ -445,16 +503,20 @@ function DashboardPage() {
   );
 }
 
-/* ── Calendário mini inline ─────────────────────────────────────────────────── */
+/* ── Calendário mini inline ─────────────────────────────────────────────── */
 function MiniCalendar({
   campaigns,
   onOpen,
+  EyeBtn,
 }: {
   campaigns: CampanhaDash[];
   onOpen: (id: string) => void;
+  EyeBtn: React.ComponentType<{ id: string }>;
 }) {
   const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
   const [mes, setMes] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const firstDay = new Date(mes.getFullYear(), mes.getMonth(), 1).getDay();
   const daysInMes = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate();
@@ -473,26 +535,30 @@ function MiniCalendar({
     return campaigns.filter((c) => {
       const ini = parseISO(c.dataInicial);
       const fim = parseISO(c.dataFinal);
-      return date >= new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()) &&
-             date <= new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
+      return (
+        date >= new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()) &&
+        date <= new Date(fim.getFullYear(), fim.getMonth(), fim.getDate())
+      );
     });
   };
+
+  const selectedDayCampaigns = selectedDay !== null ? campaignsOnDay(selectedDay) : [];
 
   return (
     <div>
       {/* Navegação do mês */}
       <div className="mb-2 flex items-center justify-between">
         <button
-          onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))}
+          onClick={() => { setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1)); setSelectedDay(null); }}
           className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           <ChevronLeft className="h-3 w-3" />
         </button>
-        <span className="text-xs font-semibold text-navy">
+        <span className="text-xs font-semibold capitalize text-navy">
           {format(mes, "MMMM yyyy", { locale: ptBR })}
         </span>
         <button
-          onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1))}
+          onClick={() => { setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1)); setSelectedDay(null); }}
           className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           <ChevronRight className="h-3 w-3" />
@@ -513,21 +579,32 @@ function MiniCalendar({
         {cells.map((d, i) => {
           if (!d) return <div key={`empty-${i}`} />;
           const onD = isToday(d);
-          const onD_campaigns = campaignsOnDay(d);
-          const temAtiva = onD_campaigns.some((c) => c.status === "Ativa");
-          const temProg = onD_campaigns.some((c) => c.status === "Programada");
+          const dayCampaigns = campaignsOnDay(d);
+          const hasAtiva = dayCampaigns.some((c) => c.status === "Ativa");
+          const hasProg = dayCampaigns.some((c) => c.status === "Programada");
+          const isSelected = selectedDay === d;
+          const tooltip = dayCampaigns.length
+            ? dayCampaigns.map((c) => c.nome).join(", ")
+            : undefined;
           return (
             <div
               key={d}
-              className={`relative flex h-8 flex-col items-center justify-center rounded text-[10px] transition-colors ${
-                onD ? "bg-primary font-semibold text-white" : "text-navy hover:bg-secondary"
-              }`}
+              role="button"
+              tabIndex={0}
+              title={tooltip}
+              onClick={() => setSelectedDay(isSelected ? null : d)}
+              onKeyDown={(e) => e.key === "Enter" && setSelectedDay(isSelected ? null : d)}
+              className={cn(
+                "relative flex h-8 flex-col items-center justify-center rounded text-[10px] transition-colors",
+                onD ? "bg-primary font-semibold text-white" : "text-navy hover:bg-secondary",
+                isSelected && !onD ? "ring-1 ring-primary bg-primary/5" : "",
+              )}
             >
               <span>{d}</span>
-              {d % 5 === 0 && !onD && (
+              {dayCampaigns.length > 0 && (
                 <div className="mt-0.5 flex gap-0.5">
-                  {temAtiva && <span className="h-1 w-1 rounded-full bg-primary" />}
-                  {temProg && <span className="h-1 w-1 rounded-full bg-navy" />}
+                  {hasAtiva && <span className="h-1 w-1 rounded-full bg-primary" />}
+                  {hasProg && <span className="h-1 w-1 rounded-full bg-navy" />}
                 </div>
               )}
             </div>
@@ -544,6 +621,40 @@ function MiniCalendar({
           <span className="h-1.5 w-1.5 rounded-full bg-navy" /> Programadas
         </span>
       </div>
+
+      {/* Campanhas do dia selecionado */}
+      {selectedDay !== null && (
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {format(new Date(mes.getFullYear(), mes.getMonth(), selectedDay), "dd 'de' MMMM", { locale: ptBR })}
+          </p>
+          {selectedDayCampaigns.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Nenhuma campanha neste dia.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {selectedDayCampaigns.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/30 px-2.5 py-1.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      {format(parseISO(c.dataInicial), "dd/MM")}–{format(parseISO(c.dataFinal), "dd/MM")}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className={cn(
+                      "text-[9px] font-semibold uppercase tracking-wide",
+                      c.status === "Ativa" ? "text-primary" : "text-navy",
+                    )}>
+                      {c.status}
+                    </span>
+                    <EyeBtn id={c.id} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
