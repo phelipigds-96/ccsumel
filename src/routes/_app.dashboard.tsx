@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { Plus, ArrowRight, Eye, Megaphone, CalendarClock, Tags, CalendarDays, Sparkles } from "lucide-react";
+import { Plus, ArrowRight, Eye, Megaphone, CalendarClock, Tags, CalendarDays, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCampanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView } from "@/components/campanha-quick-view";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
-import { format, isSameDay, isWithinInterval, parseISO, differenceInCalendarDays } from "date-fns";
+import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
 
@@ -33,24 +32,16 @@ interface CampanhaDash {
   status: "Ativa" | "Programada" | "Encerrada";
 }
 
-const STATUS_DOT: Record<CampanhaDash["status"], string> = {
+const STATUS_COLOR: Record<CampanhaDash["status"], string> = {
   Ativa: "bg-primary",
   Programada: "bg-navy",
   Encerrada: "bg-border",
 };
 
-const STATUS_PILL: Record<CampanhaDash["status"], string> = {
-  Ativa: "bg-emerald-50 text-emerald-600 font-semibold",
-  Programada: "bg-navy/5 text-navy font-semibold",
-  Encerrada: "border border-border text-muted-foreground",
-};
-
-function Panel({ className = "", children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div className={`rounded-2xl border bg-card shadow-[0_1px_2px_rgba(11,31,58,0.05)] ${className}`}>
-      {children}
-    </div>
-  );
+function getSaudacao(hora: number, nome: string) {
+  if (hora < 12) return `Bom dia, ${nome}`;
+  if (hora < 18) return `Boa tarde, ${nome}`;
+  return `Boa noite, ${nome}`;
 }
 
 function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenChange: (v: boolean) => void; userName: string }) {
@@ -58,7 +49,6 @@ function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenC
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm gap-0 overflow-hidden p-0 text-left">
-        {/* Cabeçalho gradiente */}
         <div className="bg-navy px-6 pb-8 pt-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
             <Sparkles className="h-7 w-7 text-primary" />
@@ -67,7 +57,6 @@ function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenC
             Bem-vindo de volta,<br />{primeiroNome}! 👋
           </h2>
         </div>
-        {/* Corpo */}
         <div className="bg-background px-6 pb-6 pt-6">
           <p className="mb-6 text-center text-sm leading-relaxed text-muted-foreground">
             É sempre bom ver você por aqui.
@@ -81,14 +70,23 @@ function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenC
   );
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
 function DashboardPage() {
   const hoje = new Date();
+  const hora = hoje.getHours();
   const { campanhas: rawCampanhas, ofertas: rawOfertas } = useCampanhasStore();
   const [quickView, setQuickView] = useState<Campanha | null>(null);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const { user } = useAuth();
+  const primeiroNome = (user?.name ?? "").split(" ")[0];
 
-  // Exibe modal de boas-vindas uma única vez após login
   useEffect(() => {
     if (sessionStorage.getItem("justLoggedIn") === "1") {
       sessionStorage.removeItem("justLoggedIn");
@@ -130,9 +128,6 @@ function DashboardPage() {
 
   const produtosEmOferta = ativas.reduce((sum, c) => sum + c.ofertas, 0);
 
-  const [mesRef, setMesRef] = useState<Date>(hoje);
-  const [diaSelecionado, setDiaSelecionado] = useState<Date | undefined>(hoje);
-
   const abrirQuickView = (id: string) => {
     const c = rawCampanhas.find((x) => x.id === id);
     if (c) setQuickView(c);
@@ -141,50 +136,58 @@ function DashboardPage() {
   const EyeBtn = ({ id }: { id: string }) => (
     <button
       type="button"
-      title="Ver produtos, anexos e imprimir PDF"
-      aria-label="Visualização rápida da campanha"
+      title="Ver produtos e detalhes"
       onClick={() => abrirQuickView(id)}
-      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+      className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:text-primary"
     >
-      <Eye className="h-4 w-4" />
+      <Eye className="h-3.5 w-3.5" />
     </button>
   );
 
-  const { diasAtivos, diasProgramados, campanhasPorDia } = useMemo(() => {
-    const a: Date[] = [];
-    const p: Date[] = [];
-    const map = new Map<string, string[]>();
-    campanhas.forEach((c) => {
-      const start = parseISO(c.dataInicial);
-      const end = parseISO(c.dataFinal);
-      const cursor = new Date(start);
-      while (cursor <= end) {
-        if (c.status === "Ativa") a.push(new Date(cursor));
-        else if (c.status === "Programada") p.push(new Date(cursor));
-        const key = format(cursor, "yyyy-MM-dd");
-        const label = `${c.nome} (${c.status}) — ${format(start, "dd/MM")} a ${format(end, "dd/MM")}`;
-        map.set(key, [...(map.get(key) ?? []), label]);
-        cursor.setDate(cursor.getDate() + 1);
-      }
-    });
-    return { diasAtivos: a, diasProgramados: p, campanhasPorDia: map };
-  }, [campanhas]);
+  // ── Timeline Gantt: próximos 30 dias ─────────────────────────────────────
+  const [tlOffset, setTlOffset] = useState(0);
 
+  const tlDays = useMemo(() => {
+    const days: Date[] = [];
+    const start = new Date(hoje);
+    start.setDate(start.getDate() - 7 + tlOffset);
+    for (let i = 0; i < 37; i++) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [tlOffset]);
 
-  const campanhasDoDia = diaSelecionado
-    ? campanhas.filter(
-        (c) =>
-          isWithinInterval(diaSelecionado, { start: parseISO(c.dataInicial), end: parseISO(c.dataFinal) }) ||
-          isSameDay(parseISO(c.dataInicial), diaSelecionado) ||
-          isSameDay(parseISO(c.dataFinal), diaSelecionado),
-      )
-    : [];
+  const tlCampanhas = useMemo(
+    () =>
+      campanhas.filter((c) => {
+        const ini = parseISO(c.dataInicial);
+        const fim = parseISO(c.dataFinal);
+        return tlDays.some(
+          (d) => d >= new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()) &&
+                 d <= new Date(fim.getFullYear(), fim.getMonth(), fim.getDate()),
+        );
+      }),
+    [campanhas, tlDays],
+  );
 
-  const kpis = [
-    { label: "Campanhas ativas", valor: ativas.length, sub: "em andamento", icon: Megaphone, tone: "primary" as const },
-    { label: "Campanhas programadas", valor: proximas.length, sub: "a iniciar", icon: CalendarClock, tone: "navy" as const },
-    { label: "Ofertas ativas", valor: produtosEmOferta, sub: "produtos", icon: Tags, tone: "navy" as const },
-  ];
+  const cellW = 32;
+  const todayIdx = tlDays.findIndex(
+    (d) =>
+      d.getFullYear() === hoje.getFullYear() &&
+      d.getMonth() === hoje.getMonth() &&
+      d.getDate() === hoje.getDate(),
+  );
+
+  const barLeft = (ini: Date, fim: Date) => {
+    const s = tlDays[0];
+    const startDay = Math.max(0, Math.floor((ini.getTime() - s.getTime()) / 86400000));
+    const endDay = Math.min(tlDays.length - 1, Math.floor((fim.getTime() - s.getTime()) / 86400000));
+    const left = startDay * cellW;
+    const width = Math.max(cellW, (endDay - startDay + 1) * cellW);
+    return { left, width };
+  };
 
   return (
     <>
@@ -193,224 +196,235 @@ function DashboardPage() {
         onOpenChange={setWelcomeOpen}
         userName={user?.name ?? ""}
       />
-      <div className="space-y-6 sm:space-y-8">
-        {/* Cabeçalho */}
-        <div className="relative overflow-hidden rounded-3xl border bg-navy px-4 py-6 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(11,31,58,0.7)] sm:px-8 sm:py-9">
-          <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary/30 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="space-y-8">
+
+        {/* ── Cabeçalho sóbrio ── */}
+        <div className="relative overflow-hidden rounded-xl border-b-2 border-primary bg-navy px-5 py-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-foreground/60">
-                {format(hoje, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-              </p>
-              <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Dashboard</h1>
-              <p className="mt-1 text-sm text-primary-foreground/70">
-                Bem-vindo à Central de Campanhas Sumel.
+              <h1 className="font-display text-xl font-bold text-white sm:text-2xl">
+                {getSaudacao(hora, primeiroNome)}
+              </h1>
+              <p className="mt-0.5 text-xs text-white/60">
+                {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </p>
             </div>
-            <Button asChild className="w-full sm:w-auto shrink-0 rounded-full shadow-lg">
+            <Button asChild className="w-full sm:w-auto shrink-0 rounded-lg font-semibold">
               <Link to="/campanhas">
-                <Plus className="mr-2 h-4 w-4" /> Nova campanha
+                <Plus className="mr-1.5 h-3.5 w-3.5" /> Nova campanha
               </Link>
             </Button>
           </div>
         </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6">
-          {kpis.map((k, i) => (
-            <Panel
-              key={k.label}
-              className={`group relative overflow-hidden p-4 transition-shadow hover:shadow-[0_12px_30px_-18px_rgba(11,31,58,0.45)] sm:p-6 ${
-                i === 2 ? "col-span-2 sm:col-span-1" : ""
-              }`}
-            >
-              <span
-                className={`absolute inset-x-0 top-0 h-1 ${k.tone === "primary" ? "bg-primary" : "bg-navy"}`}
-              />
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {k.label}
-                </p>
-                <span
-                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
-                    k.tone === "primary" ? "bg-primary/10 text-primary" : "bg-navy/10 text-navy"
-                  }`}
-                >
-                  <k.icon className="h-4 w-4" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="font-display text-3xl font-bold tabular-nums text-navy sm:text-4xl">{k.valor}</span>
-                <span className="text-xs font-medium text-muted-foreground">{k.sub}</span>
-              </div>
-            </Panel>
-          ))}
+        {/* ── KPI barra compacta ── */}
+        <div className="rounded-xl border bg-card px-6 py-4 shadow-sm">
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Resumo do dia
+          </p>
+          <div className="flex items-stretch divide-x divide-border">
+            <div className="flex flex-1 flex-col items-center px-6 py-1">
+              <span className="font-display text-3xl font-bold tabular-nums text-navy">{ativas.length}</span>
+              <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Ativas</span>
+            </div>
+            <div className="flex flex-1 flex-col items-center px-6 py-1">
+              <span className="font-display text-3xl font-bold tabular-nums text-navy">{proximas.length}</span>
+              <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Programadas</span>
+            </div>
+            <div className="flex flex-1 flex-col items-center px-6 py-1">
+              <span className="font-display text-3xl font-bold tabular-nums text-primary">{produtosEmOferta}</span>
+              <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Produtos em oferta</span>
+            </div>
+          </div>
         </div>
 
-        {/* Calendário em destaque */}
-        <Panel className="overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-secondary/30 p-4 sm:p-6">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-navy/10 text-navy">
-                <CalendarDays className="h-4 w-4" />
-              </span>
-              <h3 className="truncate font-display text-base font-semibold text-navy">Calendário de campanhas</h3>
+        {/* ── Timeline Gantt ── */}
+        <div className="rounded-xl border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <div>
+              <SectionLabel>Timeline — próximas semanas</SectionLabel>
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-primary" /> Ativas
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-navy" /> Programadas
-              </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setTlOffset((p) => p - 7)}
+                className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setTlOffset((p) => Math.min(p + 7, 0))}
+                className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
-          <div className="grid gap-6 p-3 sm:gap-8 sm:p-6 lg:grid-cols-[auto_1fr]">
 
-            <Calendar
-              mode="single"
-              locale={ptBR}
-              selected={diaSelecionado}
-              onSelect={setDiaSelecionado}
-              month={mesRef}
-              onMonthChange={setMesRef}
-              modifiers={{ ativa: diasAtivos, programada: diasProgramados }}
-              modifiersClassNames={{
-                ativa: "bg-primary/10 text-primary font-semibold rounded-md",
-                programada: "bg-navy/10 text-navy font-semibold rounded-md",
-              }}
-              components={{
-                DayButton: (props) => {
-                  const nomes = campanhasPorDia.get(format(props.day.date, "yyyy-MM-dd"));
-                  return (
-                    <CalendarDayButton
-                      {...props}
-                      title={
-                        nomes?.length
-                          ? `${format(props.day.date, "dd/MM/yyyy")}\n${nomes.map((n) => `• ${n}`).join("\n")}`
-                          : `${format(props.day.date, "dd/MM/yyyy")}\nSem campanhas`
-                      }
-                    />
-                  );
-                },
-              }}
-              className="pointer-events-auto w-full max-w-full rounded-xl border p-2 [--cell-size:min(2.4rem,10vw)] sm:p-4 sm:[--cell-size:2.6rem]"
-            />
-
-            <div className="min-w-0">
-              <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                {diaSelecionado ? format(diaSelecionado, "PPP", { locale: ptBR }) : "Selecione um dia"}
-              </div>
-              {campanhasDoDia.length === 0 ? (
-                <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-                  Nenhuma campanha neste dia.
+          <div className="overflow-x-auto">
+            <div style={{ minWidth: tlDays.length * cellW + 140 }}>
+              {/* Cabeçalho de datas */}
+              <div className="flex h-8 items-center border-b bg-secondary/40 px-2">
+                <div className="w-[140px] shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Campanha
                 </div>
-              ) : (
-                <ul className="space-y-2">
-                  {campanhasDoDia.map((c) => (
-                    <li
-                      key={c.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:bg-secondary/50"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status]}`} />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} ofertas
-                          </p>
+                <div className="flex">
+                  {tlDays.map((d, i) => {
+                    const isToday =
+                      d.getFullYear() === hoje.getFullYear() &&
+                      d.getMonth() === hoje.getMonth() &&
+                      d.getDate() === hoje.getDate();
+                    return (
+                      <div
+                        key={i}
+                        className={`flex flex-col items-center justify-center border-l border-border/50 ${isToday ? "bg-primary/10" : ""}`}
+                        style={{ width: cellW, height: "100%" }}
+                      >
+                        <span className={`text-[9px] font-semibold ${isToday ? "text-primary" : "text-muted-foreground/60"}`}>
+                          {format(d, "dd")}
+                        </span>
+                        <span className={`text-[8px] ${isToday ? "text-primary" : "text-muted-foreground/40"}`}>
+                          {format(d, "MMM").slice(0, 1)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Linhas de campanha */}
+              <div className="relative">
+                {/* Indicador de hoje */}
+                {todayIdx >= 0 && (
+                  <div
+                    className="absolute top-0 z-10 h-full w-0.5 bg-primary"
+                    style={{ left: 140 + todayIdx * cellW + cellW / 2 }}
+                  />
+                )}
+                {tlCampanhas.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground">Nenhuma campanha neste período.</p>
+                ) : (
+                  tlCampanhas.map((c) => {
+                    const ini = parseISO(c.dataInicial);
+                    const fim = parseISO(c.dataFinal);
+                    const { left, width } = barLeft(ini, fim);
+                    return (
+                      <div
+                        key={c.id}
+                        className="flex h-9 items-center border-b border-border/40 px-2 transition-colors hover:bg-secondary/30"
+                      >
+                        <div className="w-[140px] shrink-0 pr-2">
+                          <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
+                        </div>
+                        <div className="relative flex-1">
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => abrirQuickView(c.id)}
+                            onKeyDown={(e) => e.key === "Enter" && abrirQuickView(c.id)}
+                            className={`absolute top-1/2 -translate-y-1/2 cursor-pointer rounded px-2 py-0.5 text-[10px] font-semibold text-white transition-opacity hover:opacity-80 ${
+                              c.status === "Ativa" ? "bg-primary" : "bg-navy"
+                            }`}
+                            style={{ left, width: Math.max(width - 4, 20) }}
+                          >
+                            <span className="block truncate">{c.nome}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${STATUS_PILL[c.status]}`}>
-                          {c.status}
-                        </span>
-                        <EyeBtn id={c.id} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
-        </Panel>
+        </div>
 
-        {/* Campanhas ativas e futuras em destaque */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Panel>
-            <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary" />
-                <h3 className="font-display text-sm font-semibold text-navy">Campanhas ativas</h3>
-                <span className="text-xs text-muted-foreground">({ativas.length})</span>
-              </div>
-              <Link to="/campanhas" className="text-xs font-semibold text-muted-foreground hover:text-navy">
-                Ver todas
-              </Link>
+        {/* ── Calendário e Listas lado a lado ── */}
+        <div className="grid gap-6 lg:grid-cols-5">
+
+          {/* Calendário compacto */}
+          <div className="rounded-xl border bg-card shadow-sm lg:col-span-2">
+            <div className="flex items-center gap-2 border-b px-4 py-3">
+              <CalendarDays className="h-4 w-4 text-navy" />
+              <SectionLabel className="mb-0">Calendário</SectionLabel>
             </div>
-            <div className="p-2">
+            <div className="p-3">
+              <MiniCalendar campaigns={campanhas} onOpen={abrirQuickView} />
+            </div>
+          </div>
+
+          {/* Campanhas ativas */}
+          <div className="rounded-xl border bg-card shadow-sm lg:col-span-1">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <SectionLabel className="mb-0">Ativas</SectionLabel>
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground">{ativas.length}</span>
+            </div>
+            <div className="divide-y divide-border/60">
               {ativas.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground">Nenhuma campanha ativa.</p>
+                <p className="py-4 px-4 text-xs text-muted-foreground">Nenhuma.</p>
               ) : (
                 ativas.map((c) => {
                   const restam = differenceInCalendarDays(parseISO(c.dataFinal), hoje);
                   return (
-                    <div
-                      key={c.id}
-                      className="flex items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-secondary/60"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} produtos ·{" "}
-                          {restam <= 0 ? "encerra hoje" : `${restam} dia${restam > 1 ? "s" : ""} restantes`}
+                    <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-2.5 transition-colors hover:bg-secondary/40">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
+                        <p className="truncate text-[10px] text-muted-foreground">
+                          {format(parseISO(c.dataInicial), "dd/MM")}–{format(parseISO(c.dataFinal), "dd/MM")}
+                          {c.ofertas > 0 && ` · ${c.ofertas} prod.`}
                         </p>
                       </div>
-                      <EyeBtn id={c.id} />
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <span className={`text-[10px] font-semibold ${restam <= 0 ? "text-primary" : restam <= 3 ? "text-amber-600" : "text-muted-foreground"}`}>
+                          {restam <= 0 ? "hoje" : `${restam}d`}
+                        </span>
+                        <EyeBtn id={c.id} />
+                      </div>
                     </div>
                   );
                 })
               )}
             </div>
-          </Panel>
+          </div>
 
-          <Panel>
-            <div className="flex items-center justify-between border-b bg-secondary/30 p-4 sm:p-5">
+          {/* Próximas campanhas */}
+          <div className="rounded-xl border bg-card shadow-sm lg:col-span-2">
+            <div className="flex items-center justify-between border-b px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-navy" />
-                <h3 className="font-display text-sm font-semibold text-navy">Próximas campanhas</h3>
-                <span className="text-xs text-muted-foreground">({proximas.length})</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-navy" />
+                <SectionLabel className="mb-0">Programadas</SectionLabel>
               </div>
-              <Link to="/campanhas" className="text-xs font-semibold text-muted-foreground hover:text-navy">
-                Ver todas
-              </Link>
+              <span className="text-xs font-semibold text-muted-foreground">{proximas.length}</span>
             </div>
-            <div className="p-2">
+            <div className="divide-y divide-border/60">
               {proximas.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground">Nenhuma campanha programada.</p>
+                <p className="py-4 px-4 text-xs text-muted-foreground">Nenhuma.</p>
               ) : (
                 proximas.map((c) => {
                   const dias = differenceInCalendarDays(parseISO(c.dataInicial), hoje);
                   return (
-                    <div
-                      key={c.id}
-                      className="flex items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-secondary/60"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-navy">{c.nome}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {format(parseISO(c.dataInicial), "dd/MM")} – {format(parseISO(c.dataFinal), "dd/MM")} · {c.ofertas} produtos ·{" "}
-                          {dias <= 0 ? "inicia hoje" : `inicia em ${dias} dia${dias > 1 ? "s" : ""}`}
+                    <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-2.5 transition-colors hover:bg-secondary/40">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
+                        <p className="truncate text-[10px] text-muted-foreground">
+                          {format(parseISO(c.dataInicial), "dd/MM")}–{format(parseISO(c.dataFinal), "dd/MM")}
+                          {c.ofertas > 0 && ` · ${c.ofertas} prod.`}
                         </p>
                       </div>
-                      <EyeBtn id={c.id} />
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                          {dias <= 0 ? "hoje" : `${dias}d`}
+                        </span>
+                        <EyeBtn id={c.id} />
+                      </div>
                     </div>
                   );
                 })
               )}
             </div>
-          </Panel>
+          </div>
         </div>
 
         <CampanhaQuickView
@@ -428,5 +442,108 @@ function DashboardPage() {
         </div>
       </div>
     </>
+  );
+}
+
+/* ── Calendário mini inline ─────────────────────────────────────────────────── */
+function MiniCalendar({
+  campaigns,
+  onOpen,
+}: {
+  campaigns: CampanhaDash[];
+  onOpen: (id: string) => void;
+}) {
+  const hoje = new Date();
+  const [mes, setMes] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+
+  const firstDay = new Date(mes.getFullYear(), mes.getMonth(), 1).getDay();
+  const daysInMes = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate();
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMes }, (_, i) => i + 1),
+  ];
+
+  const isToday = (d: number) =>
+    mes.getMonth() === hoje.getMonth() &&
+    mes.getFullYear() === hoje.getFullYear() &&
+    d === hoje.getDate();
+
+  const campaignsOnDay = (d: number) => {
+    const date = new Date(mes.getFullYear(), mes.getMonth(), d);
+    return campaigns.filter((c) => {
+      const ini = parseISO(c.dataInicial);
+      const fim = parseISO(c.dataFinal);
+      return date >= new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()) &&
+             date <= new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
+    });
+  };
+
+  return (
+    <div>
+      {/* Navegação do mês */}
+      <div className="mb-2 flex items-center justify-between">
+        <button
+          onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))}
+          className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <ChevronLeft className="h-3 w-3" />
+        </button>
+        <span className="text-xs font-semibold text-navy">
+          {format(mes, "MMMM yyyy", { locale: ptBR })}
+        </span>
+        <button
+          onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1))}
+          className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <ChevronRight className="h-3 w-3" />
+        </button>
+      </div>
+
+      {/* Dias da semana */}
+      <div className="mb-1 grid grid-cols-7">
+        {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
+          <div key={i} className="text-center text-[9px] font-semibold uppercase text-muted-foreground">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Células */}
+      <div className="grid grid-cols-7 gap-0.5">
+        {cells.map((d, i) => {
+          if (!d) return <div key={`empty-${i}`} />;
+          const onD = isToday(d);
+          const onD_campaigns = campaignsOnDay(d);
+          const temAtiva = onD_campaigns.some((c) => c.status === "Ativa");
+          const temProg = onD_campaigns.some((c) => c.status === "Programada");
+          return (
+            <div
+              key={d}
+              className={`relative flex h-8 flex-col items-center justify-center rounded text-[10px] transition-colors ${
+                onD ? "bg-primary font-semibold text-white" : "text-navy hover:bg-secondary"
+              }`}
+            >
+              <span>{d}</span>
+              {d % 5 === 0 && !onD && (
+                <div className="mt-0.5 flex gap-0.5">
+                  {temAtiva && <span className="h-1 w-1 rounded-full bg-primary" />}
+                  {temProg && <span className="h-1 w-1 rounded-full bg-navy" />}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legenda */}
+      <div className="mt-3 flex items-center gap-3 text-[9px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Ativas
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-navy" /> Programadas
+        </span>
+      </div>
+    </div>
   );
 }
