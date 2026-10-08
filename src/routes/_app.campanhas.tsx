@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
   Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered, Share2, Target, Camera,
-  LayoutGrid, List, ArrowUpDown
+  LayoutGrid, List, ArrowUpDown, MapPin
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -304,6 +304,12 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
               <Calendar className="h-3.5 w-3.5" />
               {fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}
             </span>
+            <span className="flex items-center gap-1.5" title={c.filiais?.join(", ") || "Todas as filiais"}>
+              <MapPin className="h-3.5 w-3.5 text-red-500" />
+              <strong className="text-foreground">
+                {c.filiais?.length ? (c.filiais.length > 1 ? `${c.filiais.length} filiais` : c.filiais[0]) : "Todas as filiais"}
+              </strong>
+            </span>
             <span className="flex items-center gap-1.5">
               <Package className="h-3.5 w-3.5 text-primary" />
               <strong className="text-foreground">{count}</strong> produto{count === 1 ? "" : "s"} em oferta
@@ -504,6 +510,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                   }}>
                     <div className="flex items-center gap-1">Término <ArrowUpDown className="h-3 w-3" /></div>
                   </TableHead>
+                  <TableHead className="text-center">Filiais</TableHead>
                   <TableHead className="text-center">Produtos</TableHead>
                   <TableHead className="text-center">Anexos</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -523,6 +530,11 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                       <TableCell className="font-semibold text-navy truncate max-w-[200px]">{c.nome}</TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmtDate(c.dataInicial)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmtDate(c.dataFinal)}</TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-[11px] text-muted-foreground" title={c.filiais?.join(", ") || "Todas"}>
+                          {c.filiais?.length ? (c.filiais.length > 1 ? `${c.filiais.length} filiais` : c.filiais[0]) : "Todas"}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-center">
                         <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                           {count}
@@ -758,7 +770,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
       <PageHeader
         title={campanha.nome}
-        description={`Vigência ${fmtDate(campanha.dataInicial)} → ${fmtDate(campanha.dataFinal)}  •  ${campanha.descricao || "Ofertas desta campanha."}`}
+        description={`Vigência ${fmtDate(campanha.dataInicial)} → ${fmtDate(campanha.dataFinal)}  •  Filial: ${campanha.filiais?.length ? (campanha.filiais.length > 1 ? `${campanha.filiais.length} filiais` : campanha.filiais[0]) : "Todas"}  •  ${campanha.descricao || "Ofertas desta campanha."}`}
         actions={
           <>
             <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>

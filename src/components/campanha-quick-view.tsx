@@ -1,4 +1,4 @@
-import { Printer, ChevronRight, Paperclip, FileText, Image as ImageIcon } from "lucide-react";
+import { Printer, ChevronRight, Paperclip, FileText, Image as ImageIcon, MapPin } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
@@ -191,8 +191,15 @@ export function CampanhaQuickView({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{campanha.nome}</DialogTitle>
-          <DialogDescription>
-            {fmtDate(campanha.dataInicial)} → {fmtDate(campanha.dataFinal)} • {ofertas.length} produto(s) em oferta
+          <DialogDescription className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+            <span>{fmtDate(campanha.dataInicial)} → {fmtDate(campanha.dataFinal)}</span>
+            <span>•</span>
+            <span className="flex items-center gap-1 text-red-500/80" title={campanha.filiais?.join(", ") || "Todas as filiais"}>
+              <MapPin className="h-3.5 w-3.5" />
+              {campanha.filiais?.length ? (campanha.filiais.length > 1 ? `${campanha.filiais.length} filiais` : campanha.filiais[0]) : "Todas as filiais"}
+            </span>
+            <span>•</span>
+            <span>{ofertas.length} produto(s) em oferta</span>
           </DialogDescription>
         </DialogHeader>
 
