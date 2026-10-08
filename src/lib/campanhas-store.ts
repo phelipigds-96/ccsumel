@@ -1,6 +1,18 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export const mapFilial = (f: string) => {
+  if (f === "Filial 01" || f === "Filial 1") return "Filial Esteio";
+  if (f === "Filial 02" || f === "Filial 2") return "Filial Sapucaia";
+  if (f === "Filial 03" || f === "Filial 3") return "Filial São Leopoldo";
+  return f;
+};
+
+export const formatFiliais = (filiais?: string[], defaultText = "Todas as filiais") => {
+  if (!filiais || filiais.length === 0) return defaultText;
+  return filiais.map(mapFilial).join(", ");
+};
+
 export type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";
 
 export type ChecklistStatus = "Pendente" | "Concluída";

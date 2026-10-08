@@ -58,11 +58,12 @@ import {
   campanhasStore,
   categoriaCampanha,
   statusCampanha,
+  formatFiliais,
 } from "@/lib/campanhas-store";
 
 const CATEGORIAS = ["Bebidas", "Mercearia", "Higiene", "Limpeza", "Frios", "Padaria", "Hortifruti"];
 const FORNECEDORES = ["Ambev", "Nestlé", "Unilever", "P&G", "Coca-Cola", "BRF", "JBS"];
-const FILIAIS = ["Matriz", "Filial 01", "Filial 02", "Filial 03"];
+const FILIAIS = ["Matriz", "Filial Esteio", "Filial Sapucaia", "Filial São Leopoldo"];
 const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
 const emptyCampanha = (): Campanha => ({
@@ -304,10 +305,10 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
               <Calendar className="h-3.5 w-3.5" />
               {fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}
             </span>
-            <span className="flex items-center gap-1.5" title={c.filiais?.join(", ") || "Todas as filiais"}>
+            <span className="flex items-center gap-1.5" title={formatFiliais(c.filiais)}>
               <MapPin className="h-3.5 w-3.5 text-red-500" />
-              <strong className="text-foreground">
-                {c.filiais?.length ? (c.filiais.length > 1 ? `${c.filiais.length} filiais` : c.filiais[0]) : "Todas as filiais"}
+              <strong className="text-foreground max-w-[200px] truncate">
+                {formatFiliais(c.filiais)}
               </strong>
             </span>
             <span className="flex items-center gap-1.5">
@@ -531,8 +532,8 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmtDate(c.dataInicial)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmtDate(c.dataFinal)}</TableCell>
                       <TableCell className="text-center">
-                        <span className="text-[11px] text-muted-foreground" title={c.filiais?.join(", ") || "Todas"}>
-                          {c.filiais?.length ? (c.filiais.length > 1 ? `${c.filiais.length} filiais` : c.filiais[0]) : "Todas"}
+                        <span className="text-[11px] text-muted-foreground truncate max-w-[150px] inline-block align-bottom" title={formatFiliais(c.filiais)}>
+                          {formatFiliais(c.filiais)}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
@@ -770,7 +771,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
       <PageHeader
         title={campanha.nome}
-        description={`Vigência ${fmtDate(campanha.dataInicial)} → ${fmtDate(campanha.dataFinal)}  •  Filial: ${campanha.filiais?.length ? (campanha.filiais.length > 1 ? `${campanha.filiais.length} filiais` : campanha.filiais[0]) : "Todas"}  •  ${campanha.descricao || "Ofertas desta campanha."}`}
+        description={`Vigência ${fmtDate(campanha.dataInicial)} → ${fmtDate(campanha.dataFinal)}  •  Filial: ${formatFiliais(campanha.filiais)}  •  ${campanha.descricao || "Ofertas desta campanha."}`}
         actions={
           <>
             <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>

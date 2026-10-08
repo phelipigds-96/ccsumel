@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import type { Campanha, Oferta, MaterialApoio } from "@/lib/campanhas-store";
+import { formatFiliais } from "@/lib/campanhas-store";
 
 export const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 export const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
@@ -194,9 +195,9 @@ export function CampanhaQuickView({
           <DialogDescription className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
             <span>{fmtDate(campanha.dataInicial)} → {fmtDate(campanha.dataFinal)}</span>
             <span>•</span>
-            <span className="flex items-center gap-1 text-red-500/80" title={campanha.filiais?.join(", ") || "Todas as filiais"}>
+            <span className="flex items-center gap-1 text-red-500/80" title={formatFiliais(campanha.filiais)}>
               <MapPin className="h-3.5 w-3.5" />
-              {campanha.filiais?.length ? (campanha.filiais.length > 1 ? `${campanha.filiais.length} filiais` : campanha.filiais[0]) : "Todas as filiais"}
+              <span className="max-w-[250px] truncate">{formatFiliais(campanha.filiais)}</span>
             </span>
             <span>•</span>
             <span>{ofertas.length} produto(s) em oferta</span>
