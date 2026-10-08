@@ -110,8 +110,9 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9.5);
       doc.setTextColor(200, 210, 225);
+      const filiaisText = formatFiliais(campanha.filiais);
       doc.text(
-        `Central de Campanhas Sumel  •  Vigência ${periodo}  •  ${ofertas.length} produto(s)`,
+        `Sumel  •  Filial: ${filiaisText}  •  Vigência ${periodo}  •  ${ofertas.length} produto(s)`,
         M,
         52,
       );
