@@ -17,6 +17,8 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -63,6 +65,7 @@ type FracionamentoProduto = {
   id: string;
   codigo_balanca: string;
   descricao: string;
+  is_balanca: boolean;
 };
 
 const normalize = (s: string) =>
@@ -75,10 +78,13 @@ const normalize = (s: string) =>
 async function listFracionamento(): Promise<FracionamentoProduto[]> {
   const { data, error } = await supabase
     .from("fracionamento_produtos" as any)
-    .select("id, codigo_balanca, descricao")
+    .select("id, codigo_balanca, descricao, is_balanca")
     .order("descricao", { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as FracionamentoProduto[];
+  return (data ?? []).map((p: any) => ({
+    ...p,
+    is_balanca: p.is_balanca ?? true
+  })) as unknown as FracionamentoProduto[];
 }
 
 function FracionamentoPage() {
@@ -222,8 +228,9 @@ function Consulta({
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/60 active:bg-muted"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-foreground">
+                    <span className="flex items-center gap-2 truncate text-sm font-semibold text-foreground">
                       {p.descricao}
+                      {p.is_balanca && <Badge variant="secondary" className="text-[10px] h-5 py-0">Balança</Badge>}
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       Código: {p.codigo_balanca}
@@ -285,6 +292,7 @@ function Gestao({
   const [editing, setEditing] = useState<FracionamentoProduto | null>(null);
   const [codigo, setCodigo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [isBalanca, setIsBalanca] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<FracionamentoProduto | null>(null);
   const [importing, setImporting] = useState(false);
@@ -304,6 +312,7 @@ function Gestao({
     setEditing(null);
     setCodigo("");
     setDescricao("");
+    setIsBalanca(true);
     setDialogOpen(true);
   };
 
@@ -311,6 +320,7 @@ function Gestao({
     setEditing(p);
     setCodigo(p.codigo_balanca);
     setDescricao(p.descricao);
+    setIsBalanca(p.is_balanca);
     setDialogOpen(true);
   };
 
@@ -326,7 +336,7 @@ function Gestao({
       if (editing) {
         const { error } = await supabase
           .from("fracionamento_produtos" as any)
-          .update({ codigo_balanca: cod, descricao: desc } as any)
+          .update({ codigo_balanca: cod, descricao: desc, is_balanca: isBalanca } as any)
           .eq("id", editing.id);
         if (error) throw error;
         toast.success("Produto atualizado.");
@@ -334,7 +344,7 @@ function Gestao({
         const { error } = await supabase
           .from("fracionamento_produtos" as any)
           .upsert(
-            { codigo_balanca: cod, descricao: desc } as any,
+            { codigo_balanca: cod, descricao: desc, is_balanca: isBalanca } as any,
             { onConflict: "codigo_balanca" },
           );
         if (error) throw error;
@@ -496,7 +506,12 @@ function Gestao({
                   <TableCell className="font-bold tabular-nums text-primary">
                     {p.codigo_balanca}
                   </TableCell>
-                  <TableCell className="font-medium">{p.descricao}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {p.descricao}
+                      {p.is_balanca && <Badge variant="secondary" className="text-[10px] h-5 py-0">Balança</Badge>}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
@@ -556,6 +571,16 @@ function Gestao({
                 onChange={(e) => setDescricao(e.target.value.toUpperCase())}
                 placeholder="Ex.: AÇÚCAR COLORIDO KG"
               />
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <Switch
+                id="frac-balanca"
+                checked={isBalanca}
+                onCheckedChange={setIsBalanca}
+              />
+              <Label htmlFor="frac-balanca" className="cursor-pointer">
+                Produto passa por balança
+              </Label>
             </div>
           </div>
           <DialogFooter>

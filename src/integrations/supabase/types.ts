@@ -176,6 +176,7 @@ export type Database = {
           descricao: string
           id: string
           updated_at: string
+          is_balanca: boolean | null
         }
         Insert: {
           codigo_balanca: string
@@ -183,6 +184,7 @@ export type Database = {
           descricao: string
           id?: string
           updated_at?: string
+          is_balanca?: boolean | null
         }
         Update: {
           codigo_balanca?: string
@@ -190,6 +192,7 @@ export type Database = {
           descricao?: string
           id?: string
           updated_at?: string
+          is_balanca?: boolean | null
         }
         Relationships: []
       }

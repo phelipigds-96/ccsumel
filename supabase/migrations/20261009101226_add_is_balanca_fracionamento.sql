@@ -1,0 +1,1 @@
+ALTER TABLE fracionamento_produtos ADD COLUMN IF NOT EXISTS is_balanca BOOLEAN DEFAULT true;
