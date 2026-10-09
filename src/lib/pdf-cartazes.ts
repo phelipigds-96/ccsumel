@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import type { Oferta } from "./campanhas-store";
+import { supabase } from "@/integrations/supabase/client";
 
 export type TextPosition = {
   x: number;
@@ -33,12 +34,27 @@ export const defaultLayoutConfig: CartazLayoutConfig = {
 };
 
 /**
- * Baixa a imagem, desenha num Canvas, e extrai um base64 puro em JPEG garantido.
- * Isso resolve todos os problemas de assinaturas inválidas no jsPDF.
+ * Baixa a imagem usando a API do Supabase (para furar o bloqueio de CORS), desenha num Canvas,
+ * e extrai um base64 puro em JPEG garantido.
  */
 async function getNormalizedJpegBase64(imageUrl: string): Promise<string> {
-  const res = await fetch(imageUrl);
-  const blob = await res.blob();
+  let blob: Blob;
+
+  // Se a URL for do nosso Storage, usa o cliente oficial para evitar bloqueios CORS do navegador
+  if (imageUrl.includes("/public/campanha-materiais/")) {
+    const path = decodeURIComponent(imageUrl.split("/public/campanha-materiais/")[1]);
+    const { data, error } = await supabase.storage.from("campanha-materiais").download(path);
+    if (error || !data) {
+      throw new Error("Falha ao baixar imagem via Supabase: " + (error?.message || "Sem dados"));
+    }
+    blob = data;
+  } else {
+    // Fallback para imagens de fora (caso exista)
+    const res = await fetch(imageUrl);
+    if (!res.ok) throw new Error("Falha no fetch: " + res.status);
+    blob = await res.blob();
+  }
+
   const objUrl = URL.createObjectURL(blob);
 
   return new Promise((resolve, reject) => {
