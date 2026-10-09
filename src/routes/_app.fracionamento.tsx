@@ -256,7 +256,7 @@ function Consulta({
               {selected?.descricao}
             </DialogTitle>
             <DialogDescription className="text-center text-[11px] font-medium uppercase tracking-[0.2em]">
-              Código de balança
+              {selected?.is_balanca ? "Código de balança" : "Código de etiquetadora"}
             </DialogDescription>
           </DialogHeader>
           <div className="py-2 text-center text-7xl font-black tabular-nums tracking-tight text-primary sm:text-8xl">
