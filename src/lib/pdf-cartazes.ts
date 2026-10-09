@@ -134,9 +134,14 @@ export async function generateCartazesPDF(ofertas: Oferta[], template: CartazTem
 
     // Desenha o fundo
     if (bgBase64) {
-      // Identifica o formato pela string base64
-      const format = bgBase64.includes("image/jpeg") || bgBase64.includes("image/jpg") ? "JPEG" : "PNG";
-      doc.addImage(bgBase64, format, 0, yOffset, pageWidth, halfHeight);
+      // Identifica o formato pela string base64 verdadeira (magic bytes)
+      const b64Data = bgBase64.split(",")[1] || bgBase64;
+      let format = "PNG";
+      if (b64Data.startsWith("/9j/")) format = "JPEG";
+      else if (b64Data.startsWith("iVBORw0KGgo")) format = "PNG";
+      else if (b64Data.startsWith("UklGR")) format = "WEBP";
+      
+      doc.addImage(b64Data, format, 0, yOffset, pageWidth, halfHeight);
     } else {
       // Fundo branco se não tiver imagem
       doc.setFillColor(255, 255, 255);
