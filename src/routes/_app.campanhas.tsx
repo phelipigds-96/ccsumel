@@ -1,4 +1,4 @@
-﻿import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
@@ -630,7 +630,6 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
 
       {dpCampanha && (
         <DescricaoPrecoDialog
-      <GeradorCartazesDialog campanha={campanha} ofertas={filtered} open={cartazOpen} onOpenChange={setCartazOpen} />
           campanha={dpCampanha}
           ofertas={ofertas.filter((o) => o.campanhaId === dpCampanha.id)}
           open={!!dpCampanha}
