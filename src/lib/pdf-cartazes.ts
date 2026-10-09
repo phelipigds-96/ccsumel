@@ -134,8 +134,9 @@ export async function generateCartazesPDF(ofertas: Oferta[], template: CartazTem
 
     // Desenha o fundo
     if (bgBase64) {
-      // addImage(base64, formato, x, y, largura, altura)
-      doc.addImage(bgBase64, "PNG", 0, yOffset, pageWidth, halfHeight);
+      // Identifica o formato pela string base64
+      const format = bgBase64.includes("image/jpeg") || bgBase64.includes("image/jpg") ? "JPEG" : "PNG";
+      doc.addImage(bgBase64, format, 0, yOffset, pageWidth, halfHeight);
     } else {
       // Fundo branco se não tiver imagem
       doc.setFillColor(255, 255, 255);
