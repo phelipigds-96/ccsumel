@@ -67,7 +67,8 @@ export function GeradorCartazesDialog({
       window.open(pdfUrl, "_blank");
       onOpenChange(false);
     } catch (e: any) {
-      toast.error("Erro ao gerar cartazes.");
+      console.error(e);
+      toast.error(`Erro ao gerar cartazes: ${e.message || "Desconhecido"}`);
     } finally {
       setGenerating(false);
     }
