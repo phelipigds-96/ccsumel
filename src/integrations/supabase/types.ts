@@ -73,6 +73,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cartaz_templates: {
+        Row: {
+          id: string
+          nome: string
+          bg_url: string | null
+          config: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+          bg_url?: string | null
+          config?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          bg_url?: string | null
+          config?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       campanhas: {
         Row: {
           checklist: Json | null
