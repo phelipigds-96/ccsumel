@@ -54,23 +54,47 @@ function drawPrice(doc: jsPDF, price: number, config: TextPosition, yOffset: num
   const priceStr = price.toFixed(2); // "29.99"
   const parts = priceStr.split(".");
   const reais = parts[0];
-  const cents = parts[1];
+  const cents = "," + parts[1];
+  const currency = "R$ ";
 
-  doc.setFontSize(config.fontSize);
   doc.setTextColor(config.color);
   
-  const y = config.y + yOffset;
-  
+  const baseFontSize = config.fontSize;
+  const currencyFontSize = baseFontSize * 0.4;
+  const centsFontSize = baseFontSize * 0.5;
+
+  // Calculando as larguras exatas para alinhar perfeitamente
+  doc.setFontSize(currencyFontSize);
+  const wCurrency = doc.getTextWidth(currency);
+
+  doc.setFontSize(baseFontSize);
+  const wReais = doc.getTextWidth(reais);
+
+  doc.setFontSize(centsFontSize);
+  const wCents = doc.getTextWidth(cents);
+
+  const totalWidth = wCurrency + wReais + wCents;
+
+  let startX = config.x;
   if (config.align === "center") {
-    // Calculo manual aproximado para centralizar com centavos altos
-    // Para simplificar no V1, vamos desenhar o texto junto. 
-    // Em produção, faremos a matemática fina da largura da fonte.
-    const text = `R$ ${reais},${cents}`;
-    doc.text(text, config.x, y, { align: "center" });
-  } else {
-    const text = `R$ ${reais},${cents}`;
-    doc.text(text, config.x, y, { align: config.align });
+    startX = config.x - (totalWidth / 2);
+  } else if (config.align === "right") {
+    startX = config.x - totalWidth;
   }
+
+  const y = config.y + yOffset;
+
+  // Desenha Moeda (R$) um pouco levantada
+  doc.setFontSize(currencyFontSize);
+  doc.text(currency, startX, y - (baseFontSize * 0.15));
+
+  // Desenha os Reais (Ex: 29) gigante
+  doc.setFontSize(baseFontSize);
+  doc.text(reais, startX + wCurrency, y);
+
+  // Desenha os Centavos (Ex: ,99) pequenos e alinhados no topo
+  doc.setFontSize(centsFontSize);
+  doc.text(cents, startX + wCurrency + wReais, y - (baseFontSize * 0.25));
 }
 
 /**
