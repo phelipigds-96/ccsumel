@@ -1,4 +1,4 @@
-﻿import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import logoSumel from "@/assets/logo-sumel.png";
 import { useLocation } from "@tanstack/react-router";
@@ -48,7 +48,7 @@ type Item = {
   url: string;
   icon: typeof LayoutDashboard;
   children?: { title: string; url: string; icon: typeof LayoutDashboard }[];
-  /** VisÃ­vel tambÃ©m para administradores, mesmo sem a permissÃ£o explÃ­cita. */
+  /** Visível também para administradores, mesmo sem a permissão explícita. */
   adminAlways?: boolean;
 };
 
@@ -60,22 +60,22 @@ const items: Item[] = [
   { title: "Campanhas Encerradas", url: "/campanhas-encerradas", icon: Archive },
   { title: "Verbas Cooperadas", url: "/verbas-cooperadas", icon: HandCoins },
   { title: "Sell Out", url: "/sell-out/acertos", icon: TrendingUp },
-  { title: "Pontas de GÃ´ndola", url: "/pontas-de-gondola", icon: LayoutGrid },
+  { title: "Pontas de Gôndola", url: "/pontas-de-gondola", icon: LayoutGrid },
   { title: "Fornecedores", url: "/fornecedores", icon: Truck },
   { title: "Fracionamento", url: "/fracionamento", icon: Scale },
   { title: "Produtos em Falta", url: "/produtos-em-falta", icon: PackageSearch },
   { title: "Central de faltas", url: "/central-produtos-em-falta", icon: AlertTriangle },
-  { title: "Retorno Ã s Lojas", url: "/retorno-as-lojas", icon: PackageCheck },
+  { title: "Retorno às Lojas", url: "/retorno-as-lojas", icon: PackageCheck },
   {
-    title: "SolicitaÃ§Ãµes de Novos Produtos",
+    title: "Solicitações de Novos Produtos",
     url: "/solicitacoes-produtos",
     icon: ClipboardList,
     adminAlways: true,
   },
-  { title: "CatÃ¡logo de Produtos", url: "/catalogo-de-produtos", icon: Package },
-  { title: "RelatÃ³rios", url: "/relatorios", icon: BarChart3 },
-  { title: "UsuÃ¡rios", url: "/usuarios", icon: Users },
-  { title: "ConfiguraÃ§Ãµes", url: "/configuracoes", icon: Settings },
+  { title: "Catálogo de Produtos", url: "/catalogo-de-produtos", icon: Package },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Usuários", url: "/usuarios", icon: Users },
+  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 
@@ -171,7 +171,7 @@ export function AppSidebar() {
         <SidebarGroup>
           {!collapsed && (
             <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
-              MÃ³dulos
+              Módulos
             </SidebarGroupLabel>
           )}
           <SidebarGroupContent>

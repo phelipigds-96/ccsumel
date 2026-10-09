@@ -41,9 +41,9 @@ import { type Produto } from "@/lib/produtos";
 export const Route = createFileRoute("/_app/campanhas")({
   head: () => ({
     meta: [
-      { title: "Campanhas â€” Central de Campanhas Sumel" },
+      { title: "Campanhas — Central de Campanhas Sumel" },
       { name: "description", content: "Gerencie campanhas e suas ofertas comerciais na Central de Campanhas Sumel." },
-      { property: "og:title", content: "Campanhas â€” Central de Campanhas Sumel" },
+      { property: "og:title", content: "Campanhas — Central de Campanhas Sumel" },
       { property: "og:description", content: "Gerencie campanhas e ofertas na Central de Campanhas Sumel." },
     ],
   }),
@@ -63,8 +63,8 @@ import {
 } from "@/lib/campanhas-store";
 
 const CATEGORIAS = ["Bebidas", "Mercearia", "Higiene", "Limpeza", "Frios", "Padaria", "Hortifruti"];
-const FORNECEDORES = ["Ambev", "NestlÃ©", "Unilever", "P&G", "Coca-Cola", "BRF", "JBS"];
-const FILIAIS = ["Matriz", "Filial Esteio", "Filial Sapucaia", "Filial SÃ£o Leopoldo"];
+const FORNECEDORES = ["Ambev", "Nestlé", "Unilever", "P&G", "Coca-Cola", "BRF", "JBS"];
+const FILIAIS = ["Matriz", "Filial Esteio", "Filial Sapucaia", "Filial São Leopoldo"];
 const STATUS: Status[] = ["Ativa", "Programada", "Encerrada", "Rascunho"];
 
 const emptyCampanha = (): Campanha => ({
@@ -73,7 +73,7 @@ const emptyCampanha = (): Campanha => ({
     { id: "c1", task: "Coletar produtos", status: "Pendente" },
     { id: "c2", task: "Precificar ofertas", status: "Pendente" },
     { id: "c3", task: "Cadastrar no Sistema", status: "Pendente" },
-    { id: "c4", task: "Fazer cartazes para impressÃ£o", status: "Pendente" },
+    { id: "c4", task: "Fazer cartazes para impressão", status: "Pendente" },
     { id: "c5", task: "Criar encarte digital", status: "Pendente" },
   ],
 });
@@ -116,7 +116,7 @@ function CampanhasModulo() {
   const { campanhas, ofertas } = useCampanhasStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // As campanhas sÃ£o filtradas e ordenadas em CampanhasList
+  // As campanhas são filtradas e ordenadas em CampanhasList
   const visiveis = campanhas;
 
   const selected = campanhas.find((c) => c.id === selectedId) ?? null;
@@ -130,10 +130,10 @@ function CampanhasModulo() {
   const deleteOferta = async (id: string) => {
     const o = ofertas.find(off => off.id === id);
     if (o) {
-      // Se era de uma oportunidade, volta para DisponÃ­vel
+      // Se era de uma oportunidade, volta para Disponível
       const { data } = await supabase.from('oportunidades' as any).select('id').eq('gtin', o.gtin).eq('campanha_id', o.campanhaId).maybeSingle();
       if (data && (data as any).id) {
-        await updateOportunidadeStatus((data as any).id, 'DisponÃ­vel', null);
+        await updateOportunidadeStatus((data as any).id, 'Disponível', null);
       }
     }
     campanhasStore.setOfertas((prev) => prev.filter((p) => p.id !== id));
@@ -187,7 +187,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("todos");
 
-  // VisualizaÃ§Ã£o e OrdenaÃ§Ã£o
+  // Visualização e Ordenação
   const [viewMode, setViewModeLocal] = useState<"grid" | "list">(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("campanhas.viewMode") as "grid" | "list") || "grid";
@@ -298,13 +298,13 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
           </div>
 
           <p className="mb-4 line-clamp-2 min-h-[2.5rem] text-sm text-muted-foreground">
-            {c.descricao || "Sem descriÃ§Ã£o."}
+            {c.descricao || "Sem descrição."}
           </p>
 
           <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5" />
-              {fmtDate(c.dataInicial)} â†’ {fmtDate(c.dataFinal)}
+              {fmtDate(c.dataInicial)} → {fmtDate(c.dataFinal)}
             </span>
             <span className="flex items-center gap-1.5" title={formatFiliais(c.filiais)}>
               <MapPin className="h-3.5 w-3.5 text-red-500" />
@@ -351,7 +351,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                     <FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setDpCampanha(c)}>
-                    <ListOrdered className="mr-2 h-4 w-4" />DescriÃ§Ã£o + PreÃ§o
+                    <ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -442,7 +442,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-1.5 w-1.5 rounded-full bg-navy" />
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-navy">
-                  PrÃ³ximas campanhas
+                  Próximas campanhas
                 </h2>
                 <span className="text-xs text-muted-foreground">({futuras.length})</span>
               </div>
@@ -504,18 +504,18 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                     if (sortField === 'dataInicial') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
                     else { setSortField('dataInicial'); setSortOrder('asc'); }
                   }}>
-                    <div className="flex items-center gap-1">InÃ­cio <ArrowUpDown className="h-3 w-3" /></div>
+                    <div className="flex items-center gap-1">Início <ArrowUpDown className="h-3 w-3" /></div>
                   </TableHead>
                   <TableHead className="cursor-pointer" onClick={() => { 
                     if (sortField === 'dataFinal') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
                     else { setSortField('dataFinal'); setSortOrder('asc'); }
                   }}>
-                    <div className="flex items-center gap-1">TÃ©rmino <ArrowUpDown className="h-3 w-3" /></div>
+                    <div className="flex items-center gap-1">Término <ArrowUpDown className="h-3 w-3" /></div>
                   </TableHead>
                   <TableHead className="text-center">Filiais</TableHead>
                   <TableHead className="text-center">Produtos</TableHead>
                   <TableHead className="text-center">Anexos</TableHead>
-                  <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -572,7 +572,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                                 <FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setDpCampanha(c)}>
-                                <ListOrdered className="mr-2 h-4 w-4" />DescriÃ§Ã£o + PreÃ§o
+                                <ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -641,11 +641,11 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
-            <AlertDialogDescription>Todas as ofertas vinculadas a esta campanha tambÃ©m serÃ£o excluÃ­das.</AlertDialogDescription>
+            <AlertDialogDescription>Todas as ofertas vinculadas a esta campanha também serão excluídas.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (deleteId) { onDelete(deleteId); toast.success("Campanha excluÃ­da."); setDeleteId(null); } }} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+            <AlertDialogAction onClick={() => { if (deleteId) { onDelete(deleteId); toast.success("Campanha excluída."); setDeleteId(null); } }} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -653,7 +653,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   );
 }
 
-// QuickView e geraÃ§Ã£o de PDF vivem em @/components/campanha-quick-view
+// QuickView e geração de PDF vivem em @/components/campanha-quick-view
 
 
 // ============ CAMPANHA DETALHE (ofertas) ============
@@ -682,14 +682,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [oportunidadesOpen, setOportunidadesOpen] = useState(false);
 
   const COLUMNS: { key: string; label: string }[] = [
-    { key: "codigo", label: "CÃ³digo" },
-    { key: "gtin", label: "CÃ³digo de barras" },
-    { key: "descricao", label: "DescriÃ§Ã£o" },
-    { key: "precoNormal", label: "PreÃ§o Normal" },
-    { key: "precoPromocional", label: "PreÃ§o Promo" },
+    { key: "codigo", label: "Código" },
+    { key: "gtin", label: "Código de barras" },
+    { key: "descricao", label: "Descrição" },
+    { key: "precoNormal", label: "Preço Normal" },
+    { key: "precoPromocional", label: "Preço Promo" },
     { key: "clubeSumel", label: "Clube" },
     { key: "sellout", label: "Sell Out" },
-    { key: "dataInicial", label: "InÃ­cio" },
+    { key: "dataInicial", label: "Início" },
     { key: "dataFinal", label: "Fim" },
     { key: "filiais", label: "Filial" },
     { key: "corredor", label: "Corredor" },
@@ -702,7 +702,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     COLUMNS.map((c) => c.key),
     { filiais: false },
   );
-  const visibleCount = COLUMNS.filter((c) => isVisible(c.key)).length + 1; // +AÃ§Ãµes
+  const visibleCount = COLUMNS.filter((c) => isVisible(c.key)).length + 1; // +Ações
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -729,16 +729,16 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
   const save = async () => {
     if (!editing) return;
-    if (!editing.codigo.trim() || !editing.descricao.trim()) { toast.error("Preencha cÃ³digo e descriÃ§Ã£o."); return; }
+    if (!editing.codigo.trim() || !editing.descricao.trim()) { toast.error("Preencha código e descrição."); return; }
     
     // Se a campanha for Rascunho, e a oferta vier de uma oportunidade, o status da oportunidade deve ser Reservada.
-    // Se a campanha nÃ£o for Rascunho (Ativa/Programada), o status deve ser Utilizada.
-    // Mas a lÃ³gica do sistema diz que "ao finalizar/publicar" vira Utilizada.
-    // Na prÃ¡tica, vamos marcar como Utilizada se o status da campanha for Ativa ou Programada.
+    // Se a campanha não for Rascunho (Ativa/Programada), o status deve ser Utilizada.
+    // Mas a lógica do sistema diz que "ao finalizar/publicar" vira Utilizada.
+    // Na prática, vamos marcar como Utilizada se o status da campanha for Ativa ou Programada.
     if (isNew) {
       const campStatus = statusCampanha(campanha);
       const isPublicada = campStatus === 'Ativa' || campStatus === 'Programada';
-      const { data: op } = await supabase.from('oportunidades' as any).select('id').eq('gtin', editing.gtin).eq('status', 'DisponÃ­vel').maybeSingle();
+      const { data: op } = await supabase.from('oportunidades' as any).select('id').eq('gtin', editing.gtin).eq('status', 'Disponível').maybeSingle();
       if (op && (op as any).id) {
         await updateOportunidadeStatus((op as any).id, isPublicada ? 'Utilizada' : 'Reservada', campanha.id);
       }
@@ -747,7 +747,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     onSaveOferta(editing);
     toast.success("Oferta salva.");
     if (isNew) {
-      // Reabre com nova oferta em branco para cadastro contÃ­nuo
+      // Reabre com nova oferta em branco para cadastro contínuo
       setEditing(emptyOferta(campanha));
     } else {
       setDialogOpen(false);
@@ -773,7 +773,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
       <PageHeader
         title={campanha.nome}
-        description={`VigÃªncia ${fmtDate(campanha.dataInicial)} â†’ ${fmtDate(campanha.dataFinal)}  â€¢  Filial: ${formatFiliais(campanha.filiais)}  â€¢  ${campanha.descricao || "Ofertas desta campanha."}`}
+        description={`Vigência ${fmtDate(campanha.dataInicial)} → ${fmtDate(campanha.dataFinal)}  •  Filial: ${formatFiliais(campanha.filiais)}  •  ${campanha.descricao || "Ofertas desta campanha."}`}
         actions={
           <>
             <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>
@@ -787,7 +787,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                 <DropdownMenuItem onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setCartazOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Gerar Cartazes</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setCvOpen(true)}><FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDpOpen(true)}><ListOrdered className="mr-2 h-4 w-4" />DescriÃ§Ã£o + PreÃ§o</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDpOpen(true)}><ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             {!readOnly && (
@@ -867,7 +867,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
       <div className="mb-4 rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm backdrop-blur flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por cÃ³digo, descriÃ§Ã£o ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-full border-border/70 bg-background w-full" />
+          <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-full border-border/70 bg-background w-full" />
         </div>
         <Select value={fCategoria} onValueChange={setFCategoria}>
           <SelectTrigger className="rounded-full border-border/70 bg-background text-xs w-full sm:w-[170px]"><SelectValue /></SelectTrigger>
@@ -906,7 +906,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Colunas visÃ­veis</DropdownMenuLabel>
+            <DropdownMenuLabel>Colunas visíveis</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {COLUMNS.map((col) => {
               const on = isVisible(col.key);
@@ -937,21 +937,21 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           <Table>
             <TableHeader>
               <TableRow className="border-border/70 bg-navy/[0.04] hover:bg-navy/[0.04] [&>th]:h-10 [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
-                {isVisible("codigo") && <TableHead>CÃ³digo</TableHead>}
-                {isVisible("gtin") && <TableHead>CÃ³d. barras</TableHead>}
-                {isVisible("descricao") && <TableHead>DescriÃ§Ã£o</TableHead>}
+                {isVisible("codigo") && <TableHead>Código</TableHead>}
+                {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
+                {isVisible("descricao") && <TableHead>Descrição</TableHead>}
                 {isVisible("precoNormal") && <TableHead className="text-right">Normal</TableHead>}
                 {isVisible("precoPromocional") && <TableHead className="text-right">Promo</TableHead>}
                 {isVisible("clubeSumel") && <TableHead className="text-center">Clube</TableHead>}
                 {isVisible("sellout") && <TableHead className="text-right">Sell Out</TableHead>}
-                {isVisible("dataInicial") && <TableHead>InÃ­cio</TableHead>}
+                {isVisible("dataInicial") && <TableHead>Início</TableHead>}
                 {isVisible("dataFinal") && <TableHead>Fim</TableHead>}
                 {isVisible("filiais") && <TableHead>Filial</TableHead>}
                 {isVisible("corredor") && <TableHead>Corredor</TableHead>}
                 {isVisible("estoque") && <TableHead className="text-right">Estoque</TableHead>}
                 {isVisible("margem") && <TableHead className="text-right">Margem</TableHead>}
                 {isVisible("status") && <TableHead>Status</TableHead>}
-                <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -987,7 +987,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   )}
                   {isVisible("clubeSumel") && (
                     <TableCell className="text-center">
-                      {o.clubeSumel ? <Badge className="bg-primary/10 text-primary border-primary/20"><Tag className="h-3 w-3 mr-1" />Sim</Badge> : <span className="text-muted-foreground text-xs">NÃ£o</span>}
+                      {o.clubeSumel ? <Badge className="bg-primary/10 text-primary border-primary/20"><Tag className="h-3 w-3 mr-1" />Sim</Badge> : <span className="text-muted-foreground text-xs">Não</span>}
                     </TableCell>
                   )}
                   {isVisible("sellout") && (
@@ -997,7 +997,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                           <span className="font-semibold tabular-nums text-navy">{brl(o.selloutValor)}</span>
                           {o.selloutFornecedor && <span className="text-[10px] text-muted-foreground">{o.selloutFornecedor}</span>}
                         </div>
-                      ) : <span className="text-muted-foreground text-xs">â€”</span>}
+                      ) : <span className="text-muted-foreground text-xs">—</span>}
                     </TableCell>
                   )}
                   {isVisible("dataInicial") && <TableCell className="text-xs text-muted-foreground">{fmtDate(o.dataInicial)}</TableCell>}
@@ -1009,7 +1009,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   {isVisible("status") && <TableCell><Badge variant="outline" className={statusVariant[o.status]}>{o.status}</Badge></TableCell>}
                   <TableCell className="text-right whitespace-nowrap">
                     {readOnly ? (
-                      <span className="text-xs text-muted-foreground">â€”</span>
+                      <span className="text-xs text-muted-foreground">—</span>
                     ) : (
                       <div className="inline-flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
                         <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-navy/10" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
@@ -1034,11 +1034,11 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir oferta?</AlertDialogTitle>
-            <AlertDialogDescription>Esta aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita.</AlertDialogDescription>
+            <AlertDialogDescription>Esta ação não poderá ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (deleteId) { onDeleteOferta(deleteId); toast.success("Oferta excluÃ­da."); setDeleteId(null); } }} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+            <AlertDialogAction onClick={() => { if (deleteId) { onDeleteOferta(deleteId); toast.success("Oferta excluída."); setDeleteId(null); } }} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1064,11 +1064,11 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave, onS
         <div className="p-6">
         <DialogHeader>
           <DialogTitle>{campanha.nome ? "Editar Campanha" : "Nova Campanha"}</DialogTitle>
-          <DialogDescription>Defina o perÃ­odo, o status e os materiais de apoio da campanha.</DialogDescription>
+          <DialogDescription>Defina o período, o status e os materiais de apoio da campanha.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <Field label="Nome"><Input value={campanha.nome} onChange={(e) => upd("nome", e.target.value)} placeholder="Ex: Ofertas da Semana" /></Field>
-          <Field label="DescriÃ§Ã£o"><Textarea value={campanha.descricao} onChange={(e) => upd("descricao", e.target.value)} rows={3} /></Field>
+          <Field label="Descrição"><Textarea value={campanha.descricao} onChange={(e) => upd("descricao", e.target.value)} rows={3} /></Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Data Inicial"><Input type="date" value={campanha.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} /></Field>
             <Field label="Data Final"><Input type="date" value={campanha.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} /></Field>
@@ -1088,7 +1088,7 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave, onS
                 {statusCampanha(campanha)}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                O status Ã© definido automaticamente pelas datas da campanha.
+                O status é definido automaticamente pelas datas da campanha.
               </span>
             </div>
           </Field>
@@ -1117,7 +1117,7 @@ function CampanhaDialog({ open, onOpenChange, campanha, setCampanha, onSave, onS
 
           <div className="flex items-center gap-3 rounded-md border p-3">
             <Switch checked={campanha.clubeSumel ?? false} onCheckedChange={(v) => upd("clubeSumel", v)} id="camp-clube" />
-            <Label htmlFor="camp-clube" className="cursor-pointer">Campanha Clube Sumel (as ofertas herdam essa marcaÃ§Ã£o)</Label>
+            <Label htmlFor="camp-clube" className="cursor-pointer">Campanha Clube Sumel (as ofertas herdam essa marcação)</Label>
           </div>
 
           <MateriaisUploader
@@ -1158,7 +1158,7 @@ function MateriaisUploader({
     const added: MaterialApoio[] = [];
     for (const file of Array.from(files)) {
       if (!["image/jpeg", "image/png", "application/pdf"].includes(file.type)) {
-        toast.error(`Formato nÃ£o suportado: ${file.name}`);
+        toast.error(`Formato não suportado: ${file.name}`);
         continue;
       }
       if (file.size > 20 * 1024 * 1024) {
@@ -1199,7 +1199,7 @@ function MateriaisUploader({
   const openMaterial = async (m: MaterialApoio) => {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(m.path, 3600);
     if (error || !data?.signedUrl) {
-      toast.error("Erro ao abrir arquivo. Tentando URL pÃºblica...");
+      toast.error("Erro ao abrir arquivo. Tentando URL pública...");
       const { data: publicData } = supabase.storage.from(BUCKET).getPublicUrl(m.path);
       if (publicData?.publicUrl) {
         window.open(publicData.publicUrl, "_blank", "noopener");
@@ -1211,11 +1211,11 @@ function MateriaisUploader({
 
   return (
     <div className="grid gap-2">
-      <Label className="text-xs text-muted-foreground">Materiais de apoio para as lojas (JPG, PNG, PDF â€” atÃ© 20 MB)</Label>
+      <Label className="text-xs text-muted-foreground">Materiais de apoio para as lojas (JPG, PNG, PDF — até 20 MB)</Label>
       <label className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-6 cursor-pointer transition ${uploading ? "opacity-60 pointer-events-none" : "hover:border-primary hover:bg-primary/5"}`}>
         <Upload className="h-6 w-6 text-primary" />
         <span className="text-sm font-medium text-navy">{uploading ? "Enviando..." : "Clique para anexar ou arraste arquivos"}</span>
-        <span className="text-xs text-muted-foreground">Cartazes, encartes, imagens de gÃ´ndola, PDF de campanha</span>
+        <span className="text-xs text-muted-foreground">Cartazes, encartes, imagens de gôndola, PDF de campanha</span>
         <input type="file" accept={ACCEPT} multiple className="hidden" onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
       </label>
 
@@ -1261,7 +1261,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
       precoPromocional: preco,
     });
     setTimeout(() => { promoRef.current?.focus(); promoRef.current?.select(); }, 60);
-    toast.success("Produto carregado. Informe o preÃ§o promocional ou clique num desconto.");
+    toast.success("Produto carregado. Informe o preço promocional ou clique num desconto.");
   };
 
 
@@ -1303,7 +1303,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
         <div className="p-6">
         <DialogHeader>
           <DialogTitle>{oferta.codigo ? "Editar Oferta" : "Nova Oferta"}</DialogTitle>
-          <DialogDescription>Localize o produto pelo cÃ³digo ou descriÃ§Ã£o para preencher automaticamente.</DialogDescription>
+          <DialogDescription>Localize o produto pelo código ou descrição para preencher automaticamente.</DialogDescription>
         </DialogHeader>
 
         <ProductSearch onSelect={handleProductSelect} />
@@ -1312,13 +1312,13 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
         {historico.length > 0 && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 mb-1">
             <div className="text-sm font-semibold text-amber-900">
-              Este produto jÃ¡ participou de {historico.length} campanha{historico.length > 1 ? "s" : ""}
+              Este produto já participou de {historico.length} campanha{historico.length > 1 ? "s" : ""}
             </div>
             <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
               {historico.map(({ o, c }) => (
                 <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-card px-2.5 py-1.5 text-xs">
                   <span className="font-medium text-navy">{c!.nome}</span>
-                  <span className="text-muted-foreground">{fmtDate(c!.dataInicial)} â†’ {fmtDate(c!.dataFinal)}</span>
+                  <span className="text-muted-foreground">{fmtDate(c!.dataInicial)} → {fmtDate(c!.dataFinal)}</span>
                   <span className="text-muted-foreground">
                     De <span className="line-through">{brl(o.precoNormal)}</span>{" "}
                     por <span className="font-semibold text-primary">{brl(o.precoPromocional)}</span>
@@ -1332,17 +1332,17 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
 
         <div className="grid gap-4 py-2 grid-cols-1 md:grid-cols-2">
-          <Field label="CÃ³digo interno"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} /></Field>
-          <Field label="CÃ³digo de barras (GTIN)"><Input value={oferta.gtin} onChange={(e) => upd("gtin", e.target.value)} /></Field>
-          <Field label="DescriÃ§Ã£o" className="md:col-span-2"><Input value={oferta.descricao} onChange={(e) => upd("descricao", e.target.value)} /></Field>
-          <Field label="PreÃ§o Atual (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
+          <Field label="Código interno"><Input value={oferta.codigo} onChange={(e) => upd("codigo", e.target.value)} /></Field>
+          <Field label="Código de barras (GTIN)"><Input value={oferta.gtin} onChange={(e) => upd("gtin", e.target.value)} /></Field>
+          <Field label="Descrição" className="md:col-span-2"><Input value={oferta.descricao} onChange={(e) => upd("descricao", e.target.value)} /></Field>
+          <Field label="Preço Atual (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
           <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} readOnly disabled className="bg-muted cursor-not-allowed" /></Field>
 
-          {/* SugestÃµes de desconto */}
+          {/* Sugestões de desconto */}
           <div className="md:col-span-2 rounded-lg border p-4 bg-card">
             <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
               <div>
-                <div className="text-xs text-muted-foreground">PreÃ§o atual</div>
+                <div className="text-xs text-muted-foreground">Preço atual</div>
                 <div className="text-xl font-semibold text-navy">{brl(oferta.precoNormal)}</div>
               </div>
               <div className="text-center">
@@ -1355,7 +1355,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
               </div>
             </div>
 
-            <div className="text-xs text-muted-foreground mb-2">SugestÃµes automÃ¡ticas â€” clique para aplicar</div>
+            <div className="text-xs text-muted-foreground mb-2">Sugestões automáticas — clique para aplicar</div>
             <div className="grid grid-cols-3 gap-2 mb-3">
               {[5, 10, 15].map(pct => {
                 const preco = priceAt(pct);
@@ -1368,7 +1368,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
                     disabled={oferta.precoNormal <= 0}
                     className={`rounded-lg border p-3 text-left transition hover:border-primary hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${ativo ? "border-primary bg-primary/5" : "bg-card"}`}
                   >
-                    <div className="text-xs font-semibold text-primary">âˆ’{pct}%</div>
+                    <div className="text-xs font-semibold text-primary">−{pct}%</div>
                     <div className="text-lg font-bold text-navy leading-tight">{brl(preco)}</div>
                     <div className="text-[11px] text-muted-foreground">Economia {brl(oferta.precoNormal - preco)}</div>
                   </button>
@@ -1376,7 +1376,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
               })}
             </div>
 
-            <Field label="PreÃ§o Promocional (R$) â€” ou informe manualmente">
+            <Field label="Preço Promocional (R$) — ou informe manualmente">
               <Input
                 ref={promoRef}
                 type="number" step="0.01"
@@ -1386,11 +1386,11 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
             </Field>
 
             <div className="mt-4">
-              <Field label="CÃ³digos de barras cresce vendas">
+              <Field label="Códigos de barras cresce vendas">
                 <Textarea
                   value={oferta.gtinsCresceVendas}
                   onChange={(e) => upd("gtinsCresceVendas", e.target.value)}
-                  placeholder="Informe um cÃ³digo de barras por linha (ou separados por vÃ­rgula) para variaÃ§Ãµes do produto"
+                  placeholder="Informe um código de barras por linha (ou separados por vírgula) para variações do produto"
                   rows={3}
                 />
               </Field>
@@ -1400,7 +1400,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
 
           <Field label="Data Inicial"><Input type="date" value={oferta.dataInicial} onChange={(e) => upd("dataInicial", e.target.value)} className="w-full" /></Field>
           <Field label="Data Final"><Input type="date" value={oferta.dataFinal} onChange={(e) => upd("dataFinal", e.target.value)} className="w-full" /></Field>
-          <Field label="Filiais (herdadas da campanha â€” desmarque para excluir alguma)" className="md:col-span-2">
+          <Field label="Filiais (herdadas da campanha — desmarque para excluir alguma)" className="md:col-span-2">
             {filiaisPermitidas.length === 0 ? (
               <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
                 Nenhuma filial foi selecionada na campanha. Edite a campanha e escolha as filiais participantes.
@@ -1438,7 +1438,7 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
             <Label htmlFor="clube" className="cursor-pointer">Oferta Clube Sumel</Label>
           </div>
 
-          {/* Sell Out â€” verba do fornecedor */}
+          {/* Sell Out — verba do fornecedor */}
           <div className="md:col-span-2 rounded-lg border p-4 bg-navy/5">
             <div className="flex items-center gap-3 mb-3">
               <Switch checked={oferta.selloutTemVerba} onCheckedChange={(v) => upd("selloutTemVerba", v)} id="sellout" />
@@ -1462,18 +1462,18 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
                     onChange={(e) => upd("selloutValor", parseFloat(e.target.value) || 0)}
                   />
                 </Field>
-                <Field label="ObservaÃ§Ãµes / condiÃ§Ãµes de cobranÃ§a" className="md:col-span-2">
+                <Field label="Observações / condições de cobrança" className="md:col-span-2">
                   <Textarea
                     rows={2}
                     value={oferta.selloutObs}
                     onChange={(e) => upd("selloutObs", e.target.value)}
-                    placeholder="Ex: NF emitida ao final da campanha, referÃªncia do contrato, contato do comprador..."
+                    placeholder="Ex: NF emitida ao final da campanha, referência do contrato, contato do comprador..."
                   />
                 </Field>
               </div>
             )}
             {!oferta.selloutTemVerba && (
-              <p className="text-xs text-muted-foreground">Ative quando o fornecedor pagar uma verba especÃ­fica por esta oferta (para lembrar de cobrar depois).</p>
+              <p className="text-xs text-muted-foreground">Ative quando o fornecedor pagar uma verba específica por esta oferta (para lembrar de cobrar depois).</p>
             )}
           </div>
         </div>
@@ -1514,7 +1514,7 @@ function BancoOportunidadesSelectDialog({
     if (open) {
       setLoading(true);
       listOportunidades().then(data => {
-        setOpts(data.filter(o => o.status === 'DisponÃ­vel'));
+        setOpts(data.filter(o => o.status === 'Disponível'));
         setLoading(false);
       });
     }
@@ -1537,12 +1537,12 @@ function BancoOportunidadesSelectDialog({
             <Target className="h-5 w-5 text-primary" /> Selecionar do Banco de Oportunidades
           </DialogTitle>
           <DialogDescription>
-            Escolha um item disponÃ­vel para adicionar a esta campanha.
+            Escolha um item disponível para adicionar a esta campanha.
           </DialogDescription>
           <div className="relative mt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por descriÃ§Ã£o, cÃ³digo ou barras..." 
+              placeholder="Buscar por descrição, código ou barras..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 rounded-full border-border/70"
@@ -1559,7 +1559,7 @@ function BancoOportunidadesSelectDialog({
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-center">
               <Package className="h-10 w-10 mb-2 opacity-20" />
-              <p className="text-sm font-medium">Nenhuma oportunidade disponÃ­vel</p>
+              <p className="text-sm font-medium">Nenhuma oportunidade disponível</p>
               <p className="text-xs">Ajuste os filtros ou cadastre novas oportunidades.</p>
             </div>
           ) : (
@@ -1575,7 +1575,7 @@ function BancoOportunidadesSelectDialog({
                       <span className="text-sm font-bold text-navy">{o.descricao}</span>
                       <Badge variant="outline" className={`text-[10px] h-4 ${
                         o.prioridade === 'Alta' ? 'bg-red-50 text-red-600 border-red-200' :
-                        o.prioridade === 'MÃ©dia' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                        o.prioridade === 'Média' ? 'bg-orange-50 text-orange-600 border-orange-200' :
                         'bg-blue-50 text-blue-600 border-blue-200'
                       }`}>
                         {o.prioridade}
@@ -1583,7 +1583,7 @@ function BancoOportunidadesSelectDialog({
                     </div>
                     <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="font-mono">{o.gtin || o.codigo_interno}</span>
-                      <span>â€¢</span>
+                      <span>•</span>
                       <span>{o.motivo}</span>
                     </div>
                   </div>
