@@ -33,16 +33,42 @@ export const defaultLayoutConfig: CartazLayoutConfig = {
 };
 
 /**
- * Função utilitária para converter URL de imagem em Base64 (necessário para o jsPDF)
+ * Baixa a imagem, desenha num Canvas, e extrai um base64 puro em JPEG garantido.
+ * Isso resolve todos os problemas de assinaturas inválidas no jsPDF.
  */
-async function getBase64ImageFromUrl(imageUrl: string): Promise<string> {
+async function getNormalizedJpegBase64(imageUrl: string): Promise<string> {
   const res = await fetch(imageUrl);
   const blob = await res.blob();
+  const objUrl = URL.createObjectURL(blob);
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        // Fundo branco caso a imagem tenha transparência
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        // Extrai como JPEG puro
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+        URL.revokeObjectURL(objUrl);
+        // Retorna só o base64 (removendo "data:image/jpeg;base64,")
+        resolve(dataUrl.split(",")[1]);
+      } else {
+        URL.revokeObjectURL(objUrl);
+        reject(new Error("Erro ao criar contexto de imagem"));
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objUrl);
+      reject(new Error("Erro ao carregar a imagem na tela invisível"));
+    };
+    img.src = objUrl;
   });
 }
 
@@ -112,9 +138,9 @@ export async function generateCartazesPDF(ofertas: Oferta[], template: CartazTem
   let bgBase64: string | null = null;
   if (template.bg_url) {
     try {
-      bgBase64 = await getBase64ImageFromUrl(template.bg_url);
+      bgBase64 = await getNormalizedJpegBase64(template.bg_url);
     } catch (e) {
-      console.error("Erro ao carregar imagem de fundo", e);
+      console.error("Erro ao normalizar imagem de fundo", e);
     }
   }
 
@@ -134,14 +160,8 @@ export async function generateCartazesPDF(ofertas: Oferta[], template: CartazTem
 
     // Desenha o fundo
     if (bgBase64) {
-      // Identifica o formato pela string base64 verdadeira (magic bytes)
-      const b64Data = bgBase64.split(",")[1] || bgBase64;
-      let format = "PNG";
-      if (b64Data.startsWith("/9j/")) format = "JPEG";
-      else if (b64Data.startsWith("iVBORw0KGgo")) format = "PNG";
-      else if (b64Data.startsWith("UklGR")) format = "WEBP";
-      
-      doc.addImage(b64Data, format, 0, yOffset, pageWidth, halfHeight);
+      // Como a imagem já foi normalizada no canvas, ela é 100% um JPEG válido!
+      doc.addImage(bgBase64, "JPEG", 0, yOffset, pageWidth, halfHeight);
     } else {
       // Fundo branco se não tiver imagem
       doc.setFillColor(255, 255, 255);
