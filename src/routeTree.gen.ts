@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AppBancoDeOportunidadesRouteImport } from './routes/_app.banco-de-oportunidades'
 import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
 import { Route as AppCampanhasEncerradasRouteImport } from './routes/_app.campanhas-encerradas'
@@ -30,6 +32,7 @@ import { Route as AppSellOutRouteImport } from './routes/_app.sell-out'
 import { Route as AppSolicitacoesProdutosRouteImport } from './routes/_app.solicitacoes-produtos'
 import { Route as AppUsuariosRouteImport } from './routes/_app.usuarios'
 import { Route as AppVerbasCooperadasRouteImport } from './routes/_app.verbas-cooperadas'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AppSellOutIndexRouteImport } from './routes/_app.sell-out.index'
 import { Route as AppSellOutAcertosRouteImport } from './routes/_app.sell-out.acertos'
 
@@ -47,6 +50,17 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppBancoDeOportunidadesRoute = AppBancoDeOportunidadesRouteImport.update({
   id: '/banco-de-oportunidades',
   path: '/banco-de-oportunidades',
@@ -138,6 +152,11 @@ const AppVerbasCooperadasRoute = AppVerbasCooperadasRouteImport.update({
   path: '/verbas-cooperadas',
   getParentRoute: () => AppRoute,
 } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppSellOutIndexRoute = AppSellOutIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -152,6 +171,8 @@ const AppSellOutAcertosRoute = AppSellOutAcertosRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/campanhas': typeof AppCampanhasRoute
   '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
@@ -170,12 +191,15 @@ export interface FileRoutesByFullPath {
   '/solicitacoes-produtos': typeof AppSolicitacoesProdutosRoute
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/sell-out/acertos': typeof AppSellOutAcertosRoute
   '/sell-out/': typeof AppSellOutIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/campanhas': typeof AppCampanhasRoute
   '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
@@ -193,6 +217,7 @@ export interface FileRoutesByTo {
   '/solicitacoes-produtos': typeof AppSolicitacoesProdutosRoute
   '/usuarios': typeof AppUsuariosRoute
   '/verbas-cooperadas': typeof AppVerbasCooperadasRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/sell-out/acertos': typeof AppSellOutAcertosRoute
   '/sell-out': typeof AppSellOutIndexRoute
 }
@@ -201,6 +226,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_app/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/_app/campanhas': typeof AppCampanhasRoute
   '/_app/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
@@ -219,6 +246,7 @@ export interface FileRoutesById {
   '/_app/solicitacoes-produtos': typeof AppSolicitacoesProdutosRoute
   '/_app/usuarios': typeof AppUsuariosRoute
   '/_app/verbas-cooperadas': typeof AppVerbasCooperadasRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_app/sell-out/acertos': typeof AppSellOutAcertosRoute
   '/_app/sell-out/': typeof AppSellOutIndexRoute
 }
@@ -227,6 +255,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/banco-de-oportunidades'
     | '/campanhas'
     | '/campanhas-encerradas'
@@ -245,12 +275,15 @@ export interface FileRouteTypes {
     | '/solicitacoes-produtos'
     | '/usuarios'
     | '/verbas-cooperadas'
+    | '/.lovable/oauth/consent'
     | '/sell-out/acertos'
     | '/sell-out/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/banco-de-oportunidades'
     | '/campanhas'
     | '/campanhas-encerradas'
@@ -268,6 +301,7 @@ export interface FileRouteTypes {
     | '/solicitacoes-produtos'
     | '/usuarios'
     | '/verbas-cooperadas'
+    | '/.lovable/oauth/consent'
     | '/sell-out/acertos'
     | '/sell-out'
   id:
@@ -275,6 +309,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/_app/banco-de-oportunidades'
     | '/_app/campanhas'
     | '/_app/campanhas-encerradas'
@@ -293,6 +329,7 @@ export interface FileRouteTypes {
     | '/_app/solicitacoes-produtos'
     | '/_app/usuarios'
     | '/_app/verbas-cooperadas'
+    | '/.lovable/oauth/consent'
     | '/_app/sell-out/acertos'
     | '/_app/sell-out/'
   fileRoutesById: FileRoutesById
@@ -301,6 +338,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -324,6 +364,20 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/banco-de-oportunidades': {
@@ -452,6 +506,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVerbasCooperadasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/sell-out/': {
       id: '/_app/sell-out/'
       path: '/'
@@ -531,6 +592,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
