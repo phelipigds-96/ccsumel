@@ -220,6 +220,7 @@ export type Database = {
       }
       degustacoes: {
         Row: {
+          anexos: Json
           campanha_id: string | null
           campanha_nome: string | null
           created_at: string
@@ -245,6 +246,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anexos?: Json
           campanha_id?: string | null
           campanha_nome?: string | null
           created_at?: string
@@ -270,6 +272,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anexos?: Json
           campanha_id?: string | null
           campanha_nome?: string | null
           created_at?: string

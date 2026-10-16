@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Sparkles,
   RotateCcw,
+  Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, EmptyState } from "@/components/page-header";
@@ -449,8 +450,18 @@ function DegustacoesPage() {
                   </TableCell>
 
                   <TableCell>
-                    <div className="font-semibold text-navy text-sm leading-snug">
-                      {item.nome}
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-navy text-sm leading-snug">
+                        {item.nome}
+                      </span>
+                      {Array.isArray(item.anexos) && item.anexos.length > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium border border-emerald-200 shrink-0"
+                          title={`${item.anexos.length} material(is) de impressão/decoração anexado(s)`}
+                        >
+                          <Paperclip className="h-2.5 w-2.5" /> {item.anexos.length}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                       <Truck className="h-3 w-3" /> {item.fornecedor_nome}
@@ -535,6 +546,17 @@ function DegustacoesPage() {
                   <span>Itens Cadastrados:</span>
                   <span className="font-mono">{item.produtos_count ?? 0} item(s)</span>
                 </div>
+
+                {Array.isArray(item.anexos) && item.anexos.length > 0 && (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                      <Paperclip className="h-3 w-3" /> Materiais & Decoração:
+                    </span>
+                    <span className="font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                      {item.anexos.length} anexo(s)
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between pt-1 border-t font-semibold">
                   <span>Faturamento:</span>

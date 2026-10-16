@@ -406,3 +406,161 @@ export async function listDegustacaoHistorico(
 
   return data ?? [];
 }
+
+// ========================================================
+// MATERIAIS DE APOIO, IMPRESSÃO E DECORAÇÃO (ANEXOS)
+// ========================================================
+
+export interface AnexoDegustacao {
+  id?: string;
+  path: string;
+  nome: string;
+  tipo: string;
+  tamanho: number;
+  bucket?: string;
+  criado_em?: string;
+}
+
+export const DEGUSTACOES_STORAGE_BUCKET = "degustacao-materiais";
+export const DEGUSTACOES_FALLBACK_BUCKET = "campanha-materiais";
+export const DEGUSTACOES_FILE_ACCEPT = "image/jpeg,image/jpg,image/png,application/pdf";
+export const DEGUSTACOES_MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+
+export function isDegustacaoImage(tipo: string): boolean {
+  return tipo.startsWith("image/");
+}
+
+export function parseDegustacaoAnexos(
+  degustacao: { anexos?: unknown } | null | undefined,
+): AnexoDegustacao[] {
+  if (!degustacao?.anexos) return [];
+  if (Array.isArray(degustacao.anexos)) {
+    return degustacao.anexos as AnexoDegustacao[];
+  }
+  return [];
+}
+
+/**
+ * Faz o upload de um arquivo de material de degustação (PDF, JPG, PNG).
+ * Tenta o bucket principal e faz fallback transparente caso o bucket ainda não tenha sido criado.
+ */
+export async function uploadDegustacaoArquivo(
+  degustacaoId: string,
+  file: File,
+): Promise<AnexoDegustacao> {
+  if (!["image/jpeg", "image/png", "application/pdf"].includes(file.type)) {
+    throw new Error(`Formato não suportado para "${file.name}". Utilize PDF, JPG ou PNG.`);
+  }
+
+  if (file.size > DEGUSTACOES_MAX_FILE_SIZE) {
+    throw new Error(`O arquivo "${file.name}" excede o tamanho máximo permitido de 20 MB.`);
+  }
+
+  const ext = file.name.split(".").pop() || "bin";
+  const path = `${degustacaoId}/${crypto.randomUUID()}.${ext}`;
+
+  // Tenta primeiro no bucket dedicado de degustações
+  let bucketUsed = DEGUSTACOES_STORAGE_BUCKET;
+  let { error } = await supabase.storage.from(bucketUsed).upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type,
+  });
+
+  // Se o bucket não existir ainda, tenta o bucket geral já existente de materiais
+  if (error && (error.message?.toLowerCase().includes("bucket") || (error as any).statusCode === 404)) {
+    bucketUsed = DEGUSTACOES_FALLBACK_BUCKET;
+    const fallbackUpload = await supabase.storage.from(bucketUsed).upload(`degustacoes/${path}`, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type,
+    });
+    if (fallbackUpload.error) {
+      throw fallbackUpload.error;
+    }
+    return {
+      path: `degustacoes/${path}`,
+      nome: file.name,
+      tipo: file.type,
+      tamanho: file.size,
+      bucket: bucketUsed,
+      criado_em: new Date().toISOString(),
+    };
+  }
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    path,
+    nome: file.name,
+    tipo: file.type,
+    tamanho: file.size,
+    bucket: bucketUsed,
+    criado_em: new Date().toISOString(),
+  };
+}
+
+/**
+ * Remove um anexo do Supabase Storage.
+ */
+export async function removeDegustacaoArquivo(anexo: AnexoDegustacao): Promise<void> {
+  const bucket = anexo.bucket || DEGUSTACOES_STORAGE_BUCKET;
+  const { error } = await supabase.storage.from(bucket).remove([anexo.path]);
+  if (error) {
+    // Tenta fallback caso tenha sido armazenado no outro bucket
+    await supabase.storage.from(DEGUSTACOES_FALLBACK_BUCKET).remove([anexo.path]);
+  }
+}
+
+/**
+ * Gera URL para visualização/download de um anexo de degustação.
+ */
+export async function getDegustacaoArquivoUrl(anexo: AnexoDegustacao): Promise<string> {
+  const bucket = anexo.bucket || DEGUSTACOES_STORAGE_BUCKET;
+
+  // Tenta URL assinada
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(anexo.path, 3600);
+  if (!error && data?.signedUrl) {
+    return data.signedUrl;
+  }
+
+  // Fallback para URL pública
+  const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(anexo.path);
+  if (publicData?.publicUrl) {
+    return publicData.publicUrl;
+  }
+
+  // Fallback secundário no bucket alternativo
+  const { data: fallbackPub } = supabase.storage
+    .from(DEGUSTACOES_FALLBACK_BUCKET)
+    .getPublicUrl(anexo.path);
+  if (fallbackPub?.publicUrl) {
+    return fallbackPub.publicUrl;
+  }
+
+  throw new Error("Não foi possível gerar link de acesso ao arquivo.");
+}
+
+/**
+ * Atualiza atomicamente a lista de anexos no registro de uma degustação.
+ */
+export async function updateDegustacaoAnexos(
+  degustacaoId: string,
+  anexos: AnexoDegustacao[],
+): Promise<Degustacao> {
+  const { data, error } = await supabase
+    .from("degustacoes")
+    .update({ anexos: anexos as unknown as Json })
+    .eq("id", degustacaoId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao atualizar anexos da degustação:", error);
+    throw error;
+  }
+
+  return data;
+}

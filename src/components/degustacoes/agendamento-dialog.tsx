@@ -32,13 +32,21 @@ import {
   Command,
   CommandList,
 } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Search, X } from "lucide-react";
+import { Check, ChevronsUpDown, Search, X, Paperclip, Upload, ImageIcon, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   LOJAS_DEGUSTACOES,
   type Degustacao,
   type DegustacaoInsert,
+  type AnexoDegustacao,
+  uploadDegustacaoArquivo,
+  removeDegustacaoArquivo,
+  getDegustacaoArquivoUrl,
+  parseDegustacaoAnexos,
+  isDegustacaoImage,
+  DEGUSTACOES_FILE_ACCEPT,
 } from "@/lib/degustacoes";
+import type { Json } from "@/integrations/supabase/types";
 
 const agendamentoSchema = z
   .object({
@@ -92,6 +100,13 @@ export function AgendamentoDialog({
   const [fornecedores, setFornecedores] = useState<FornecedorOption[]>([]);
   const [loadingFornecedores, setLoadingFornecedores] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [anexos, setAnexos] = useState<AnexoDegustacao[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  // ID persistente para vinculação dos anexos (mesmo para novo registro criado)
+  const targetId = React.useMemo(() => {
+    return degustacaoToEdit?.id || crypto.randomUUID();
+  }, [degustacaoToEdit, open]);
 
   const {
     register,
@@ -152,6 +167,7 @@ export function AgendamentoDialog({
   useEffect(() => {
     if (open) {
       if (degustacaoToEdit) {
+        setAnexos(parseDegustacaoAnexos(degustacaoToEdit));
         reset({
           loja: degustacaoToEdit.loja,
           fornecedor_id: degustacaoToEdit.fornecedor_id,
@@ -168,6 +184,7 @@ export function AgendamentoDialog({
           observacoes: degustacaoToEdit.observacoes ?? "",
         });
       } else {
+        setAnexos([]);
         reset({
           loja: LOJAS_DEGUSTACOES[0],
           fornecedor_id: "",
@@ -239,6 +256,44 @@ export function AgendamentoDialog({
     }
   };
 
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingFiles(true);
+    const added: AnexoDegustacao[] = [];
+    for (const file of Array.from(files)) {
+      try {
+        const anexo = await uploadDegustacaoArquivo(targetId, file);
+        added.push(anexo);
+      } catch (err) {
+        toast.error((err as Error).message);
+      }
+    }
+    if (added.length > 0) {
+      setAnexos((prev) => [...prev, ...added]);
+      toast.success(`${added.length} arquivo(s) anexado(s).`);
+    }
+    setUploadingFiles(false);
+  };
+
+  const handleRemoveAnexo = async (anexo: AnexoDegustacao) => {
+    try {
+      await removeDegustacaoArquivo(anexo);
+      setAnexos((prev) => prev.filter((item) => item.path !== anexo.path));
+      toast.success("Arquivo removido.");
+    } catch (err) {
+      toast.error("Erro ao remover arquivo.");
+    }
+  };
+
+  const handleOpenAnexo = async (anexo: AnexoDegustacao) => {
+    try {
+      const url = await getDegustacaoArquivoUrl(anexo);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error("Erro ao abrir anexo.");
+    }
+  };
+
   const onSubmit = async (values: AgendamentoFormData) => {
     setSubmitting(true);
     try {
@@ -253,6 +308,7 @@ export function AgendamentoDialog({
         responsavel_nome: values.responsavel_nome.trim(),
         observacoes: values.observacoes?.trim() ?? "",
         status: degustacaoToEdit ? degustacaoToEdit.status : "Programada",
+        anexos: anexos as unknown as Json,
       };
 
       if (degustacaoToEdit) {
@@ -269,7 +325,10 @@ export function AgendamentoDialog({
       } else {
         const { data, error } = await supabase
           .from("degustacoes")
-          .insert(payload)
+          .insert({
+            ...payload,
+            id: targetId,
+          })
           .select()
           .single();
 
@@ -290,7 +349,7 @@ export function AgendamentoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle className="text-navy text-xl">
@@ -515,9 +574,84 @@ export function AgendamentoDialog({
               <Textarea
                 id="obs-input"
                 placeholder="Orientações sobre balcão, ponto de venda, fita térmica, uniformes, etc."
-                className="resize-none min-h-[70px]"
+                className="resize-none min-h-[65px]"
                 {...register("observacoes")}
               />
+            </div>
+
+            {/* Materiais para Impressão e Decoração do Espaço */}
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-navy flex items-center gap-1.5">
+                  <Paperclip className="h-3.5 w-3.5 text-primary" />
+                  Materiais para Impressão e Decoração
+                </Label>
+                <span className="text-[11px] text-muted-foreground">PDF, JPG, PNG (até 20 MB)</span>
+              </div>
+
+              <label
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed p-4 cursor-pointer transition text-center",
+                  uploadingFiles
+                    ? "opacity-60 pointer-events-none bg-muted/40"
+                    : "hover:border-primary hover:bg-primary/5 border-muted-foreground/25 bg-muted/10"
+                )}
+              >
+                <Upload className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium text-navy">
+                  {uploadingFiles ? "Enviando arquivo(s)..." : "Clique para anexar ou arraste arquivos"}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  Cartazes, artes de testeira, encartes e fotos do ponto de degustação
+                </span>
+                <input
+                  type="file"
+                  accept={DEGUSTACOES_FILE_ACCEPT}
+                  multiple
+                  className="hidden"
+                  disabled={uploadingFiles}
+                  onChange={(e) => {
+                    handleFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+
+              {anexos.length > 0 && (
+                <ul className="grid gap-1.5 max-h-48 overflow-y-auto pr-1">
+                  {anexos.map((m) => (
+                    <li
+                      key={m.path}
+                      className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs shadow-2xs group hover:border-primary/40 transition"
+                    >
+                      {isDegustacaoImage(m.tipo) ? (
+                        <ImageIcon className="h-4 w-4 text-emerald-600 shrink-0" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-red-600 shrink-0" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAnexo(m)}
+                        className="flex-1 text-left truncate font-medium hover:underline text-navy"
+                        title="Clique para visualizar ou baixar"
+                      >
+                        {m.nome}
+                      </button>
+                      <span className="text-[11px] text-muted-foreground shrink-0">
+                        {(m.tamanho / 1024).toFixed(0)} KB
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAnexo(m)}
+                        className="text-muted-foreground hover:text-destructive p-1 rounded-sm transition"
+                        title="Remover anexo"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 

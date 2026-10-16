@@ -17,8 +17,13 @@ import {
   FileText,
   History,
   Package,
+  Paperclip,
+  Upload,
+  ImageIcon,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
@@ -64,6 +69,14 @@ import {
   type DegustacaoProduto,
   type DegustacaoHistorico,
   type DegustacaoStatus,
+  type AnexoDegustacao,
+  uploadDegustacaoArquivo,
+  removeDegustacaoArquivo,
+  getDegustacaoArquivoUrl,
+  updateDegustacaoAnexos,
+  parseDegustacaoAnexos,
+  isDegustacaoImage,
+  DEGUSTACOES_FILE_ACCEPT,
 } from "@/lib/degustacoes";
 import type { Produto } from "@/lib/produtos";
 import { brl } from "@/components/campanha-quick-view";
@@ -122,6 +135,63 @@ export function DegustacaoDetalhesSheet({
   const [concluirModalOpen, setConcluirModalOpen] = useState(false);
   const [observacoesResultados, setObservacoesResultados] = useState("");
   const [concluding, setConcluding] = useState(false);
+
+  // Anexos e Materiais de Apoio
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const anexos = useMemo(
+    () => parseDegustacaoAnexos(currentDegustacao),
+    [currentDegustacao],
+  );
+
+  const handleUploadFiles = async (files: FileList | null) => {
+    if (!currentDegustacao || !files || files.length === 0) return;
+    setUploadingFiles(true);
+    const added: AnexoDegustacao[] = [];
+    for (const file of Array.from(files)) {
+      try {
+        const anexo = await uploadDegustacaoArquivo(currentDegustacao.id, file);
+        added.push(anexo);
+      } catch (err) {
+        toast.error((err as Error).message);
+      }
+    }
+
+    if (added.length > 0) {
+      try {
+        const novosAnexos = [...anexos, ...added];
+        const updated = await updateDegustacaoAnexos(currentDegustacao.id, novosAnexos);
+        setCurrentDegustacao(updated);
+        onRefreshList();
+        toast.success(`${added.length} material(is) anexado(s) com sucesso.`);
+      } catch (err) {
+        toast.error("Erro ao salvar novos anexos.");
+      }
+    }
+    setUploadingFiles(false);
+  };
+
+  const handleRemoveAnexo = async (anexo: AnexoDegustacao) => {
+    if (!currentDegustacao) return;
+    try {
+      await removeDegustacaoArquivo(anexo);
+      const novosAnexos = anexos.filter((a) => a.path !== anexo.path);
+      const updated = await updateDegustacaoAnexos(currentDegustacao.id, novosAnexos);
+      setCurrentDegustacao(updated);
+      onRefreshList();
+      toast.success("Arquivo removido.");
+    } catch (err) {
+      toast.error("Erro ao remover arquivo.");
+    }
+  };
+
+  const handleOpenAnexo = async (anexo: AnexoDegustacao) => {
+    try {
+      const url = await getDegustacaoArquivoUrl(anexo);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error("Não foi possível abrir o anexo.");
+    }
+  };
 
   // Sincroniza dados da degustação selecionada
   useEffect(() => {
@@ -587,6 +657,13 @@ export function DegustacaoDetalhesSheet({
                   Dados do Agendamento
                 </TabsTrigger>
                 <TabsTrigger
+                  value="anexos"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1"
+                >
+                  <Paperclip className="h-4 w-4 mr-1.5" />
+                  Materiais & Anexos ({anexos.length})
+                </TabsTrigger>
+                <TabsTrigger
                   value="auditoria"
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1"
                 >
@@ -842,6 +919,170 @@ export function DegustacaoDetalhesSheet({
                         : "-"}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Resumo de Materiais Anexados */}
+              <div className="rounded-lg border p-4 bg-card space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Paperclip className="h-3.5 w-3.5 text-primary" />
+                    Materiais de Impressão e Decoração ({anexos.length})
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-primary font-semibold"
+                    onClick={() => setActiveTab("anexos")}
+                  >
+                    Ver todos os anexos &rarr;
+                  </Button>
+                </div>
+
+                {anexos.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    Nenhum material para impressão ou decoração anexado.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {anexos.map((m) => (
+                      <button
+                        key={m.path}
+                        type="button"
+                        onClick={() => handleOpenAnexo(m)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium bg-background hover:bg-muted text-navy truncate max-w-[220px]"
+                        title="Clique para visualizar ou baixar"
+                      >
+                        {isDegustacaoImage(m.tipo) ? (
+                          <ImageIcon className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                        )}
+                        <span className="truncate">{m.nome}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* CONTEÚDO TAB MATERIAIS & ANEXOS */}
+            <TabsContent value="anexos" className="p-6 space-y-5 m-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b">
+                <div>
+                  <h3 className="text-sm font-bold text-navy flex items-center gap-1.5">
+                    <Paperclip className="h-4 w-4 text-primary" />
+                    Materiais para Impressão & Decoração do Espaço
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Cartazes de oferta, testeiras para gôndola, manual de instruções e artes de ponto de degustação.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-muted rounded-full text-foreground shrink-0">
+                  {anexos.length} anexo(s)
+                </span>
+              </div>
+
+              {/* Upload Dropzone */}
+              {isMaster && currentDegustacao.status !== "Cancelada" && (
+                <label
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 cursor-pointer transition text-center",
+                    uploadingFiles
+                      ? "opacity-60 pointer-events-none bg-muted/40"
+                      : "hover:border-primary hover:bg-primary/5 border-muted-foreground/25 bg-muted/10"
+                  )}
+                >
+                  <Upload className="h-6 w-6 text-primary" />
+                  <span className="text-sm font-semibold text-navy">
+                    {uploadingFiles ? "Fazendo upload do arquivo..." : "Clique para anexar ou arraste arquivos aqui"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Suporta arquivos em PDF, JPG e PNG de até 20 MB por arquivo
+                  </span>
+                  <input
+                    type="file"
+                    accept={DEGUSTACOES_FILE_ACCEPT}
+                    multiple
+                    className="hidden"
+                    disabled={uploadingFiles}
+                    onChange={(e) => {
+                      handleUploadFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+
+              {/* Lista e Grade de Anexos */}
+              {anexos.length === 0 ? (
+                <div className="text-center py-10 border rounded-xl bg-card/50 space-y-2">
+                  <Paperclip className="h-8 w-8 text-muted-foreground/50 mx-auto" />
+                  <p className="text-sm font-medium text-foreground">Nenhum material anexado</p>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                    Nenhum arquivo de impressão ou arte para decoração foi anexado para esta degustação ainda.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {anexos.map((m) => {
+                    const isImg = isDegustacaoImage(m.tipo);
+                    return (
+                      <div
+                        key={m.path}
+                        className="rounded-lg border bg-card p-3 shadow-2xs hover:shadow-xs hover:border-primary/40 transition flex flex-col justify-between gap-3 group"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className="p-2 rounded-md bg-muted/50 shrink-0">
+                            {isImg ? (
+                              <ImageIcon className="h-5 w-5 text-emerald-600" />
+                            ) : (
+                              <FileText className="h-5 w-5 text-red-600" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="text-xs font-semibold text-navy truncate hover:underline cursor-pointer"
+                              title={m.nome}
+                              onClick={() => handleOpenAnexo(m)}
+                            >
+                              {m.nome}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {(m.tamanho / 1024).toFixed(0)} KB &bull; {m.tipo.split("/")[1]?.toUpperCase() || "ARQUIVO"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t text-xs">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs font-medium text-primary hover:text-primary/80 gap-1"
+                            onClick={() => handleOpenAnexo(m)}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Visualizar
+                          </Button>
+
+                          {isMaster && currentDegustacao.status !== "Cancelada" && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-destructive gap-1"
+                              onClick={() => handleRemoveAnexo(m)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Excluir
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
