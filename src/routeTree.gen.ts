@@ -9,101 +9,67 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppVerbasCooperadasRouteImport } from './routes/_app.verbas-cooperadas'
-import { Route as AppUsuariosRouteImport } from './routes/_app.usuarios'
-import { Route as AppSolicitacoesProdutosRouteImport } from './routes/_app.solicitacoes-produtos'
-import { Route as AppSellOutRouteImport } from './routes/_app.sell-out'
-import { Route as AppRetornoAsLojasRouteImport } from './routes/_app.retorno-as-lojas'
-import { Route as AppRelatoriosRouteImport } from './routes/_app.relatorios'
-import { Route as AppProdutosEmFaltaRouteImport } from './routes/_app.produtos-em-falta'
-import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-gondola'
-import { Route as AppFracionamentoRouteImport } from './routes/_app.fracionamento'
-import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
-import { Route as AppCentralProdutosEmFaltaRouteImport } from './routes/_app.central-produtos-em-falta'
-import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalogo-de-produtos'
-import { Route as AppCampanhasEncerradasRouteImport } from './routes/_app.campanhas-encerradas'
-import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppBancoDeOportunidadesRouteImport } from './routes/_app.banco-de-oportunidades'
+import { Route as AppCampanhasRouteImport } from './routes/_app.campanhas'
+import { Route as AppCampanhasEncerradasRouteImport } from './routes/_app.campanhas-encerradas'
+import { Route as AppCartazesRouteImport } from './routes/_app.cartazes'
+import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalogo-de-produtos'
+import { Route as AppCentralProdutosEmFaltaRouteImport } from './routes/_app.central-produtos-em-falta'
+import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
+import { Route as AppFracionamentoRouteImport } from './routes/_app.fracionamento'
+import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-gondola'
+import { Route as AppProdutosEmFaltaRouteImport } from './routes/_app.produtos-em-falta'
+import { Route as AppRelatoriosRouteImport } from './routes/_app.relatorios'
+import { Route as AppRetornoAsLojasRouteImport } from './routes/_app.retorno-as-lojas'
+import { Route as AppSellOutRouteImport } from './routes/_app.sell-out'
+import { Route as AppSolicitacoesProdutosRouteImport } from './routes/_app.solicitacoes-produtos'
+import { Route as AppUsuariosRouteImport } from './routes/_app.usuarios'
+import { Route as AppVerbasCooperadasRouteImport } from './routes/_app.verbas-cooperadas'
 import { Route as AppSellOutIndexRouteImport } from './routes/_app.sell-out.index'
 import { Route as AppSellOutAcertosRouteImport } from './routes/_app.sell-out.acertos'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppVerbasCooperadasRoute = AppVerbasCooperadasRouteImport.update({
-  id: '/verbas-cooperadas',
-  path: '/verbas-cooperadas',
+const AppBancoDeOportunidadesRoute = AppBancoDeOportunidadesRouteImport.update({
+  id: '/banco-de-oportunidades',
+  path: '/banco-de-oportunidades',
   getParentRoute: () => AppRoute,
 } as any)
-const AppUsuariosRoute = AppUsuariosRouteImport.update({
-  id: '/usuarios',
-  path: '/usuarios',
+const AppCampanhasRoute = AppCampanhasRouteImport.update({
+  id: '/campanhas',
+  path: '/campanhas',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSolicitacoesProdutosRoute = AppSolicitacoesProdutosRouteImport.update({
-  id: '/solicitacoes-produtos',
-  path: '/solicitacoes-produtos',
+const AppCampanhasEncerradasRoute = AppCampanhasEncerradasRouteImport.update({
+  id: '/campanhas-encerradas',
+  path: '/campanhas-encerradas',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSellOutRoute = AppSellOutRouteImport.update({
-  id: '/sell-out',
-  path: '/sell-out',
+const AppCartazesRoute = AppCartazesRouteImport.update({
+  id: '/cartazes',
+  path: '/cartazes',
   getParentRoute: () => AppRoute,
 } as any)
-const AppRetornoAsLojasRoute = AppRetornoAsLojasRouteImport.update({
-  id: '/retorno-as-lojas',
-  path: '/retorno-as-lojas',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRelatoriosRoute = AppRelatoriosRouteImport.update({
-  id: '/relatorios',
-  path: '/relatorios',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppProdutosEmFaltaRoute = AppProdutosEmFaltaRouteImport.update({
-  id: '/produtos-em-falta',
-  path: '/produtos-em-falta',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPontasDeGondolaRoute = AppPontasDeGondolaRouteImport.update({
-  id: '/pontas-de-gondola',
-  path: '/pontas-de-gondola',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppFracionamentoRoute = AppFracionamentoRouteImport.update({
-  id: '/fracionamento',
-  path: '/fracionamento',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppFornecedoresRoute = AppFornecedoresRouteImport.update({
-  id: '/fornecedores',
-  path: '/fornecedores',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
+const AppCatalogoDeProdutosRoute = AppCatalogoDeProdutosRouteImport.update({
+  id: '/catalogo-de-produtos',
+  path: '/catalogo-de-produtos',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCentralProdutosEmFaltaRoute =
@@ -112,24 +78,64 @@ const AppCentralProdutosEmFaltaRoute =
     path: '/central-produtos-em-falta',
     getParentRoute: () => AppRoute,
   } as any)
-const AppCatalogoDeProdutosRoute = AppCatalogoDeProdutosRouteImport.update({
-  id: '/catalogo-de-produtos',
-  path: '/catalogo-de-produtos',
+const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCampanhasEncerradasRoute = AppCampanhasEncerradasRouteImport.update({
-  id: '/campanhas-encerradas',
-  path: '/campanhas-encerradas',
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCampanhasRoute = AppCampanhasRouteImport.update({
-  id: '/campanhas',
-  path: '/campanhas',
+const AppFornecedoresRoute = AppFornecedoresRouteImport.update({
+  id: '/fornecedores',
+  path: '/fornecedores',
   getParentRoute: () => AppRoute,
 } as any)
-const AppBancoDeOportunidadesRoute = AppBancoDeOportunidadesRouteImport.update({
-  id: '/banco-de-oportunidades',
-  path: '/banco-de-oportunidades',
+const AppFracionamentoRoute = AppFracionamentoRouteImport.update({
+  id: '/fracionamento',
+  path: '/fracionamento',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPontasDeGondolaRoute = AppPontasDeGondolaRouteImport.update({
+  id: '/pontas-de-gondola',
+  path: '/pontas-de-gondola',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProdutosEmFaltaRoute = AppProdutosEmFaltaRouteImport.update({
+  id: '/produtos-em-falta',
+  path: '/produtos-em-falta',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRelatoriosRoute = AppRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRetornoAsLojasRoute = AppRetornoAsLojasRouteImport.update({
+  id: '/retorno-as-lojas',
+  path: '/retorno-as-lojas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSellOutRoute = AppSellOutRouteImport.update({
+  id: '/sell-out',
+  path: '/sell-out',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSolicitacoesProdutosRoute = AppSolicitacoesProdutosRouteImport.update({
+  id: '/solicitacoes-produtos',
+  path: '/solicitacoes-produtos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsuariosRoute = AppUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVerbasCooperadasRoute = AppVerbasCooperadasRouteImport.update({
+  id: '/verbas-cooperadas',
+  path: '/verbas-cooperadas',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSellOutIndexRoute = AppSellOutIndexRouteImport.update({
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/campanhas': typeof AppCampanhasRoute
   '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
+  '/cartazes': typeof AppCartazesRoute
   '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/configuracoes': typeof AppConfiguracoesRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/campanhas': typeof AppCampanhasRoute
   '/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
+  '/cartazes': typeof AppCartazesRoute
   '/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/configuracoes': typeof AppConfiguracoesRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/_app/banco-de-oportunidades': typeof AppBancoDeOportunidadesRoute
   '/_app/campanhas': typeof AppCampanhasRoute
   '/_app/campanhas-encerradas': typeof AppCampanhasEncerradasRoute
+  '/_app/cartazes': typeof AppCartazesRoute
   '/_app/catalogo-de-produtos': typeof AppCatalogoDeProdutosRoute
   '/_app/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/banco-de-oportunidades'
     | '/campanhas'
     | '/campanhas-encerradas'
+    | '/cartazes'
     | '/catalogo-de-produtos'
     | '/central-produtos-em-falta'
     | '/configuracoes'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/banco-de-oportunidades'
     | '/campanhas'
     | '/campanhas-encerradas'
+    | '/cartazes'
     | '/catalogo-de-produtos'
     | '/central-produtos-em-falta'
     | '/configuracoes'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/_app/banco-de-oportunidades'
     | '/_app/campanhas'
     | '/_app/campanhas-encerradas'
+    | '/_app/cartazes'
     | '/_app/catalogo-de-produtos'
     | '/_app/central-produtos-em-falta'
     | '/_app/configuracoes'
@@ -293,11 +305,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -307,116 +319,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/verbas-cooperadas': {
-      id: '/_app/verbas-cooperadas'
-      path: '/verbas-cooperadas'
-      fullPath: '/verbas-cooperadas'
-      preLoaderRoute: typeof AppVerbasCooperadasRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/usuarios': {
-      id: '/_app/usuarios'
-      path: '/usuarios'
-      fullPath: '/usuarios'
-      preLoaderRoute: typeof AppUsuariosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/solicitacoes-produtos': {
-      id: '/_app/solicitacoes-produtos'
-      path: '/solicitacoes-produtos'
-      fullPath: '/solicitacoes-produtos'
-      preLoaderRoute: typeof AppSolicitacoesProdutosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/sell-out': {
-      id: '/_app/sell-out'
-      path: '/sell-out'
-      fullPath: '/sell-out'
-      preLoaderRoute: typeof AppSellOutRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/retorno-as-lojas': {
-      id: '/_app/retorno-as-lojas'
-      path: '/retorno-as-lojas'
-      fullPath: '/retorno-as-lojas'
-      preLoaderRoute: typeof AppRetornoAsLojasRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/relatorios': {
-      id: '/_app/relatorios'
-      path: '/relatorios'
-      fullPath: '/relatorios'
-      preLoaderRoute: typeof AppRelatoriosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/produtos-em-falta': {
-      id: '/_app/produtos-em-falta'
-      path: '/produtos-em-falta'
-      fullPath: '/produtos-em-falta'
-      preLoaderRoute: typeof AppProdutosEmFaltaRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/pontas-de-gondola': {
-      id: '/_app/pontas-de-gondola'
-      path: '/pontas-de-gondola'
-      fullPath: '/pontas-de-gondola'
-      preLoaderRoute: typeof AppPontasDeGondolaRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/fracionamento': {
-      id: '/_app/fracionamento'
-      path: '/fracionamento'
-      fullPath: '/fracionamento'
-      preLoaderRoute: typeof AppFracionamentoRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/fornecedores': {
-      id: '/_app/fornecedores'
-      path: '/fornecedores'
-      fullPath: '/fornecedores'
-      preLoaderRoute: typeof AppFornecedoresRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/configuracoes': {
-      id: '/_app/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof AppConfiguracoesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/central-produtos-em-falta': {
-      id: '/_app/central-produtos-em-falta'
-      path: '/central-produtos-em-falta'
-      fullPath: '/central-produtos-em-falta'
-      preLoaderRoute: typeof AppCentralProdutosEmFaltaRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/catalogo-de-produtos': {
-      id: '/_app/catalogo-de-produtos'
-      path: '/catalogo-de-produtos'
-      fullPath: '/catalogo-de-produtos'
-      preLoaderRoute: typeof AppCatalogoDeProdutosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/campanhas-encerradas': {
-      id: '/_app/campanhas-encerradas'
-      path: '/campanhas-encerradas'
-      fullPath: '/campanhas-encerradas'
-      preLoaderRoute: typeof AppCampanhasEncerradasRouteImport
+    '/_app/banco-de-oportunidades': {
+      id: '/_app/banco-de-oportunidades'
+      path: '/banco-de-oportunidades'
+      fullPath: '/banco-de-oportunidades'
+      preLoaderRoute: typeof AppBancoDeOportunidadesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/campanhas': {
@@ -426,11 +340,116 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCampanhasRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/banco-de-oportunidades': {
-      id: '/_app/banco-de-oportunidades'
-      path: '/banco-de-oportunidades'
-      fullPath: '/banco-de-oportunidades'
-      preLoaderRoute: typeof AppBancoDeOportunidadesRouteImport
+    '/_app/campanhas-encerradas': {
+      id: '/_app/campanhas-encerradas'
+      path: '/campanhas-encerradas'
+      fullPath: '/campanhas-encerradas'
+      preLoaderRoute: typeof AppCampanhasEncerradasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/cartazes': {
+      id: '/_app/cartazes'
+      path: '/cartazes'
+      fullPath: '/cartazes'
+      preLoaderRoute: typeof AppCartazesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/catalogo-de-produtos': {
+      id: '/_app/catalogo-de-produtos'
+      path: '/catalogo-de-produtos'
+      fullPath: '/catalogo-de-produtos'
+      preLoaderRoute: typeof AppCatalogoDeProdutosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/central-produtos-em-falta': {
+      id: '/_app/central-produtos-em-falta'
+      path: '/central-produtos-em-falta'
+      fullPath: '/central-produtos-em-falta'
+      preLoaderRoute: typeof AppCentralProdutosEmFaltaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/configuracoes': {
+      id: '/_app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AppConfiguracoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/fornecedores': {
+      id: '/_app/fornecedores'
+      path: '/fornecedores'
+      fullPath: '/fornecedores'
+      preLoaderRoute: typeof AppFornecedoresRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/fracionamento': {
+      id: '/_app/fracionamento'
+      path: '/fracionamento'
+      fullPath: '/fracionamento'
+      preLoaderRoute: typeof AppFracionamentoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pontas-de-gondola': {
+      id: '/_app/pontas-de-gondola'
+      path: '/pontas-de-gondola'
+      fullPath: '/pontas-de-gondola'
+      preLoaderRoute: typeof AppPontasDeGondolaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/produtos-em-falta': {
+      id: '/_app/produtos-em-falta'
+      path: '/produtos-em-falta'
+      fullPath: '/produtos-em-falta'
+      preLoaderRoute: typeof AppProdutosEmFaltaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/relatorios': {
+      id: '/_app/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof AppRelatoriosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/retorno-as-lojas': {
+      id: '/_app/retorno-as-lojas'
+      path: '/retorno-as-lojas'
+      fullPath: '/retorno-as-lojas'
+      preLoaderRoute: typeof AppRetornoAsLojasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sell-out': {
+      id: '/_app/sell-out'
+      path: '/sell-out'
+      fullPath: '/sell-out'
+      preLoaderRoute: typeof AppSellOutRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/solicitacoes-produtos': {
+      id: '/_app/solicitacoes-produtos'
+      path: '/solicitacoes-produtos'
+      fullPath: '/solicitacoes-produtos'
+      preLoaderRoute: typeof AppSolicitacoesProdutosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/usuarios': {
+      id: '/_app/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AppUsuariosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/verbas-cooperadas': {
+      id: '/_app/verbas-cooperadas'
+      path: '/verbas-cooperadas'
+      fullPath: '/verbas-cooperadas'
+      preLoaderRoute: typeof AppVerbasCooperadasRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/sell-out/': {
@@ -468,6 +487,7 @@ interface AppRouteChildren {
   AppBancoDeOportunidadesRoute: typeof AppBancoDeOportunidadesRoute
   AppCampanhasRoute: typeof AppCampanhasRoute
   AppCampanhasEncerradasRoute: typeof AppCampanhasEncerradasRoute
+  AppCartazesRoute: typeof AppCartazesRoute
   AppCatalogoDeProdutosRoute: typeof AppCatalogoDeProdutosRoute
   AppCentralProdutosEmFaltaRoute: typeof AppCentralProdutosEmFaltaRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
@@ -488,6 +508,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBancoDeOportunidadesRoute: AppBancoDeOportunidadesRoute,
   AppCampanhasRoute: AppCampanhasRoute,
   AppCampanhasEncerradasRoute: AppCampanhasEncerradasRoute,
+  AppCartazesRoute: AppCartazesRoute,
   AppCatalogoDeProdutosRoute: AppCatalogoDeProdutosRoute,
   AppCentralProdutosEmFaltaRoute: AppCentralProdutosEmFaltaRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
