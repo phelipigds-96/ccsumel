@@ -145,6 +145,236 @@ export type Database = {
         }
         Relationships: []
       }
+      degustacoes: {
+        Row: {
+          campanha_id: string | null
+          campanha_nome: string | null
+          created_at: string
+          data: string
+          faturamento_total_calculado: number
+          fornecedor_id: string
+          fornecedor_nome: string
+          horario_fim: string | null
+          horario_inicio: string | null
+          id: string
+          justificativa_alteracao: string
+          loja: string
+          nome: string
+          observacoes: string
+          observacoes_resultados: string
+          quantidade_total_vendida: number
+          responsavel_id: string | null
+          responsavel_nome: string
+          resultado_registrado_em: string | null
+          resultado_registrado_por: string | null
+          resultado_registrado_por_nome: string | null
+          status: Database["public"]["Enums"]["degustacao_status"]
+          updated_at: string
+        }
+        Insert: {
+          campanha_id?: string | null
+          campanha_nome?: string | null
+          created_at?: string
+          data: string
+          faturamento_total_calculado?: number
+          fornecedor_id: string
+          fornecedor_nome: string
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          justificativa_alteracao?: string
+          loja: string
+          nome: string
+          observacoes?: string
+          observacoes_resultados?: string
+          quantidade_total_vendida?: number
+          responsavel_id?: string | null
+          responsavel_nome: string
+          resultado_registrado_em?: string | null
+          resultado_registrado_por?: string | null
+          resultado_registrado_por_nome?: string | null
+          status?: Database["public"]["Enums"]["degustacao_status"]
+          updated_at?: string
+        }
+        Update: {
+          campanha_id?: string | null
+          campanha_nome?: string | null
+          created_at?: string
+          data?: string
+          faturamento_total_calculado?: number
+          fornecedor_id?: string
+          fornecedor_nome?: string
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          justificativa_alteracao?: string
+          loja?: string
+          nome?: string
+          observacoes?: string
+          observacoes_resultados?: string
+          quantidade_total_vendida?: number
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          resultado_registrado_em?: string | null
+          resultado_registrado_por?: string | null
+          resultado_registrado_por_nome?: string | null
+          status?: Database["public"]["Enums"]["degustacao_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "degustacoes_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "campanhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degustacoes_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degustacoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degustacoes_resultado_registrado_por_fkey"
+            columns: ["resultado_registrado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      degustacao_produtos: {
+        Row: {
+          codigo: string | null
+          created_at: string
+          degustacao_id: string
+          descricao: string
+          faturamento_total: number
+          gtin: string | null
+          id: string
+          observacoes: string
+          oferta_id: string | null
+          preco_base: number
+          preco_praticado: number
+          produto_id: string | null
+          quantidade_vendida: number
+          updated_at: string
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string
+          degustacao_id: string
+          descricao: string
+          faturamento_total?: number
+          gtin?: string | null
+          id?: string
+          observacoes?: string
+          oferta_id?: string | null
+          preco_base?: number
+          preco_praticado?: number
+          produto_id?: string | null
+          quantidade_vendida?: number
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string
+          degustacao_id?: string
+          descricao?: string
+          faturamento_total?: number
+          gtin?: string | null
+          id?: string
+          observacoes?: string
+          oferta_id?: string | null
+          preco_base?: number
+          preco_praticado?: number
+          produto_id?: string | null
+          quantidade_vendida?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "degustacao_produtos_degustacao_id_fkey"
+            columns: ["degustacao_id"]
+            isOneToOne: false
+            referencedRelation: "degustacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degustacao_produtos_oferta_id_fkey"
+            columns: ["oferta_id"]
+            isOneToOne: false
+            referencedRelation: "ofertas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degustacao_produtos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      degustacoes_historico: {
+        Row: {
+          acao: string
+          changed_by: string | null
+          changed_by_name: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          degustacao_id: string
+          id: string
+          observacao: string
+          status_anterior: Database["public"]["Enums"]["degustacao_status"] | null
+          status_novo: Database["public"]["Enums"]["degustacao_status"]
+        }
+        Insert: {
+          acao: string
+          changed_by?: string | null
+          changed_by_name: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          degustacao_id: string
+          id?: string
+          observacao?: string
+          status_anterior?: Database["public"]["Enums"]["degustacao_status"] | null
+          status_novo: Database["public"]["Enums"]["degustacao_status"]
+        }
+        Update: {
+          acao?: string
+          changed_by?: string | null
+          changed_by_name?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          degustacao_id?: string
+          id?: string
+          observacao?: string
+          status_anterior?: Database["public"]["Enums"]["degustacao_status"] | null
+          status_novo?: Database["public"]["Enums"]["degustacao_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "degustacoes_historico_degustacao_id_fkey"
+            columns: ["degustacao_id"]
+            isOneToOne: false
+            referencedRelation: "degustacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       falta_status_regras: {
         Row: {
           bloqueia_novo_lancamento: boolean
@@ -919,6 +1149,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_master: { Args: never; Returns: boolean }
       is_read_only: { Args: { _user_id: string }; Returns: boolean }
       liberar_produto_bloqueado: {
         Args: { _bloqueio_id: string; _motivo?: string; _nome: string }
@@ -933,6 +1164,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      degustacao_status:
+        | "Programada"
+        | "Ativa"
+        | "Aguardando Resultados"
+        | "Concluída"
+        | "Cancelada"
       falta_status:
         | "Pendente"
         | "Em análise"
@@ -1086,6 +1323,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      degustacao_status: [
+        "Programada",
+        "Ativa",
+        "Aguardando Resultados",
+        "Concluída",
+        "Cancelada",
+      ],
       falta_status: [
         "Pendente",
         "Em análise",
