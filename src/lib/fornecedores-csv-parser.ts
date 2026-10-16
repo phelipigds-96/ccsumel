@@ -16,11 +16,11 @@ export interface FornecedoresCsvResult {
 
 function detectDelimiter(lines: string[]): string {
   const candidates = [";", ",", "\t", "|"];
-  let best = ";";
-  let bestCount = -1;
+  let best = "";
+  let bestCount = 0;
   for (const c of candidates) {
     let count = 0;
-    for (let i = 0; i < Math.min(10, lines.length); i++) {
+    for (let i = 0; i < Math.min(15, lines.length); i++) {
       count += lines[i].split(c).length - 1;
     }
     if (count > bestCount) {
@@ -28,11 +28,13 @@ function detectDelimiter(lines: string[]): string {
       best = c;
     }
   }
-  return best;
+  return bestCount > 0 ? best : "";
 }
 
-/** Split respeitando aspas duplas. */
+/** Split respeitando aspas duplas. Se não houver delimitador (arquivo txt formatado por espaços), retorna a linha inteira. */
 function splitLine(line: string, delimiter: string): string[] {
+  if (!delimiter) return [line.trim()];
+
   const out: string[] = [];
   let cur = "";
   let inQuotes = false;
@@ -65,110 +67,120 @@ function cleanCode(raw: any): string {
 }
 
 /**
- * Processa a matriz de dados (linhas x colunas).
- * Suporta:
- * 1. Relatório em blocos de ERP (como o exportado pelo sistema Sumel):
- *    - Linhas contendo "Código:" (coluna C / índice 2) e "Nome:" (coluna H / índice 7).
- *    - Paginações intermediárias ("Processado por:").
- *    - Remoção de ".0" em códigos numéricos ("1211.0" -> "1211").
- * 2. Planilha/CSV tabular padrão (cabeçalho com "Código" e "Razão Social" / "Nome").
+ * Regex para capturar Código e Nome quando estão na mesma linha ou célula (relatório de impressão TXT ou Excel sem colunas delimitadas).
+ * Ex: "   Código:     55685         Nome:       FITOS ALIMENTOS LTDA         Tipo:   F ..."
  */
-function processDataGrid(grid: any[][]): FornecedoresCsvResult {
-  // Verifica se o arquivo segue o formato de relatório de ERP (linhas com "Código:" e "Nome:")
-  let isErpReport = false;
-  for (let r = 0; r < Math.min(grid.length, 50); r++) {
-    const rowStr = (grid[r] || []).map((c) => String(c ?? "")).join(" ");
-    if (/c[óo]digo/i.test(rowStr) && /nome/i.test(rowStr)) {
-      isErpReport = true;
-      break;
+const INLINE_ERP_REGEX = /c[óo\uFFFD]digo\s*:\s*([0-9]+(?:\.[0-9]+)?)\s+nome\s*:\s*(.*?)(?:\s+tipo\s*:|\s{4,}Grupo:|\s{4,}CNPJ|$)/i;
+
+/**
+ * Analisa uma linha para extrair fornecedor:
+ * 1. Verifica padrão em linha de texto corrida (TXT ou Excel com linha em célula única).
+ * 2. Verifica padrão de células separadas (CSV/XLS com colunas C e H ou rótulos "Código:" e "Nome:").
+ */
+function parseRowSupplier(row: any[], r: number): { codigo: string; nome: string } | null {
+  const fullRowStr = Array.isArray(row) ? row.map((c) => String(c ?? "")).join(" ") : String(row ?? "");
+  const inlineMatch = fullRowStr.match(INLINE_ERP_REGEX);
+  if (inlineMatch) {
+    const cod = cleanCode(inlineMatch[1]);
+    const nome = inlineMatch[2].replace(/[;,]+$/, "").trim().toUpperCase();
+    if (nome && !nome.includes("PROCESSADO POR") && !nome.includes("RELATÓRIO")) {
+      return { codigo: cod, nome };
     }
   }
 
+  if (Array.isArray(row)) {
+    let codCol = -1;
+    let nomeCol = -1;
+
+    for (let c = 0; c < row.length; c++) {
+      const val = String(row[c] ?? "").trim();
+      if (/^c[óo\uFFFD]digo\:?$/i.test(val)) {
+        codCol = c;
+      } else if (/^nome\:?$/i.test(val)) {
+        nomeCol = c;
+      }
+    }
+
+    if (codCol !== -1 && nomeCol !== -1) {
+      let rawCodigo: any = "";
+      for (let c = codCol + 1; c < nomeCol; c++) {
+        const val = String(row[c] ?? "").trim();
+        if (val) {
+          rawCodigo = row[c];
+          break;
+        }
+      }
+      if (!rawCodigo && row[2] !== undefined && String(row[2]).trim() !== "") {
+        rawCodigo = row[2];
+      }
+
+      let rawNome: any = "";
+      for (let c = nomeCol + 1; c < row.length; c++) {
+        const val = String(row[c] ?? "").trim();
+        if (val) {
+          rawNome = row[c];
+          break;
+        }
+      }
+      if (!rawNome && row[7] !== undefined && String(row[7]).trim() !== "") {
+        rawNome = row[7];
+      }
+
+      const cod = cleanCode(rawCodigo);
+      const nome = String(rawNome ?? "").trim().toUpperCase();
+      if (nome && !nome.includes("PROCESSADO POR") && !nome.includes("RELATÓRIO") && !nome.includes("TOTAL")) {
+        return { codigo: cod, nome };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Processa a matriz de dados (linhas x colunas).
+ * Suporta:
+ * 1. Arquivos TXT de relatório de ERP (como forntxt.txt com 1.700+ fornecedores).
+ * 2. Arquivos CSV ou XLS de relatório em blocos (com código na col C e nome na col H).
+ * 3. Planilhas/CSVs tabulares convencionais com cabeçalho (Código / Razão Social).
+ */
+function processDataGrid(grid: any[][]): FornecedoresCsvResult {
   const seen = new Set<string>();
   const fornecedores: FornecedorParsedRow[] = [];
   let totalLidos = 0;
   let ignorados = 0;
 
-  if (isErpReport) {
-    for (let r = 0; r < grid.length; r++) {
-      const row = grid[r];
-      if (!Array.isArray(row)) continue;
-      totalLidos++;
+  // 1. Tenta extrair fornecedores no formato de relatório do ERP Sumel
+  for (let r = 0; r < grid.length; r++) {
+    const row = grid[r];
+    if (!Array.isArray(row)) continue;
+    totalLidos++;
 
-      let codCol = -1;
-      let nomeCol = -1;
-
-      for (let c = 0; c < row.length; c++) {
-        const val = String(row[c] ?? "").trim();
-        if (/^c[óo]digo\:?$/i.test(val)) {
-          codCol = c;
-        } else if (/^nome\:?$/i.test(val)) {
-          nomeCol = c;
-        }
-      }
-
-      if (codCol !== -1 && nomeCol !== -1) {
-        // Extrai o código: primeiro valor não vazio entre codCol e nomeCol
-        let rawCodigo: any = "";
-        for (let c = codCol + 1; c < nomeCol; c++) {
-          const val = String(row[c] ?? "").trim();
-          if (val) {
-            rawCodigo = row[c];
-            break;
-          }
-        }
-        // Fallback para coluna C (índice 2) se não encontrado entre
-        if (!rawCodigo && row[2] !== undefined && String(row[2]).trim() !== "") {
-          rawCodigo = row[2];
-        }
-
-        // Extrai a razão social/nome: primeiro valor não vazio após nomeCol
-        let rawNome: any = "";
-        for (let c = nomeCol + 1; c < row.length; c++) {
-          const val = String(row[c] ?? "").trim();
-          if (val) {
-            rawNome = row[c];
-            break;
-          }
-        }
-        // Fallback para coluna H (índice 7) se não encontrado após
-        if (!rawNome && row[7] !== undefined && String(row[7]).trim() !== "") {
-          rawNome = row[7];
-        }
-
-        const codigo = cleanCode(rawCodigo);
-        const razaoSocial = String(rawNome ?? "").trim().toUpperCase();
-
-        if (
-          !razaoSocial ||
-          razaoSocial.includes("PROCESSADO POR") ||
-          razaoSocial.includes("RELATÓRIO") ||
-          razaoSocial.includes("TOTAL")
-        ) {
-          ignorados++;
-          continue;
-        }
-
-        const dedupKey = codigo ? `cod:${codigo}` : `nome:${razaoSocial}`;
-        if (seen.has(dedupKey)) {
-          ignorados++;
-          continue;
-        }
+    const parsed = parseRowSupplier(row, r);
+    if (parsed) {
+      const dedupKey = parsed.codigo ? `cod:${parsed.codigo}` : `nome:${parsed.nome}`;
+      if (!seen.has(dedupKey)) {
         seen.add(dedupKey);
-
         fornecedores.push({
-          codigo_interno: codigo,
-          razao_social: razaoSocial,
-          nome: razaoSocial,
+          codigo_interno: parsed.codigo,
+          razao_social: parsed.nome,
+          nome: parsed.nome,
           linhaOriginal: r + 1,
         });
       } else {
-        // Linhas de endereço, CNPJ, observações ou cabeçalhos que não são a linha principal do fornecedor
         ignorados++;
       }
+    } else {
+      ignorados++;
     }
-  } else {
-    // Formato tabular tradicional (cabeçalho nas primeiras linhas)
+  }
+
+  // 2. Se não encontrou registros no formato de relatório ERP, tenta formato tabular tradicional
+  if (fornecedores.length === 0) {
+    totalLidos = 0;
+    ignorados = 0;
+    seen.clear();
+
     let colCodigo = -1;
     let colNome = -1;
     let startRow = 1;
@@ -269,14 +281,14 @@ function isExcelBuffer(buffer: ArrayBuffer): boolean {
 }
 
 /**
- * Parser de texto CSV com delimitador automático.
+ * Parser de texto CSV / TXT com delimitador automático.
  */
 export function parseFornecedoresCsv(text: string): FornecedoresCsvResult {
   const clean = text.replace(/^\uFEFF/, "");
   const lines = clean.split(/\r?\n/).filter((l) => l.trim().length > 0);
 
   if (lines.length === 0) {
-    throw new Error("Arquivo CSV vazio.");
+    throw new Error("Arquivo vazio.");
   }
 
   const delimiter = detectDelimiter(lines);
@@ -289,9 +301,11 @@ export function parseFornecedoresCsv(text: string): FornecedoresCsvResult {
  * Decodifica o buffer com fallback UTF-8 → windows-1252.
  */
 export function decodeFile(buffer: ArrayBuffer): string {
-  let text = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
-  if (text.includes("\uFFFD")) {
-    text = new TextDecoder("windows-1252").decode(buffer);
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+    if (!text.includes("\uFFFD")) return text;
+  } catch {
+    // Falha de UTF-8, decodifica como windows-1252
   }
-  return text;
+  return new TextDecoder("windows-1252").decode(buffer);
 }

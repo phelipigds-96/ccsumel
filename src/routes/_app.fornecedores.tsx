@@ -212,7 +212,7 @@ function FornecedoresPage() {
               className="gap-2"
             >
               <Upload className="h-4 w-4" />
-              {importing ? "Importando..." : "Importar Planilha / CSV"}
+              {importing ? "Importando..." : "Importar Arquivo (TXT / Excel / CSV)"}
             </Button>
             <Button className="gap-2" onClick={() => setEditing({ codigo_interno: "", razao_social: "", nome: "", observacoes: "" })}>
               <Plus className="h-4 w-4" /> Novo Fornecedor
