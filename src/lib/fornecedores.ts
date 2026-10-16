@@ -99,6 +99,14 @@ export async function deleteFornecedor(id: string) {
   if (error) throw error;
 }
 
+export async function clearAllFornecedores() {
+  const { error } = await supabase
+    .from("fornecedores")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) throw error;
+}
+
 /** Garante que todos os nomes existam na tabela fornecedores. Retorna quantos foram criados. */
 export async function syncFornecedores(nomes: string[]): Promise<number> {
   const unicos = Array.from(

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  listFornecedores, upsertFornecedor, deleteFornecedor,
+  listFornecedores, upsertFornecedor, deleteFornecedor, clearAllFornecedores,
   type FornecedorComContagem,
 } from "@/lib/fornecedores";
 import { upsertFornecedoresBatch, type FornecedorBatchResult } from "@/lib/fornecedores-batch";
@@ -49,6 +49,8 @@ function FornecedoresPage() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Partial<FornecedorComContagem> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<FornecedorComContagem | null>(null);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -130,6 +132,20 @@ function FornecedoresPage() {
     }
   };
 
+  const onClearAll = async () => {
+    setClearing(true);
+    try {
+      await clearAllFornecedores();
+      toast.success("Todos os fornecedores foram removidos com sucesso.");
+      setConfirmClearAll(false);
+      load("", 1, effectivePageSize);
+    } catch (e) {
+      toast.error("Falha ao limpar fornecedores", { description: (e as Error).message });
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const handleImportFile = async (file: File) => {
     setImporting(true);
     const toastId = toast.loading("Lendo arquivo...");
@@ -178,10 +194,21 @@ function FornecedoresPage() {
                 if (e.target) (e.target as HTMLInputElement).value = "";
               }}
             />
+            {total > 0 && (
+              <Button
+                variant="outline"
+                className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setConfirmClearAll(true)}
+                disabled={importing || clearing}
+              >
+                <Trash2 className="h-4 w-4" />
+                Limpar Base
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              disabled={importing}
+              disabled={importing || clearing}
               className="gap-2"
             >
               <Upload className="h-4 w-4" />
@@ -367,6 +394,36 @@ function FornecedoresPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={onDelete}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmClearAll} onOpenChange={setConfirmClearAll}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              Limpar todos os fornecedores?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span>
+                Esta ação apagará permanentemente todos os <strong>{total.toLocaleString("pt-BR")}</strong> fornecedores cadastrados na base de dados para permitir uma importação limpa do zero.
+              </span>
+              <br /><br />
+              <span className="text-xs text-muted-foreground">
+                <strong>Atenção:</strong> Os produtos vinculados não serão excluídos. Caso exista alguma degustação agendada vinculada a um fornecedor, a exclusão será bloqueada pela integridade do banco.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onClearAll}
+              disabled={clearing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {clearing ? "Limpando..." : "Sim, limpar todos"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
