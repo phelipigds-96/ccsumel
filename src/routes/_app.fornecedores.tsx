@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Search, Plus, Pencil, Trash2, Building2, Upload, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ function FornecedoresPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<(FornecedorBatchResult & { arquivo?: string; validos: number; ignorados: number }) | null>(null);
   const [showImportResult, setShowImportResult] = useState(false);
-  const fileRef = useState<React.RefObject<HTMLInputElement | null>>(() => ({ current: null }))[0];
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const effectivePageSize = pageSize;
 
@@ -135,11 +135,11 @@ function FornecedoresPage() {
     const toastId = toast.loading("Lendo arquivo...");
     try {
       const buf = await file.arrayBuffer();
-      const parseResult = parseFornecedoresFile(buf, file.name);
+      const parseResult = await parseFornecedoresFile(buf, file.name);
 
       if (parseResult.fornecedores.length === 0) {
         throw new Error(
-          "Nenhum fornecedor encontrado no arquivo. Verifique se o código está a partir da linha 8 coluna C e o nome na coluna H."
+          "Nenhum fornecedor encontrado no arquivo. Verifique se o relatório contém as colunas de Código e Razão Social/Nome."
         );
       }
 
@@ -168,7 +168,7 @@ function FornecedoresPage() {
         actions={
           <div className="flex gap-2">
             <input
-              ref={fileRef as unknown as React.RefObject<HTMLInputElement>}
+              ref={fileInputRef}
               type="file"
               accept=".xlsx,.xls,.csv,.txt"
               className="hidden"
@@ -180,7 +180,7 @@ function FornecedoresPage() {
             />
             <Button
               variant="outline"
-              onClick={() => (fileRef as unknown as React.RefObject<HTMLInputElement>).current?.click()}
+              onClick={() => fileInputRef.current?.click()}
               disabled={importing}
               className="gap-2"
             >

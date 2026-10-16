@@ -81,59 +81,109 @@ export async function upsertFornecedoresBatch(
           if (row.nome) {
             existingById.set(`name:${row.nome.trim().toUpperCase()}`, row.id);
           }
+          if (row.razao_social) {
+            existingById.set(`name:${row.razao_social.trim().toUpperCase()}`, row.id);
+          }
+          if (row.codigo_interno) {
+            existingById.set(`cod:${row.codigo_interno.trim()}`, row.id);
+          }
         }
       }
     } catch (e) {
       console.warn("Aviso ao buscar fornecedores existentes:", e);
     }
 
-    // Monta payload final com IDs para os existentes
-    const payloadParaEnvio = chunk.map((item) => {
+    // Separa os registros para atualização e inserção
+    const paraAtualizar: Array<{
+      id: string;
+      codigo_interno: string;
+      razao_social: string;
+      nome: string;
+      ativo: boolean;
+    }> = [];
+
+    const paraInserir: Array<{
+      codigo_interno: string;
+      razao_social: string;
+      nome: string;
+      ativo: boolean;
+    }> = [];
+
+    for (const item of chunk) {
       const existingId =
         (item.codigo_interno && existingById.get(`cod:${item.codigo_interno}`)) ||
+        existingById.get(`name:${item.razao_social.toUpperCase()}`) ||
         existingById.get(`name:${item.nome.toUpperCase()}`);
 
       if (existingId) {
-        existentes++;
-        return {
+        paraAtualizar.push({
           id: existingId,
           codigo_interno: item.codigo_interno,
           razao_social: item.razao_social,
           nome: item.nome,
           ativo: item.ativo,
-        };
+        });
       } else {
-        novos++;
-        return {
+        paraInserir.push({
           codigo_interno: item.codigo_interno,
           razao_social: item.razao_social,
           nome: item.nome,
           ativo: item.ativo,
-        };
+        });
       }
-    });
+    }
 
-    // Executa upsert em lote
-    const { error: batchError } = await supabase
-      .from("fornecedores")
-      .upsert(payloadParaEnvio as any, {
-        onConflict: "id",
-        ignoreDuplicates: false,
-      });
+    // 1. Atualiza existentes em lote
+    if (paraAtualizar.length > 0) {
+      const { error: updError } = await supabase
+        .from("fornecedores")
+        .upsert(paraAtualizar as any, { onConflict: "id" });
 
-    if (batchError) {
-      console.warn("Falha no upsert em lote de fornecedores, tentando item a item:", batchError);
-      // Fallback um a um
-      for (const item of payloadParaEnvio) {
-        try {
-          const { error: singleError } = await supabase
-            .from("fornecedores")
-            .upsert(item as any, { onConflict: (item as any).id ? "id" : "nome" });
-
-          if (singleError) throw singleError;
-        } catch {
-          erros++;
+      if (updError) {
+        console.warn("Falha ao atualizar fornecedores existentes em lote:", updError);
+        for (const item of paraAtualizar) {
+          try {
+            const { error: singleError } = await supabase
+              .from("fornecedores")
+              .update({
+                codigo_interno: item.codigo_interno,
+                razao_social: item.razao_social,
+                nome: item.nome,
+                ativo: item.ativo,
+              })
+              .eq("id", item.id);
+            if (singleError) throw singleError;
+            existentes++;
+          } catch {
+            erros++;
+          }
         }
+      } else {
+        existentes += paraAtualizar.length;
+      }
+    }
+
+    // 2. Insere novos fornecedores em lote
+    if (paraInserir.length > 0) {
+      const { error: insError } = await supabase
+        .from("fornecedores")
+        .insert(paraInserir as any);
+
+      if (insError) {
+        console.warn("Falha ao inserir novos fornecedores em lote, tentando um a um:", insError);
+        for (const item of paraInserir) {
+          try {
+            const { error: singleError } = await supabase
+              .from("fornecedores")
+              .insert(item as any);
+            if (singleError) throw singleError;
+            novos++;
+          } catch {
+            erros++;
+          }
+        }
+      } else {
+        novos += paraInserir.length;
       }
     }
   }

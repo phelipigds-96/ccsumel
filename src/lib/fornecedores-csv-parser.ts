@@ -14,12 +14,15 @@ export interface FornecedoresCsvResult {
   ignorados: number;
 }
 
-function detectDelimiter(line: string): string {
+function detectDelimiter(lines: string[]): string {
   const candidates = [";", ",", "\t", "|"];
   let best = ";";
   let bestCount = -1;
   for (const c of candidates) {
-    const count = line.split(c).length - 1;
+    let count = 0;
+    for (let i = 0; i < Math.min(10, lines.length); i++) {
+      count += lines[i].split(c).length - 1;
+    }
     if (count > bestCount) {
       bestCount = count;
       best = c;
@@ -53,37 +56,30 @@ function splitLine(line: string, delimiter: string): string[] {
   return out.map((v) => v.trim());
 }
 
+function cleanCode(raw: any): string {
+  if (raw === undefined || raw === null) return "";
+  let str = String(raw).trim();
+  // Remove sufixo .0 ou .00 comum em exportações numéricas do Excel
+  str = str.replace(/\.0+$/, "");
+  return str;
+}
+
 /**
  * Processa a matriz de dados (linhas x colunas).
- * Regra: Primeiro fornecedor está na C8 (coluna C, linha 8) e o nome na H8 (coluna H, linha 8).
- * - Coluna C = índice 2
- * - Coluna H = índice 7
- * - Linha 8 = índice 7 (0-based)
+ * Suporta:
+ * 1. Relatório em blocos de ERP (como o exportado pelo sistema Sumel):
+ *    - Linhas contendo "Código:" (coluna C / índice 2) e "Nome:" (coluna H / índice 7).
+ *    - Paginações intermediárias ("Processado por:").
+ *    - Remoção de ".0" em códigos numéricos ("1211.0" -> "1211").
+ * 2. Planilha/CSV tabular padrão (cabeçalho com "Código" e "Razão Social" / "Nome").
  */
 function processDataGrid(grid: any[][]): FornecedoresCsvResult {
-  let startRow = 7; // Linha 8 (0-indexed)
-  let colCodigo = 2; // Coluna C (0-indexed)
-  let colNome = 7; // Coluna H (0-indexed)
-
-  // Verifica se há cabeçalho explícito antes da linha 8
-  for (let r = 0; r < Math.min(8, grid.length); r++) {
-    const row = grid[r];
-    if (!Array.isArray(row)) continue;
-    let foundCode = -1;
-    let foundName = -1;
-    row.forEach((cell, idx) => {
-      const val = String(cell ?? "").trim().toUpperCase();
-      if (val === "CÓDIGO" || val === "CODIGO" || val === "CÓD." || val === "COD.") {
-        foundCode = idx;
-      }
-      if (val === "RAZÃO SOCIAL" || val === "RAZAO SOCIAL" || val === "NOME" || val === "FORNECEDOR") {
-        foundName = idx;
-      }
-    });
-    if (foundCode !== -1 && foundName !== -1) {
-      colCodigo = foundCode;
-      colNome = foundName;
-      startRow = r + 1;
+  // Verifica se o arquivo segue o formato de relatório de ERP (linhas com "Código:" e "Nome:")
+  let isErpReport = false;
+  for (let r = 0; r < Math.min(grid.length, 50); r++) {
+    const rowStr = (grid[r] || []).map((c) => String(c ?? "")).join(" ");
+    if (/c[óo]digo/i.test(rowStr) && /nome/i.test(rowStr)) {
+      isErpReport = true;
       break;
     }
   }
@@ -93,55 +89,144 @@ function processDataGrid(grid: any[][]): FornecedoresCsvResult {
   let totalLidos = 0;
   let ignorados = 0;
 
-  for (let i = startRow; i < grid.length; i++) {
-    const row = grid[i];
-    if (!Array.isArray(row)) continue;
-    totalLidos++;
+  if (isErpReport) {
+    for (let r = 0; r < grid.length; r++) {
+      const row = grid[r];
+      if (!Array.isArray(row)) continue;
+      totalLidos++;
 
-    const rawCodigo = row[colCodigo];
-    const rawNome = row[colNome];
+      let codCol = -1;
+      let nomeCol = -1;
 
-    const codigo = String(rawCodigo ?? "").trim();
-    const razaoSocial = String(rawNome ?? "").trim().toUpperCase();
+      for (let c = 0; c < row.length; c++) {
+        const val = String(row[c] ?? "").trim();
+        if (/^c[óo]digo\:?$/i.test(val)) {
+          codCol = c;
+        } else if (/^nome\:?$/i.test(val)) {
+          nomeCol = c;
+        }
+      }
 
-    // Ignora linhas vazias
-    if (!codigo && !razaoSocial) {
-      ignorados++;
-      continue;
+      if (codCol !== -1 && nomeCol !== -1) {
+        // Extrai o código: primeiro valor não vazio entre codCol e nomeCol
+        let rawCodigo: any = "";
+        for (let c = codCol + 1; c < nomeCol; c++) {
+          const val = String(row[c] ?? "").trim();
+          if (val) {
+            rawCodigo = row[c];
+            break;
+          }
+        }
+        // Fallback para coluna C (índice 2) se não encontrado entre
+        if (!rawCodigo && row[2] !== undefined && String(row[2]).trim() !== "") {
+          rawCodigo = row[2];
+        }
+
+        // Extrai a razão social/nome: primeiro valor não vazio após nomeCol
+        let rawNome: any = "";
+        for (let c = nomeCol + 1; c < row.length; c++) {
+          const val = String(row[c] ?? "").trim();
+          if (val) {
+            rawNome = row[c];
+            break;
+          }
+        }
+        // Fallback para coluna H (índice 7) se não encontrado após
+        if (!rawNome && row[7] !== undefined && String(row[7]).trim() !== "") {
+          rawNome = row[7];
+        }
+
+        const codigo = cleanCode(rawCodigo);
+        const razaoSocial = String(rawNome ?? "").trim().toUpperCase();
+
+        if (
+          !razaoSocial ||
+          razaoSocial.includes("PROCESSADO POR") ||
+          razaoSocial.includes("RELATÓRIO") ||
+          razaoSocial.includes("TOTAL")
+        ) {
+          ignorados++;
+          continue;
+        }
+
+        const dedupKey = codigo ? `cod:${codigo}` : `nome:${razaoSocial}`;
+        if (seen.has(dedupKey)) {
+          ignorados++;
+          continue;
+        }
+        seen.add(dedupKey);
+
+        fornecedores.push({
+          codigo_interno: codigo,
+          razao_social: razaoSocial,
+          nome: razaoSocial,
+          linhaOriginal: r + 1,
+        });
+      } else {
+        // Linhas de endereço, CNPJ, observações ou cabeçalhos que não são a linha principal do fornecedor
+        ignorados++;
+      }
+    }
+  } else {
+    // Formato tabular tradicional (cabeçalho nas primeiras linhas)
+    let colCodigo = -1;
+    let colNome = -1;
+    let startRow = 1;
+
+    for (let r = 0; r < Math.min(10, grid.length); r++) {
+      const row = grid[r];
+      if (!Array.isArray(row)) continue;
+      row.forEach((cell, idx) => {
+        const val = String(cell ?? "").trim().toUpperCase();
+        if (val === "CÓDIGO" || val === "CODIGO" || val === "CÓD." || val === "COD.") {
+          colCodigo = idx;
+        }
+        if (val === "RAZÃO SOCIAL" || val === "RAZAO SOCIAL" || val === "NOME" || val === "FORNECEDOR") {
+          colNome = idx;
+        }
+      });
+      if (colNome !== -1) {
+        startRow = r + 1;
+        break;
+      }
     }
 
-    // Ignora cabeçalhos repetidos, títulos de relatório ou rodapés
-    if (
-      razaoSocial.includes("TOTAL") ||
-      razaoSocial.includes("PROCESSADO POR") ||
-      razaoSocial.includes("RELATÓRIO") ||
-      codigo.toUpperCase() === "CÓDIGO" ||
-      codigo.toUpperCase() === "CODIGO"
-    ) {
-      ignorados++;
-      continue;
+    if (colNome === -1) {
+      colCodigo = 0;
+      colNome = 1;
+      startRow = 0;
     }
 
-    // Razão social deve ser válida
-    if (!razaoSocial) {
-      ignorados++;
-      continue;
-    }
+    for (let r = startRow; r < grid.length; r++) {
+      const row = grid[r];
+      if (!Array.isArray(row)) continue;
+      totalLidos++;
 
-    // Deduplicação pelo código interno se houver, ou pela razão social
-    const dedupKey = codigo ? `cod:${codigo}` : `nome:${razaoSocial}`;
-    if (seen.has(dedupKey)) {
-      ignorados++;
-      continue;
-    }
-    seen.add(dedupKey);
+      const rawCodigo = colCodigo !== -1 ? row[colCodigo] : "";
+      const rawNome = row[colNome];
 
-    fornecedores.push({
-      codigo_interno: codigo,
-      razao_social: razaoSocial,
-      nome: razaoSocial,
-      linhaOriginal: i + 1,
-    });
+      const codigo = cleanCode(rawCodigo);
+      const razaoSocial = String(rawNome ?? "").trim().toUpperCase();
+
+      if (!razaoSocial || razaoSocial === "RAZÃO SOCIAL" || razaoSocial === "NOME") {
+        ignorados++;
+        continue;
+      }
+
+      const dedupKey = codigo ? `cod:${codigo}` : `nome:${razaoSocial}`;
+      if (seen.has(dedupKey)) {
+        ignorados++;
+        continue;
+      }
+      seen.add(dedupKey);
+
+      fornecedores.push({
+        codigo_interno: codigo,
+        razao_social: razaoSocial,
+        nome: razaoSocial,
+        linhaOriginal: r + 1,
+      });
+    }
   }
 
   return {
@@ -194,7 +279,7 @@ export function parseFornecedoresCsv(text: string): FornecedoresCsvResult {
     throw new Error("Arquivo CSV vazio.");
   }
 
-  const delimiter = detectDelimiter(lines[0]);
+  const delimiter = detectDelimiter(lines);
   const grid = lines.map((line) => splitLine(line, delimiter));
 
   return processDataGrid(grid);
