@@ -18,11 +18,16 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 import {
   listFornecedores, upsertFornecedor, deleteFornecedor, clearAllFornecedores,
   type FornecedorComContagem,
 } from "@/lib/fornecedores";
-import { upsertFornecedoresBatch, type FornecedorBatchResult } from "@/lib/fornecedores-batch";
+import {
+  upsertFornecedoresBatch,
+  type FornecedorBatchResult,
+  type FornecedorBatchProgress,
+} from "@/lib/fornecedores-batch";
 import { parseFornecedoresFile } from "@/lib/fornecedores-csv-parser";
 import { TableSkeleton } from "@/components/table-skeleton";
 import { EmptyModule } from "@/components/page-header";
@@ -59,6 +64,13 @@ function FornecedoresPage() {
 
   // Import file state
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<FornecedorBatchProgress>({
+    processados: 0,
+    total: 0,
+    etapa: "Preparando importação...",
+    percentual: 0,
+  });
+  const [importFileName, setImportFileName] = useState("");
   const [importResult, setImportResult] = useState<(FornecedorBatchResult & { arquivo?: string; validos: number; ignorados: number }) | null>(null);
   const [showImportResult, setShowImportResult] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -148,9 +160,22 @@ function FornecedoresPage() {
 
   const handleImportFile = async (file: File) => {
     setImporting(true);
-    const toastId = toast.loading("Lendo arquivo...");
+    setImportFileName(file.name);
+    setImportProgress({
+      processados: 0,
+      total: 0,
+      etapa: "Lendo arquivo...",
+      percentual: 2,
+    });
     try {
       const buf = await file.arrayBuffer();
+      setImportProgress({
+        processados: 0,
+        total: 0,
+        etapa: "Interpretando dados do relatório...",
+        percentual: 5,
+      });
+
       const parseResult = await parseFornecedoresFile(buf, file.name);
 
       if (parseResult.fornecedores.length === 0) {
@@ -159,14 +184,23 @@ function FornecedoresPage() {
         );
       }
 
-      toast.loading(`Importando ${parseResult.fornecedores.length.toLocaleString("pt-BR")} fornecedores...`, { id: toastId });
-      const result = await upsertFornecedoresBatch(parseResult.fornecedores);
-      toast.success("Importação concluída", { id: toastId });
+      setImportProgress({
+        processados: 0,
+        total: parseResult.fornecedores.length,
+        etapa: `Preparando ${parseResult.fornecedores.length.toLocaleString("pt-BR")} fornecedores...`,
+        percentual: 8,
+      });
+
+      const result = await upsertFornecedoresBatch(parseResult.fornecedores, (p) => {
+        setImportProgress(p);
+      });
+
+      toast.success("Importação concluída com sucesso!");
       setImportResult({ ...result, arquivo: file.name, validos: parseResult.validos, ignorados: parseResult.ignorados });
       setShowImportResult(true);
       load(busca, page, effectivePageSize);
     } catch (e) {
-      toast.error("Falha na importação", { id: toastId, description: (e as Error).message });
+      toast.error("Falha na importação", { description: (e as Error).message });
     } finally {
       setImporting(false);
     }
@@ -427,6 +461,31 @@ function FornecedoresPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de Progresso em Tempo Real */}
+      <Dialog open={importing} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md [&>button]:hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-navy">
+              <Upload className="h-5 w-5 text-primary animate-pulse" />
+              Importando Fornecedores
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground truncate max-w-[280px]">{importProgress.etapa}</span>
+              <span className="font-bold text-navy">{importProgress.percentual}%</span>
+            </div>
+            <Progress value={importProgress.percentual} className="h-3" />
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="truncate max-w-[200px]">Arquivo: {importFileName}</span>
+              <span>
+                {importProgress.processados.toLocaleString("pt-BR")} / {importProgress.total.toLocaleString("pt-BR")} registros
+              </span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showImportResult} onOpenChange={setShowImportResult}>
         <DialogContent>
