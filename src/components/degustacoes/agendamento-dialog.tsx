@@ -59,6 +59,8 @@ type AgendamentoFormData = z.infer<typeof agendamentoSchema>;
 interface FornecedorOption {
   id: string;
   nome: string;
+  codigo_interno?: string;
+  razao_social?: string;
 }
 
 interface AgendamentoDialogProps {
@@ -112,11 +114,11 @@ export function AgendamentoDialog({
       try {
         const { data, error } = await supabase
           .from("fornecedores")
-          .select("id, nome")
-          .order("nome", { ascending: true });
+          .select("id, nome, codigo_interno, razao_social")
+          .order("razao_social", { ascending: true });
 
         if (!error && data) {
-          setFornecedores(data);
+          setFornecedores(data as any);
         }
       } catch (err) {
         console.error("Erro ao carregar fornecedores:", err);
@@ -168,13 +170,14 @@ export function AgendamentoDialog({
   const handleFornecedorChange = (fornecedorId: string) => {
     const found = fornecedores.find((f) => f.id === fornecedorId);
     if (found) {
+      const nomeFinal = found.razao_social || found.nome;
       setValue("fornecedor_id", found.id, { shouldValidate: true });
-      setValue("fornecedor_nome", found.nome, { shouldValidate: true });
+      setValue("fornecedor_nome", nomeFinal, { shouldValidate: true });
 
       // Se o campo de nome estiver vazio ou for o padrão, sugere um nome amigável
       const currentNome = watch("nome");
       if (!currentNome || currentNome.startsWith("Degustação")) {
-        setValue("nome", `Degustação ${found.nome}`);
+        setValue("nome", `Degustação ${nomeFinal}`);
       }
     }
   };
@@ -289,11 +292,16 @@ export function AgendamentoDialog({
                   />
                 </SelectTrigger>
                 <SelectContent className="max-h-56">
-                  {fornecedores.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.nome}
-                    </SelectItem>
-                  ))}
+                  {fornecedores.map((f) => {
+                    const label = f.codigo_interno
+                      ? `[${f.codigo_interno}] ${f.razao_social || f.nome}`
+                      : (f.razao_social || f.nome);
+                    return (
+                      <SelectItem key={f.id} value={f.id}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               {errors.fornecedor_id && (

@@ -423,26 +423,32 @@ export type Database = {
       fornecedores: {
         Row: {
           ativo: boolean
+          codigo_interno: string
           created_at: string
           id: string
           nome: string
           observacoes: string
+          razao_social: string
           updated_at: string
         }
         Insert: {
           ativo?: boolean
-          created_at?: string
-          id?: string
-          nome: string
-          observacoes?: string
-          updated_at?: string
-        }
-        Update: {
-          ativo?: boolean
+          codigo_interno?: string
           created_at?: string
           id?: string
           nome?: string
           observacoes?: string
+          razao_social?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo_interno?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          observacoes?: string
+          razao_social?: string
           updated_at?: string
         }
         Relationships: []

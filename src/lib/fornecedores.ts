@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface Fornecedor {
   id: string;
+  codigo_interno: string;
+  razao_social: string;
   nome: string;
   observacoes: string;
   ativo: boolean;
@@ -21,14 +23,18 @@ export async function listFornecedores(
   let q = supabase
     .from("fornecedores")
     .select("*", { count: "exact" })
-    .order("nome", { ascending: true });
+    .order("razao_social", { ascending: true });
+
   const s = search.trim();
-  if (s) q = q.ilike("nome", `%${s}%`);
+  if (s) {
+    q = q.or(`razao_social.ilike.%${s}%,codigo_interno.ilike.%${s}%,nome.ilike.%${s}%`);
+  }
+
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
   const { data, error, count } = await q.range(from, to);
   if (error) throw error;
-  const fornecedores = (data ?? []) as Fornecedor[];
+  const fornecedores = (data ?? []) as unknown as Fornecedor[];
 
   // Uma única consulta que busca todos os fornecedores dos produtos,
   // conta no código e aplica aos fornecedores da página atual.
@@ -42,25 +48,41 @@ export async function listFornecedores(
   }
 
   return {
-    rows: fornecedores.map((f) => ({
-      ...f,
-      produtos: contagens.get(f.nome.toUpperCase()) ?? 0,
-    })),
+    rows: fornecedores.map((f) => {
+      const nameKey = (f.razao_social || f.nome || "").toUpperCase();
+      const codeKey = (f.codigo_interno || "").toUpperCase();
+      const countProd = contagens.get(nameKey) ?? (codeKey ? contagens.get(codeKey) : 0) ?? 0;
+      return {
+        ...f,
+        codigo_interno: f.codigo_interno ?? "",
+        razao_social: f.razao_social || f.nome || "",
+        produtos: countProd,
+      };
+    }),
     total: count ?? 0,
   };
 }
 
 export async function upsertFornecedor(input: {
   id?: string;
-  nome: string;
+  codigo_interno?: string;
+  razao_social?: string;
+  nome?: string;
   observacoes?: string;
   ativo?: boolean;
 }) {
+  const razaoSocial = (input.razao_social || input.nome || "").trim().toUpperCase();
+  const codigoInterno = (input.codigo_interno ?? "").trim();
+  const nomeFinal = razaoSocial || codigoInterno;
+
   const payload = {
-    nome: input.nome.trim(),
+    codigo_interno: codigoInterno,
+    razao_social: razaoSocial,
+    nome: nomeFinal,
     observacoes: input.observacoes ?? "",
     ativo: input.ativo ?? true,
   };
+
   if (input.id) {
     const { error } = await supabase.from("fornecedores").update(payload).eq("id", input.id);
     if (error) throw error;
@@ -99,7 +121,11 @@ export async function syncFornecedores(nomes: string[]): Promise<number> {
 
   const novos = unicos.filter((n) => !existentes.has(n.toLowerCase()));
   for (let i = 0; i < novos.length; i += 500) {
-    const chunk = novos.slice(i, i + 500).map((nome) => ({ nome }));
+    const chunk = novos.slice(i, i + 500).map((nome) => ({
+      nome,
+      razao_social: nome,
+      codigo_interno: "",
+    }));
     const { error } = await supabase
       .from("fornecedores")
       .upsert(chunk, { onConflict: "nome", ignoreDuplicates: true });

@@ -23,7 +23,7 @@ import {
   type FornecedorComContagem,
 } from "@/lib/fornecedores";
 import { upsertFornecedoresBatch, type FornecedorBatchResult } from "@/lib/fornecedores-batch";
-import { parseFornecedoresCsv, decodeFile } from "@/lib/fornecedores-csv-parser";
+import { parseFornecedoresFile } from "@/lib/fornecedores-csv-parser";
 import { TableSkeleton } from "@/components/table-skeleton";
 import { EmptyModule } from "@/components/page-header";
 
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_app/fornecedores")({
   head: () => ({
     meta: [
       { title: "Fornecedores — Central de Campanhas Sumel" },
-      { name: "description", content: "Cadastro de fornecedores alimentado pela importação do catálogo de produtos." },
+      { name: "description", content: "Cadastro de fornecedores com razão social e código interno do ERP." },
       { property: "og:title", content: "Fornecedores — Central de Campanhas Sumel" },
       { property: "og:description", content: "Cadastro e gestão de parceiros comerciais da Central Sumel." },
       { property: "og:type", content: "website" },
@@ -55,13 +55,13 @@ function FornecedoresPage() {
   const [pageSize, setPageSize] = useState(20);
   const [total, setTotal] = useState(0);
 
-  // Import CSV state
+  // Import file state
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<(FornecedorBatchResult & { arquivo?: string; validos: number; ignorados: number }) | null>(null);
   const [showImportResult, setShowImportResult] = useState(false);
   const fileRef = useState<React.RefObject<HTMLInputElement | null>>(() => ({ current: null }))[0];
 
-  const effectivePageSize = pageSize; // "Todos" não é mais uma opção separada
+  const effectivePageSize = pageSize;
 
   const load = async (term = busca, p = page, ps = effectivePageSize) => {
     setLoading(true);
@@ -76,7 +76,6 @@ function FornecedoresPage() {
     }
   };
 
-  // Carrega ao montar e quando busca/paginação mudam
   useEffect(() => {
     const t = setTimeout(() => {
       setPage(1);
@@ -91,7 +90,6 @@ function FornecedoresPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  // Reseta para página 1 quando o tamanho de página muda
   const handlePageSizeChange = (value: number) => {
     setPageSize(value);
     setPage(1);
@@ -99,15 +97,18 @@ function FornecedoresPage() {
   };
 
   const onSave = async () => {
-    if (!editing?.nome?.trim()) {
-      toast.error("Informe o nome do fornecedor");
+    const razao = (editing?.razao_social || editing?.nome || "").trim();
+    if (!razao) {
+      toast.error("Informe a razão social do fornecedor");
       return;
     }
     try {
       await upsertFornecedor({
-        id: editing.id,
-        nome: editing.nome,
-        observacoes: editing.observacoes ?? "",
+        id: editing?.id,
+        codigo_interno: editing?.codigo_interno ?? "",
+        razao_social: razao,
+        nome: razao,
+        observacoes: editing?.observacoes ?? "",
       });
       toast.success("Fornecedor salvo");
       setEditing(null);
@@ -134,8 +135,14 @@ function FornecedoresPage() {
     const toastId = toast.loading("Lendo arquivo...");
     try {
       const buf = await file.arrayBuffer();
-      const text = decodeFile(buf);
-      const parseResult = parseFornecedoresCsv(text);
+      const parseResult = parseFornecedoresFile(buf, file.name);
+
+      if (parseResult.fornecedores.length === 0) {
+        throw new Error(
+          "Nenhum fornecedor encontrado no arquivo. Verifique se o código está a partir da linha 8 coluna C e o nome na coluna H."
+        );
+      }
+
       toast.loading(`Importando ${parseResult.fornecedores.length.toLocaleString("pt-BR")} fornecedores...`, { id: toastId });
       const result = await upsertFornecedoresBatch(parseResult.fornecedores);
       toast.success("Importação concluída", { id: toastId });
@@ -157,13 +164,13 @@ function FornecedoresPage() {
     <div>
       <PageHeader
         title="Fornecedores"
-        description="Parceiros comerciais — cadastrados manualmente ou criados automaticamente na importação do catálogo de produtos."
+        description="Gestão de fornecedores com razão social e código interno do ERP."
         actions={
           <div className="flex gap-2">
             <input
               ref={fileRef as unknown as React.RefObject<HTMLInputElement>}
               type="file"
-              accept=".csv,.txt"
+              accept=".xlsx,.xls,.csv,.txt"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -178,9 +185,9 @@ function FornecedoresPage() {
               className="gap-2"
             >
               <Upload className="h-4 w-4" />
-              {importing ? "Importando..." : "Importar CSV"}
+              {importing ? "Importando..." : "Importar Planilha / CSV"}
             </Button>
-            <Button className="gap-2" onClick={() => setEditing({ nome: "", observacoes: "" })}>
+            <Button className="gap-2" onClick={() => setEditing({ codigo_interno: "", razao_social: "", nome: "", observacoes: "" })}>
               <Plus className="h-4 w-4" /> Novo Fornecedor
             </Button>
           </div>
@@ -206,7 +213,7 @@ function FornecedoresPage() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar fornecedor..."
+              placeholder="Buscar por razão social ou código interno..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               className="pl-9 w-full"
@@ -240,7 +247,8 @@ function FornecedoresPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Fornecedor</TableHead>
+                <TableHead className="w-32">Código</TableHead>
+                <TableHead>Razão Social / Nome</TableHead>
                 <TableHead className="text-right">Produtos</TableHead>
                 <TableHead>Observações</TableHead>
                 <TableHead className="w-24"></TableHead>
@@ -248,18 +256,23 @@ function FornecedoresPage() {
             </TableHeader>
             <TableBody>
               {loading && rows.length === 0 && (
-                <TableSkeleton columns={4} rows={5} />
+                <TableSkeleton columns={5} rows={5} />
               )}
               {!loading && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4}>
+                  <TableCell colSpan={5}>
                     <EmptyModule name="Fornecedores" />
                   </TableCell>
                 </TableRow>
               )}
               {rows.map((f) => (
                 <TableRow key={f.id}>
-                  <TableCell className="font-medium text-navy">{f.nome}</TableCell>
+                  <TableCell className="font-mono text-xs font-semibold text-muted-foreground">
+                    {f.codigo_interno || "—"}
+                  </TableCell>
+                  <TableCell className="font-medium text-navy">
+                    {f.razao_social || f.nome}
+                  </TableCell>
                   <TableCell className="text-right">{f.produtos.toLocaleString("pt-BR")}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{f.observacoes || "—"}</TableCell>
                   <TableCell>
@@ -310,11 +323,21 @@ function FornecedoresPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Nome</Label>
+              <Label>Código Interno</Label>
               <Input
-                value={editing?.nome ?? ""}
-                maxLength={120}
-                onChange={(e) => setEditing((p) => ({ ...p, nome: e.target.value }))}
+                placeholder="Ex: 00123"
+                value={editing?.codigo_interno ?? ""}
+                maxLength={50}
+                onChange={(e) => setEditing((p) => ({ ...p, codigo_interno: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Razão Social / Nome</Label>
+              <Input
+                placeholder="Razão Social do Fornecedor"
+                value={editing?.razao_social ?? editing?.nome ?? ""}
+                maxLength={150}
+                onChange={(e) => setEditing((p) => ({ ...p, razao_social: e.target.value, nome: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -338,7 +361,7 @@ function FornecedoresPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir fornecedor?</AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmDelete?.nome} — os produtos vinculados não serão excluídos.
+              {confirmDelete?.razao_social || confirmDelete?.nome} — os produtos vinculados não serão excluídos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -364,8 +387,8 @@ function FornecedoresPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <Stat label="Fornecedores válidos no arquivo" value={importResult.validos} />
                 <Stat label="Novos cadastrados" value={importResult.novos} />
-                <Stat label="Já existiam" value={importResult.existentes} />
-                <Stat label="Linhas inválidas ignoradas" value={importResult.ignorados} />
+                <Stat label="Já existiam (atualizados)" value={importResult.existentes} />
+                <Stat label="Linhas ignoradas" value={importResult.ignorados} />
                 {importResult.erros > 0 && <Stat label="Erros" value={importResult.erros} />}
                 <Stat label="Tempo (segundos)" value={(importResult.duracao_ms / 1000).toFixed(1)} />
               </div>

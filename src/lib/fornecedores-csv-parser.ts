@@ -1,25 +1,17 @@
-import type { Fornecedor } from "@/lib/fornecedores";
-
-export interface FornecedorCsvRow {
+export interface FornecedorParsedRow {
+  codigo_interno: string;
+  razao_social: string;
   nome: string;
   linhaOriginal: number;
 }
 
+export type FornecedorCsvRow = FornecedorParsedRow;
+
 export interface FornecedoresCsvResult {
-  fornecedores: FornecedorCsvRow[];
+  fornecedores: FornecedorParsedRow[];
   totalLidos: number;
   validos: number;
   ignorados: number;
-}
-
-const CNPJ_REGEX = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/;
-const CPF_REGEX = /\d{3}\.\d{3}\.\d{3}-\d{2}/;
-
-function hasDocument(cols: string[]): boolean {
-  return cols.some((c) => {
-    const trimmed = c.trim();
-    return CNPJ_REGEX.test(trimmed) || CPF_REGEX.test(trimmed);
-  });
 }
 
 function detectDelimiter(line: string): string {
@@ -62,67 +54,94 @@ function splitLine(line: string, delimiter: string): string[] {
 }
 
 /**
- * Parser de relatório de fornecedores exportado do ERP.
- *
- * O arquivo contém blocos repetidos de cabeçalho/rodapé a cada ~90 linhas
- * com título, data, cabeçalho de coluna e "Processado por: ...".
- *
- * A estratégia de validação é: qualquer linha que contenha um trecho
- * com formato de CNPJ (99.999.999/9999-99) ou CPF (999.999.999-99)
- * em qualquer coluna é considerada uma linha de dados válida.
- *
- * O nome do fornecedor é a primeira coluna não vazia da linha.
+ * Processa a matriz de dados (linhas x colunas).
+ * Regra: Primeiro fornecedor está na C8 (coluna C, linha 8) e o nome na H8 (coluna H, linha 8).
+ * - Coluna C = índice 2
+ * - Coluna H = índice 7
+ * - Linha 8 = índice 7 (0-based)
  */
-export function parseFornecedoresCsv(text: string): FornecedoresCsvResult {
-  const clean = text.replace(/^\uFEFF/, "");
-  const lines = clean.split(/\r?\n/).filter((l) => l.trim().length > 0);
+function processDataGrid(grid: any[][]): FornecedoresCsvResult {
+  let startRow = 7; // Linha 8 (0-indexed)
+  let colCodigo = 2; // Coluna C (0-indexed)
+  let colNome = 7; // Coluna H (0-indexed)
 
-  if (lines.length === 0) {
-    throw new Error("Arquivo CSV vazio.");
+  // Verifica se há cabeçalho explícito antes da linha 8
+  for (let r = 0; r < Math.min(8, grid.length); r++) {
+    const row = grid[r];
+    if (!Array.isArray(row)) continue;
+    let foundCode = -1;
+    let foundName = -1;
+    row.forEach((cell, idx) => {
+      const val = String(cell ?? "").trim().toUpperCase();
+      if (val === "CÓDIGO" || val === "CODIGO" || val === "CÓD." || val === "COD.") {
+        foundCode = idx;
+      }
+      if (val === "RAZÃO SOCIAL" || val === "RAZAO SOCIAL" || val === "NOME" || val === "FORNECEDOR") {
+        foundName = idx;
+      }
+    });
+    if (foundCode !== -1 && foundName !== -1) {
+      colCodigo = foundCode;
+      colNome = foundName;
+      startRow = r + 1;
+      break;
+    }
   }
 
-  const delimiter = detectDelimiter(lines[0]);
-
-  const seen = new Map<string, number>(); // nome lowercase → índice
-  const fornecedores: FornecedorCsvRow[] = [];
+  const seen = new Set<string>();
+  const fornecedores: FornecedorParsedRow[] = [];
   let totalLidos = 0;
   let ignorados = 0;
 
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i].trim();
-    if (!rawLine) continue;
-
+  for (let i = startRow; i < grid.length; i++) {
+    const row = grid[i];
+    if (!Array.isArray(row)) continue;
     totalLidos++;
-    const cols = splitLine(rawLine, delimiter);
 
-    // Linha válida apenas se tiver conteúdo que pareça CNPJ ou CPF em alguma coluna
-    if (!hasDocument(cols)) {
+    const rawCodigo = row[colCodigo];
+    const rawNome = row[colNome];
+
+    const codigo = String(rawCodigo ?? "").trim();
+    const razaoSocial = String(rawNome ?? "").trim().toUpperCase();
+
+    // Ignora linhas vazias
+    if (!codigo && !razaoSocial) {
       ignorados++;
       continue;
     }
 
-    // Primeira coluna não vazia = nome do fornecedor
-    const nome = cols.find((c) => c.trim().length > 0)?.trim() ?? "";
-    if (!nome) {
+    // Ignora cabeçalhos repetidos, títulos de relatório ou rodapés
+    if (
+      razaoSocial.includes("TOTAL") ||
+      razaoSocial.includes("PROCESSADO POR") ||
+      razaoSocial.includes("RELATÓRIO") ||
+      codigo.toUpperCase() === "CÓDIGO" ||
+      codigo.toUpperCase() === "CODIGO"
+    ) {
       ignorados++;
       continue;
     }
 
-    const nomeLower = nome.toLowerCase();
-    if (seen.has(nomeLower)) {
-      // duplicado — ignora, mantendo a primeira ocorrência
+    // Razão social deve ser válida
+    if (!razaoSocial) {
       ignorados++;
       continue;
     }
 
-    seen.set(nomeLower, fornecedores.length);
-    fornecedores.push({ nome: nome.toUpperCase(), linhaOriginal: i + 1 });
-  }
+    // Deduplicação pelo código interno se houver, ou pela razão social
+    const dedupKey = codigo ? `cod:${codigo}` : `nome:${razaoSocial}`;
+    if (seen.has(dedupKey)) {
+      ignorados++;
+      continue;
+    }
+    seen.add(dedupKey);
 
-  if (fornecedores.length === 0) {
-    throw new Error(
-      "Nenhum fornecedor válido encontrado. O arquivo precisa conter linhas com CNPJ (99.999.999/9999-99) ou CPF (999.999.999-99).",
-    );
+    fornecedores.push({
+      codigo_interno: codigo,
+      razao_social: razaoSocial,
+      nome: razaoSocial,
+      linhaOriginal: i + 1,
+    });
   }
 
   return {
@@ -133,9 +152,56 @@ export function parseFornecedoresCsv(text: string): FornecedoresCsvResult {
   };
 }
 
+export async function parseFornecedoresFile(buffer: ArrayBuffer, fileName = ""): Promise<FornecedoresCsvResult> {
+  const isExcel =
+    fileName.toLowerCase().endsWith(".xlsx") ||
+    fileName.toLowerCase().endsWith(".xls") ||
+    isExcelBuffer(buffer);
+
+  if (isExcel) {
+    const XLSX = await import("xlsx");
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) throw new Error("A planilha não contém nenhuma aba.");
+    const sheet = workbook.Sheets[sheetName];
+    const grid = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: "" });
+    return processDataGrid(grid);
+  }
+
+  // Arquivo de texto CSV / TXT
+  const text = decodeFile(buffer);
+  return parseFornecedoresCsv(text);
+}
+
+function isExcelBuffer(buffer: ArrayBuffer): boolean {
+  if (buffer.byteLength < 4) return false;
+  const bytes = new Uint8Array(buffer.slice(0, 4));
+  // ZIP (PK..): 0x50, 0x4B, 0x03, 0x04 (XLSX)
+  if (bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04) return true;
+  // OLE / Compound Document: 0xD0, 0xCF, 0x11, 0xE0 (XLS)
+  if (bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0) return true;
+  return false;
+}
+
+/**
+ * Parser de texto CSV com delimitador automático.
+ */
+export function parseFornecedoresCsv(text: string): FornecedoresCsvResult {
+  const clean = text.replace(/^\uFEFF/, "");
+  const lines = clean.split(/\r?\n/).filter((l) => l.trim().length > 0);
+
+  if (lines.length === 0) {
+    throw new Error("Arquivo CSV vazio.");
+  }
+
+  const delimiter = detectDelimiter(lines[0]);
+  const grid = lines.map((line) => splitLine(line, delimiter));
+
+  return processDataGrid(grid);
+}
+
 /**
  * Decodifica o buffer com fallback UTF-8 → windows-1252.
- * Replica a estratégia usada em produtos-csv-parser.
  */
 export function decodeFile(buffer: ArrayBuffer): string {
   let text = new TextDecoder("utf-8", { fatal: false }).decode(buffer);

@@ -1,6 +1,5 @@
 /**
- * Upsert em lote de fornecedores. Reaproveita a lógica de deduplicação
- * existente em syncFornecedores, mas realiza upsert ao invés de apenas insert.
+ * Upsert em lote de fornecedores com suporte a código interno e razão social.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,17 +11,16 @@ export interface FornecedorBatchResult {
 }
 
 export interface FornecedorBatchRow {
+  codigo_interno?: string;
+  razao_social?: string;
   nome: string;
 }
 
 /**
- * Realiza upsert de fornecedores em lote.
- * - Se o nome já existe (case-insensitive): incrementa existentes.
- * - Se o nome não existe: cria e incrementa novos.
- * Processa em chunks de 500 para evitar payload grande.
- *
- * Usa comparação normalizada para maiúsculas (padrão do banco)
- * e bulk upsert em vez de chamadas sequenciais por registro.
+ * Realiza upsert de fornecedores em lote com suporte a codigo_interno e razao_social.
+ * - Localiza fornecedores existentes por codigo_interno ou razao_social/nome.
+ * - Atualiza os existentes preservando o ID (não quebra vínculos de degustações/produtos).
+ * - Insere novos fornecedores.
  */
 export async function upsertFornecedoresBatch(
   rows: FornecedorBatchRow[],
@@ -32,60 +30,110 @@ export async function upsertFornecedoresBatch(
   let existentes = 0;
   let erros = 0;
 
-  // Normaliza nomes para maiúsculas (padrão do banco)
-  const normalizados = rows.map((r) => ({
-    nome: r.nome.toUpperCase().trim(),
-  }));
+  // Normaliza linhas
+  const normalizados = rows.map((r) => {
+    const razao = (r.razao_social || r.nome || "").trim().toUpperCase();
+    const codigo = (r.codigo_interno ?? "").trim();
+    return {
+      codigo_interno: codigo,
+      razao_social: razao,
+      nome: razao || codigo,
+      ativo: true,
+      observacoes: "",
+    };
+  }).filter((r) => r.razao_social.length > 0 || r.codigo_interno.length > 0);
 
-  // Chunk de 500 para batch
   const CHUNK = 500;
   for (let i = 0; i < normalizados.length; i += CHUNK) {
     const chunk = normalizados.slice(i, i + CHUNK);
-    const nomesUpper = chunk.map((r) => r.nome);
+    const codigos = chunk.map((r) => r.codigo_interno).filter((c) => c.length > 0);
+    const nomes = chunk.map((r) => r.nome);
 
-    // Busca fornecedores existentes neste chunk — compara em maiúsculas
-    const { data: dbRows, error: fetchError } = await supabase
-      .from("fornecedores")
-      .select("id, nome")
-      .in(
-        "nome",
-        nomesUpper.map((n) => n.toLowerCase()),
-      );
+    // Consulta fornecedores existentes no banco para correlacionar IDs
+    const existingById = new Map<string, string>(); // code or name -> id
 
-    if (fetchError) throw fetchError;
+    try {
+      // 1. Busca por código interno se houver
+      if (codigos.length > 0) {
+        const { data: dbByCode } = await supabase
+          .from("fornecedores")
+          .select("id, codigo_interno, nome, razao_social")
+          .in("codigo_interno", codigos);
 
-    // Normaliza nomes do banco para maiúsculas para comparar corretamente
-    const existentesSet = new Set(
-      (dbRows ?? []).map((r: { nome: string }) => r.nome.toUpperCase()),
-    );
-
-    const paraCriar = chunk.filter((r) => !existentesSet.has(r.nome));
-    existentes += chunk.length - paraCriar.length;
-
-    // Upsert em lote — uma chamada por chunk em vez de uma por fornecedor
-    if (paraCriar.length > 0) {
-      const { error: upsertError } = await supabase
-        .from("fornecedores")
-        .upsert(
-          paraCriar.map((f) => ({ nome: f.nome })),
-          { onConflict: "nome", ignoreDuplicates: false },
-        );
-
-      if (upsertError) {
-        // Tenta um a um para contar exatamente quais falharam
-        for (const fornecedor of paraCriar) {
-          try {
-            const { error: singleError } = await supabase
-              .from("fornecedores")
-              .upsert({ nome: fornecedor.nome }, { onConflict: "nome" });
-            if (singleError) throw singleError;
-            novos++;
-          } catch {
-            erros++;
+        for (const row of dbByCode ?? []) {
+          if (row.codigo_interno) {
+            existingById.set(`cod:${row.codigo_interno.trim()}`, row.id);
+          }
+          if (row.nome) {
+            existingById.set(`name:${row.nome.trim().toUpperCase()}`, row.id);
           }
         }
+      }
+
+      // 2. Busca por nome para os demais
+      if (nomes.length > 0) {
+        const { data: dbByName } = await supabase
+          .from("fornecedores")
+          .select("id, nome, codigo_interno, razao_social")
+          .in("nome", nomes);
+
+        for (const row of dbByName ?? []) {
+          if (row.nome) {
+            existingById.set(`name:${row.nome.trim().toUpperCase()}`, row.id);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Aviso ao buscar fornecedores existentes:", e);
+    }
+
+    // Monta payload final com IDs para os existentes
+    const payloadParaEnvio = chunk.map((item) => {
+      const existingId =
+        (item.codigo_interno && existingById.get(`cod:${item.codigo_interno}`)) ||
+        existingById.get(`name:${item.nome.toUpperCase()}`);
+
+      if (existingId) {
+        existentes++;
+        return {
+          id: existingId,
+          codigo_interno: item.codigo_interno,
+          razao_social: item.razao_social,
+          nome: item.nome,
+          ativo: item.ativo,
+        };
       } else {
-        novos += paraCriar.length;
+        novos++;
+        return {
+          codigo_interno: item.codigo_interno,
+          razao_social: item.razao_social,
+          nome: item.nome,
+          ativo: item.ativo,
+        };
+      }
+    });
+
+    // Executa upsert em lote
+    const { error: batchError } = await supabase
+      .from("fornecedores")
+      .upsert(payloadParaEnvio as any, {
+        onConflict: "id",
+        ignoreDuplicates: false,
+      });
+
+    if (batchError) {
+      console.warn("Falha no upsert em lote de fornecedores, tentando item a item:", batchError);
+      // Fallback um a um
+      for (const item of payloadParaEnvio) {
+        try {
+          const { error: singleError } = await supabase
+            .from("fornecedores")
+            .upsert(item as any, { onConflict: (item as any).id ? "id" : "nome" });
+
+          if (singleError) throw singleError;
+        } catch {
+          erros++;
+        }
       }
     }
   }
