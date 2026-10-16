@@ -73,33 +73,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cartaz_templates: {
-        Row: {
-          id: string
-          nome: string
-          bg_url: string | null
-          config: Json
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          nome: string
-          bg_url?: string | null
-          config?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          nome?: string
-          bg_url?: string | null
-          config?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       campanhas: {
         Row: {
           checklist: Json | null
@@ -144,6 +117,106 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      cartaz_templates: {
+        Row: {
+          bg_url: string | null
+          config: Json
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          bg_url?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          bg_url?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      degustacao_produtos: {
+        Row: {
+          codigo: string | null
+          created_at: string
+          degustacao_id: string
+          descricao: string
+          faturamento_total: number
+          gtin: string | null
+          id: string
+          observacoes: string
+          oferta_id: string | null
+          preco_base: number
+          preco_praticado: number
+          produto_id: string | null
+          quantidade_vendida: number
+          updated_at: string
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string
+          degustacao_id: string
+          descricao: string
+          faturamento_total?: number
+          gtin?: string | null
+          id?: string
+          observacoes?: string
+          oferta_id?: string | null
+          preco_base?: number
+          preco_praticado?: number
+          produto_id?: string | null
+          quantidade_vendida?: number
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string
+          degustacao_id?: string
+          descricao?: string
+          faturamento_total?: number
+          gtin?: string | null
+          id?: string
+          observacoes?: string
+          oferta_id?: string | null
+          preco_base?: number
+          preco_praticado?: number
+          produto_id?: string | null
+          quantidade_vendida?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "degustacao_produtos_degustacao_id_fkey"
+            columns: ["degustacao_id"]
+            isOneToOne: false
+            referencedRelation: "degustacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degustacao_produtos_oferta_id_fkey"
+            columns: ["oferta_id"]
+            isOneToOne: false
+            referencedRelation: "ofertas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degustacao_produtos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       degustacoes: {
         Row: {
@@ -252,79 +325,6 @@ export type Database = {
           },
         ]
       }
-      degustacao_produtos: {
-        Row: {
-          codigo: string | null
-          created_at: string
-          degustacao_id: string
-          descricao: string
-          faturamento_total: number
-          gtin: string | null
-          id: string
-          observacoes: string
-          oferta_id: string | null
-          preco_base: number
-          preco_praticado: number
-          produto_id: string | null
-          quantidade_vendida: number
-          updated_at: string
-        }
-        Insert: {
-          codigo?: string | null
-          created_at?: string
-          degustacao_id: string
-          descricao: string
-          faturamento_total?: number
-          gtin?: string | null
-          id?: string
-          observacoes?: string
-          oferta_id?: string | null
-          preco_base?: number
-          preco_praticado?: number
-          produto_id?: string | null
-          quantidade_vendida?: number
-          updated_at?: string
-        }
-        Update: {
-          codigo?: string | null
-          created_at?: string
-          degustacao_id?: string
-          descricao?: string
-          faturamento_total?: number
-          gtin?: string | null
-          id?: string
-          observacoes?: string
-          oferta_id?: string | null
-          preco_base?: number
-          preco_praticado?: number
-          produto_id?: string | null
-          quantidade_vendida?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "degustacao_produtos_degustacao_id_fkey"
-            columns: ["degustacao_id"]
-            isOneToOne: false
-            referencedRelation: "degustacoes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "degustacao_produtos_oferta_id_fkey"
-            columns: ["oferta_id"]
-            isOneToOne: false
-            referencedRelation: "ofertas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "degustacao_produtos_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       degustacoes_historico: {
         Row: {
           acao: string
@@ -336,7 +336,9 @@ export type Database = {
           degustacao_id: string
           id: string
           observacao: string
-          status_anterior: Database["public"]["Enums"]["degustacao_status"] | null
+          status_anterior:
+            | Database["public"]["Enums"]["degustacao_status"]
+            | null
           status_novo: Database["public"]["Enums"]["degustacao_status"]
         }
         Insert: {
@@ -349,7 +351,9 @@ export type Database = {
           degustacao_id: string
           id?: string
           observacao?: string
-          status_anterior?: Database["public"]["Enums"]["degustacao_status"] | null
+          status_anterior?:
+            | Database["public"]["Enums"]["degustacao_status"]
+            | null
           status_novo: Database["public"]["Enums"]["degustacao_status"]
         }
         Update: {
@@ -362,7 +366,9 @@ export type Database = {
           degustacao_id?: string
           id?: string
           observacao?: string
-          status_anterior?: Database["public"]["Enums"]["degustacao_status"] | null
+          status_anterior?:
+            | Database["public"]["Enums"]["degustacao_status"]
+            | null
           status_novo?: Database["public"]["Enums"]["degustacao_status"]
         }
         Relationships: [
@@ -432,24 +438,24 @@ export type Database = {
           created_at: string
           descricao: string
           id: string
-          updated_at: string
           is_balanca: boolean | null
+          updated_at: string
         }
         Insert: {
           codigo_balanca: string
           created_at?: string
           descricao: string
           id?: string
-          updated_at?: string
           is_balanca?: boolean | null
+          updated_at?: string
         }
         Update: {
           codigo_balanca?: string
           created_at?: string
           descricao?: string
           id?: string
-          updated_at?: string
           is_balanca?: boolean | null
+          updated_at?: string
         }
         Relationships: []
       }
