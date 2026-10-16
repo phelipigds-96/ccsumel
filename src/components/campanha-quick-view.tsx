@@ -4,6 +4,7 @@ import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -11,7 +12,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import type { Campanha, Oferta, MaterialApoio } from "@/lib/campanhas-store";
-import { formatFiliais } from "@/lib/campanhas-store";
+import { formatFiliais, fmtCondicaoOferta } from "@/lib/campanhas-store";
 
 export const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 export const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
@@ -43,12 +44,23 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
     : [["Código", "Descrição do Produto", "Clube", "De", "Por", "Período"]];
 
   const body = ofertas.map((o) => {
+    const porFormatado = (() => {
+      if (o.tipoPromocao === "a_partir_de") {
+        return `A partir de ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada`;
+      }
+      if (o.tipoPromocao === "a_cada") {
+        const total = (o.quantidadeMinima || 1) * o.precoPromocional;
+        return `A cada ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada (${o.quantidadeMinima} por ${brl(total)})`;
+      }
+      return brl(o.precoPromocional);
+    })();
+
     const base = [
       pdfText(o.codigo),
       pdfText(o.descricao),
       o.clubeSumel ? "SIM" : "—",
       brl(o.precoNormal),
-      brl(o.precoPromocional),
+      porFormatado,
     ];
     return mesmoPeriodo
       ? base
@@ -230,8 +242,27 @@ export function CampanhaQuickView({
                   <TableCell className="font-mono text-xs">{o.codigo}</TableCell>
                   <TableCell className="max-w-[280px] truncate">{o.descricao}</TableCell>
                   <TableCell>{o.clubeSumel ? "Sim" : "Não"}</TableCell>
-                  <TableCell className="text-right line-through text-muted-foreground">{brl(o.precoNormal)}</TableCell>
-                  <TableCell className="text-right font-semibold text-primary">{brl(o.precoPromocional)}</TableCell>
+                  <TableCell className="text-right font-semibold text-primary">
+                    {o.tipoPromocao && o.tipoPromocao !== "simples" ? (
+                      <div className="flex flex-col items-end leading-tight gap-0.5">
+                        <Badge variant="outline" className={`text-[10px] py-0 px-1.5 font-normal ${
+                          o.tipoPromocao === "a_partir_de"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-purple-50 text-purple-700 border-purple-200"
+                        }`}>
+                          {o.tipoPromocao === "a_partir_de" ? `A partir de ${o.quantidadeMinima} un` : `A cada ${o.quantidadeMinima} un`}
+                        </Badge>
+                        <span>{brl(o.precoPromocional)} cada</span>
+                        {o.tipoPromocao === "a_cada" && (
+                          <span className="text-[10px] text-muted-foreground font-normal">
+                            {o.quantidadeMinima} un por {brl(o.quantidadeMinima * o.precoPromocional)}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      brl(o.precoPromocional)
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Plus, Search, Pencil, Trash2, Printer, Tag, ArrowLeft, Calendar, Package, ChevronRight,
   Paperclip, Upload, FileText, Image as ImageIcon, X, DollarSign, Columns3, Check, Eye, FileDown, ListOrdered, Share2, Target, Camera,
-  LayoutGrid, List, ArrowUpDown, MapPin
+  LayoutGrid, List, ArrowUpDown, MapPin, Boxes, Repeat, Sparkles
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -55,6 +55,9 @@ import {
   type MaterialApoio,
   type Campanha,
   type Oferta,
+  type TipoPromocaoOferta,
+  getMecanicaLabel,
+  fmtCondicaoOferta,
   useCampanhasStore,
   campanhasStore,
   categoriaCampanha,
@@ -81,7 +84,9 @@ const emptyCampanha = (): Campanha => ({
 const emptyOferta = (campanha: Campanha): Oferta => ({
   id: crypto.randomUUID(), campanhaId: campanha.id, codigo: "", gtin: "", gtinsCresceVendas: "", descricao: "",
   fornecedor: FORNECEDORES[0], categoria: CATEGORIAS[0],
-  precoNormal: 0, custo: 0, precoPromocional: 0, clubeSumel: campanha.clubeSumel ?? false,
+  precoNormal: 0, custo: 0, precoPromocional: 0,
+  tipoPromocao: "simples", quantidadeMinima: 1,
+  clubeSumel: campanha.clubeSumel ?? false,
   dataInicial: campanha.dataInicial, dataFinal: campanha.dataFinal,
   filiais: [...(campanha.filiais ?? [])], corredor: "", estoque: 0, margem: 0, status: statusCampanha(campanha),
   selloutTemVerba: false, selloutFornecedor: "", selloutValor: 0, selloutObs: "",
@@ -730,6 +735,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const save = async () => {
     if (!editing) return;
     if (!editing.codigo.trim() || !editing.descricao.trim()) { toast.error("Preencha código e descrição."); return; }
+    if (editing.precoPromocional <= 0) {
+      toast.error("Informe um preço promocional válido.");
+      return;
+    }
+    if (editing.tipoPromocao !== "simples" && (!editing.quantidadeMinima || editing.quantidadeMinima < 2)) {
+      toast.error("Para promoções de atacado ou combo, a quantidade mínima deve ser de pelo menos 2 unidades.");
+      return;
+    }
     
     // Se a campanha for Rascunho, e a oferta vier de uma oportunidade, o status da oportunidade deve ser Reservada.
     // Se a campanha não for Rascunho (Ativa/Programada), o status deve ser Utilizada.
@@ -977,12 +990,32 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   {isVisible("precoNormal") && <TableCell className="text-right text-muted-foreground line-through tabular-nums">{brl(o.precoNormal)}</TableCell>}
                   {isVisible("precoPromocional") && (
                     <TableCell className="text-right">
-                      <div className="inline-flex items-center gap-1.5">
-                        {desconto > 0 && (
-                          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">-{desconto}%</span>
-                        )}
-                        <span className="font-semibold tabular-nums text-primary">{brl(o.precoPromocional)}</span>
-                      </div>
+                      {o.tipoPromocao && o.tipoPromocao !== "simples" ? (
+                        <div className="flex flex-col items-end leading-tight gap-0.5">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            o.tipoPromocao === "a_partir_de"
+                              ? "bg-amber-500/10 text-amber-700 border border-amber-500/20"
+                              : "bg-purple-500/10 text-purple-700 border border-purple-500/20"
+                          }`}>
+                            {o.tipoPromocao === "a_partir_de" ? `📦 A partir de ${o.quantidadeMinima} un` : `🔁 A cada ${o.quantidadeMinima} un`}
+                          </span>
+                          <span className="font-semibold tabular-nums text-primary">
+                            {brl(o.precoPromocional)} <span className="text-[11px] font-normal text-muted-foreground">cada</span>
+                          </span>
+                          {o.tipoPromocao === "a_cada" && (
+                            <span className="text-[10px] text-muted-foreground font-medium">
+                              {o.quantidadeMinima} un por {brl(o.quantidadeMinima * o.precoPromocional)}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center gap-1.5">
+                          {desconto > 0 && (
+                            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">-{desconto}%</span>
+                          )}
+                          <span className="font-semibold tabular-nums text-primary">{brl(o.precoPromocional)}</span>
+                        </div>
+                      )}
                     </TableCell>
                   )}
                   {isVisible("clubeSumel") && (
@@ -1297,6 +1330,32 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
     : descontoPct < 20 ? "text-emerald-600"
     : "text-primary";
 
+  const tipoPromocao: TipoPromocaoOferta = oferta.tipoPromocao || "simples";
+  const qtdMinima = Math.max(Number(oferta.quantidadeMinima) || 1, 1);
+  const precoTotalCombo = Number((qtdMinima * (oferta.precoPromocional || 0)).toFixed(2));
+
+  const handleTipoChange = (novoTipo: TipoPromocaoOferta) => {
+    let novaQtd = oferta.quantidadeMinima;
+    if (novoTipo === "simples") {
+      novaQtd = 1;
+    } else if (novoTipo === "a_partir_de") {
+      novaQtd = oferta.quantidadeMinima >= 2 ? oferta.quantidadeMinima : 6;
+    } else if (novoTipo === "a_cada") {
+      novaQtd = oferta.quantidadeMinima >= 2 ? oferta.quantidadeMinima : 3;
+    }
+    setOferta({
+      ...oferta,
+      tipoPromocao: novoTipo,
+      quantidadeMinima: novaQtd,
+    });
+  };
+
+  const handlePrecoTotalComboChange = (valTotal: number) => {
+    const qtd = Math.max(Number(oferta.quantidadeMinima) || 1, 1);
+    const unitario = +(valTotal / qtd).toFixed(2);
+    upd("precoPromocional", unitario);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto p-0">
@@ -1338,54 +1397,248 @@ function OfertaDialog({ open, onOpenChange, oferta, setOferta, onSave, filiaisPe
           <Field label="Preço Atual (R$)"><Input type="number" step="0.01" value={oferta.precoNormal} onChange={(e) => upd("precoNormal", parseFloat(e.target.value) || 0)} /></Field>
           <Field label="Custo (R$)"><Input type="number" step="0.01" value={oferta.custo} readOnly disabled className="bg-muted cursor-not-allowed" /></Field>
 
-          {/* Sugestões de desconto */}
-          <div className="md:col-span-2 rounded-lg border p-4 bg-card">
-            <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          {/* Seletor de Formato da Promoção */}
+          <div className="md:col-span-2 rounded-xl border border-border/80 bg-muted/20 p-4">
+            <div className="mb-3">
+              <Label className="text-xs font-semibold text-navy uppercase tracking-wider">
+                Formato da Promoção
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Escolha a mecânica promocional aplicada no caixa (PDV):
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => handleTipoChange("simples")}
+                className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  tipoPromocao === "simples"
+                    ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/30"
+                    : "border-border bg-card hover:border-border/80 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 font-medium text-sm text-navy">
+                  <span>🏷️</span>
+                  <span>Preço Direto (tradicional)</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                  Desconto unitário De / Por. Válido a partir de 1 unidade.
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTipoChange("a_partir_de")}
+                className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  tipoPromocao === "a_partir_de"
+                    ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/30"
+                    : "border-border bg-card hover:border-border/80 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 font-medium text-sm text-navy">
+                  <span>📦</span>
+                  <span>A partir de X un (Atacado)</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                  Ex: A partir de 6 un sai por R$ 3,99 cada.
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTipoChange("a_cada")}
+                className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  tipoPromocao === "a_cada"
+                    ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/30"
+                    : "border-border bg-card hover:border-border/80 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 font-medium text-sm text-navy">
+                  <span>🔁</span>
+                  <span>A cada X un (Combo)</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                  Ex: A cada 3 un sai por R$ 3,99 cada (3 por R$ 11,97).
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Configurações específicas do formato */}
+          <div className="md:col-span-2 rounded-lg border p-4 bg-card space-y-4">
+            {/* Comparativo de preço unitário e desconto */}
+            <div className="flex items-center justify-between gap-3 flex-wrap pb-3 border-b">
               <div>
-                <div className="text-xs text-muted-foreground">Preço atual</div>
+                <div className="text-xs text-muted-foreground">Preço atual unitário</div>
                 <div className="text-xl font-semibold text-navy">{brl(oferta.precoNormal)}</div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-muted-foreground">Desconto aplicado</div>
+                <div className="text-xs text-muted-foreground">Desconto unitário</div>
                 <div className={`text-2xl font-bold ${descontoTone}`}>{descontoPct.toFixed(1)}%</div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-muted-foreground">Economia</div>
+                <div className="text-xs text-muted-foreground">Economia por un</div>
                 <div className="text-lg font-semibold text-navy">{brl(economia)}</div>
               </div>
             </div>
 
-            <div className="text-xs text-muted-foreground mb-2">Sugestões automáticas — clique para aplicar</div>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              {[5, 10, 15].map(pct => {
-                const preco = priceAt(pct);
-                const ativo = Math.abs(preco - oferta.precoPromocional) < 0.005;
-                return (
-                  <button
-                    key={pct}
-                    type="button"
-                    onClick={() => setPromoByPct(pct)}
-                    disabled={oferta.precoNormal <= 0}
-                    className={`rounded-lg border p-3 text-left transition hover:border-primary hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${ativo ? "border-primary bg-primary/5" : "bg-card"}`}
-                  >
-                    <div className="text-xs font-semibold text-primary">−{pct}%</div>
-                    <div className="text-lg font-bold text-navy leading-tight">{brl(preco)}</div>
-                    <div className="text-[11px] text-muted-foreground">Economia {brl(oferta.precoNormal - preco)}</div>
-                  </button>
-                );
-              })}
-            </div>
+            {/* SE FORMATO TRADICIONAL */}
+            {tipoPromocao === "simples" && (
+              <>
+                <div>
+                  <div className="text-xs text-muted-foreground mb-2">Sugestões automáticas — clique para aplicar</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[5, 10, 15].map(pct => {
+                      const preco = priceAt(pct);
+                      const ativo = Math.abs(preco - oferta.precoPromocional) < 0.005;
+                      return (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => setPromoByPct(pct)}
+                          disabled={oferta.precoNormal <= 0}
+                          className={`rounded-lg border p-3 text-left transition hover:border-primary hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${ativo ? "border-primary bg-primary/5" : "bg-card"}`}
+                        >
+                          <div className="text-xs font-semibold text-primary">−{pct}%</div>
+                          <div className="text-lg font-bold text-navy leading-tight">{brl(preco)}</div>
+                          <div className="text-[11px] text-muted-foreground">Economia {brl(oferta.precoNormal - preco)}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            <Field label="Preço Promocional (R$) — ou informe manualmente">
-              <Input
-                ref={promoRef}
-                type="number" step="0.01"
-                value={oferta.precoPromocional}
-                onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)}
-              />
-            </Field>
+                <Field label="Preço Promocional (R$) — unitário">
+                  <Input
+                    ref={promoRef}
+                    type="number" step="0.01"
+                    value={oferta.precoPromocional}
+                    onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)}
+                  />
+                </Field>
+              </>
+            )}
 
-            <div className="mt-4">
+            {/* SE FORMATO ATACADO (A PARTIR DE X UNIDADES) */}
+            {tipoPromocao === "a_partir_de" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Quantidade mínima para ativar preço de atacado (X)">
+                    <div className="space-y-1.5">
+                      <Input
+                        type="number"
+                        min="2"
+                        step="1"
+                        value={oferta.quantidadeMinima}
+                        onChange={(e) => upd("quantidadeMinima", Math.max(parseInt(e.target.value) || 2, 2))}
+                      />
+                      <div className="flex gap-1.5 flex-wrap">
+                        {[3, 6, 10, 12].map((qtd) => (
+                          <Button
+                            key={qtd}
+                            type="button"
+                            size="sm"
+                            variant={oferta.quantidadeMinima === qtd ? "secondary" : "outline"}
+                            className="h-7 text-xs px-2"
+                            onClick={() => upd("quantidadeMinima", qtd)}
+                          >
+                            {qtd} un
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </Field>
+
+                  <Field label="Preço Promocional por Unidade no Atacado (R$)">
+                    <Input
+                      ref={promoRef}
+                      type="number" step="0.01"
+                      value={oferta.precoPromocional}
+                      onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)}
+                    />
+                  </Field>
+                </div>
+
+                <div className="rounded-lg border border-amber-300 bg-amber-50/70 p-3 text-xs text-amber-950">
+                  <div className="font-semibold flex items-center gap-1.5 mb-1">
+                    <span>📦</span> Como funciona no caixa (PDV):
+                  </div>
+                  <div>
+                    A partir de <strong>{qtdMinima} unidades</strong>, cada uma sai por <strong>{brl(oferta.precoPromocional)}</strong> (total mínimo no atacado: <strong>{brl(qtdMinima * oferta.precoPromocional)}</strong>).
+                    <br />
+                    Abaixo de {qtdMinima} unidades, o cliente paga o preço normal de <strong>{brl(oferta.precoNormal)}</strong> cada.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SE FORMATO COMBO (A CADA X UNIDADES) */}
+            {tipoPromocao === "a_cada" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Field label="A cada quantas unidades? (X)">
+                    <div className="space-y-1.5">
+                      <Input
+                        type="number"
+                        min="2"
+                        step="1"
+                        value={oferta.quantidadeMinima}
+                        onChange={(e) => upd("quantidadeMinima", Math.max(parseInt(e.target.value) || 2, 2))}
+                      />
+                      <div className="flex gap-1.5 flex-wrap">
+                        {[2, 3, 4, 6].map((qtd) => (
+                          <Button
+                            key={qtd}
+                            type="button"
+                            size="sm"
+                            variant={oferta.quantidadeMinima === qtd ? "secondary" : "outline"}
+                            className="h-7 text-xs px-2"
+                            onClick={() => upd("quantidadeMinima", qtd)}
+                          >
+                            {qtd} un
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </Field>
+
+                  <Field label="Preço por Unidade no Combo (R$)">
+                    <Input
+                      ref={promoRef}
+                      type="number" step="0.01"
+                      value={oferta.precoPromocional}
+                      onChange={(e) => upd("precoPromocional", parseFloat(e.target.value) || 0)}
+                    />
+                  </Field>
+
+                  <Field label={`Valor Total do Pacote (${qtdMinima} un) (R$)`}>
+                    <Input
+                      type="number" step="0.01"
+                      value={precoTotalCombo}
+                      onChange={(e) => handlePrecoTotalComboChange(parseFloat(e.target.value) || 0)}
+                    />
+                  </Field>
+                </div>
+
+                <div className="rounded-lg border border-purple-300 bg-purple-50/70 p-3 text-xs text-purple-950">
+                  <div className="font-semibold flex items-center gap-1.5 mb-1">
+                    <span>🔁</span> Como funciona no caixa (PDV):
+                  </div>
+                  <div>
+                    A cada <strong>{qtdMinima} unidades</strong>, o cliente paga um total de <strong>{brl(precoTotalCombo)}</strong> (ou seja, <strong>{brl(oferta.precoPromocional)} cada</strong>).
+                    {oferta.precoNormal > 0 && (
+                      <span className="block mt-1 text-purple-800">
+                        {qtdMinima} unidades no preço normal custariam <strong>{brl(oferta.precoNormal * qtdMinima)}</strong>.
+                        Economia no combo: <strong>{brl(Math.max((oferta.precoNormal * qtdMinima) - precoTotalCombo, 0))}</strong>.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2">
               <Field label="Códigos de barras cresce vendas">
                 <Textarea
                   value={oferta.gtinsCresceVendas}

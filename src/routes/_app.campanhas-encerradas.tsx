@@ -51,14 +51,26 @@ function printPDF(campanha: Campanha, ofertas: Oferta[]) {
   autoTable(doc, {
     startY: 70,
     head: [["Código", "Descrição", "Clube", "Preço Normal", "Preço Promocional", "Período"]],
-    body: ofertas.map((o) => [
-      o.codigo,
-      o.descricao,
-      o.clubeSumel ? "Sim" : "Não",
-      brl(o.precoNormal),
-      brl(o.precoPromocional),
-      `${fmtDate(o.dataInicial)} a ${fmtDate(o.dataFinal)}`,
-    ]),
+    body: ofertas.map((o) => {
+      const promoText = (() => {
+        if (o.tipoPromocao === "a_partir_de") {
+          return `A partir de ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada`;
+        }
+        if (o.tipoPromocao === "a_cada") {
+          const total = (o.quantidadeMinima || 1) * o.precoPromocional;
+          return `A cada ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada (${o.quantidadeMinima} por ${brl(total)})`;
+        }
+        return brl(o.precoPromocional);
+      })();
+      return [
+        o.codigo,
+        o.descricao,
+        o.clubeSumel ? "Sim" : "Não",
+        brl(o.precoNormal),
+        promoText,
+        `${fmtDate(o.dataInicial)} a ${fmtDate(o.dataFinal)}`,
+      ];
+    }),
     styles: { fontSize: 9, cellPadding: 5 },
     headStyles: { fillColor: [11, 31, 58], textColor: 255 },
     alternateRowStyles: { fillColor: [248, 248, 250] },
@@ -240,7 +252,25 @@ function CampanhasEncerradas() {
                       <TableCell>{o.clubeSumel ? "Sim" : "Não"}</TableCell>
                       <TableCell className="text-right">{brl(o.precoNormal)}</TableCell>
                       <TableCell className="text-right font-medium text-primary">
-                        {brl(o.precoPromocional)}
+                        {o.tipoPromocao && o.tipoPromocao !== "simples" ? (
+                          <div className="flex flex-col items-end leading-tight gap-0.5">
+                            <Badge variant="outline" className={`text-[10px] py-0 px-1.5 font-normal ${
+                              o.tipoPromocao === "a_partir_de"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-purple-50 text-purple-700 border-purple-200"
+                            }`}>
+                              {o.tipoPromocao === "a_partir_de" ? `A partir de ${o.quantidadeMinima} un` : `A cada ${o.quantidadeMinima} un`}
+                            </Badge>
+                            <span>{brl(o.precoPromocional)} cada</span>
+                            {o.tipoPromocao === "a_cada" && (
+                              <span className="text-[10px] text-muted-foreground font-normal">
+                                {o.quantidadeMinima} un por {brl(o.quantidadeMinima * o.precoPromocional)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          brl(o.precoPromocional)
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

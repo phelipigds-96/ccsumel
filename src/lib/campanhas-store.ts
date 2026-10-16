@@ -59,6 +59,8 @@ export interface Campanha {
   checklist: ChecklistItem[];
 }
 
+export type TipoPromocaoOferta = "simples" | "a_partir_de" | "a_cada";
+
 export interface Oferta {
   id: string;
   campanhaId: string;
@@ -71,6 +73,8 @@ export interface Oferta {
   precoNormal: number;
   custo: number;
   precoPromocional: number;
+  tipoPromocao: TipoPromocaoOferta;
+  quantidadeMinima: number;
   clubeSumel: boolean;
   dataInicial: string;
   dataFinal: string;
@@ -161,6 +165,8 @@ const toOferta = (r: any): Oferta => ({
   precoNormal: Number(r.preco_normal ?? 0),
   custo: Number(r.custo ?? 0),
   precoPromocional: Number(r.preco_promocional ?? 0),
+  tipoPromocao: ((r.tipo_promocao as TipoPromocaoOferta) || "simples"),
+  quantidadeMinima: Math.max(Number(r.quantidade_minima ?? 1), 1),
   clubeSumel: !!r.clube_sumel,
   dataInicial: r.data_inicial ?? "",
   dataFinal: r.data_final ?? "",
@@ -187,6 +193,8 @@ const fromOferta = (o: Oferta) => ({
   preco_normal: Number(o.precoNormal ?? 0),
   custo: Number(o.custo ?? 0),
   preco_promocional: Number(o.precoPromocional ?? 0),
+  tipo_promocao: o.tipoPromocao || "simples",
+  quantidade_minima: Math.max(Number(o.quantidadeMinima ?? 1), 1),
   clube_sumel: !!o.clubeSumel,
   data_inicial: o.dataInicial || null,
   data_final: o.dataFinal || null,
@@ -200,6 +208,36 @@ const fromOferta = (o: Oferta) => ({
   sellout_valor: Number(o.selloutValor ?? 0),
   sellout_obs: o.selloutObs ?? "",
 });
+
+export function getMecanicaLabel(tipo: TipoPromocaoOferta = "simples"): string {
+  switch (tipo) {
+    case "a_partir_de":
+      return "A partir de X unidades (Atacado)";
+    case "a_cada":
+      return "A cada X unidades (Combo)";
+    default:
+      return "Preço Direto (tradicional)";
+  }
+}
+
+export function fmtCondicaoOferta(o: {
+  tipoPromocao?: TipoPromocaoOferta;
+  quantidadeMinima?: number;
+  precoPromocional: number;
+}): string {
+  const tipo = o.tipoPromocao || "simples";
+  const qtd = Math.max(Number(o.quantidadeMinima) || 1, 1);
+  const preco = Number(o.precoPromocional) || 0;
+
+  if (tipo === "a_partir_de") {
+    return `A partir de ${qtd} un: R$ ${preco.toFixed(2).replace(".", ",")} cada`;
+  }
+  if (tipo === "a_cada") {
+    const total = qtd * preco;
+    return `A cada ${qtd} un: R$ ${preco.toFixed(2).replace(".", ",")} cada (${qtd} un por R$ ${total.toFixed(2).replace(".", ",")})`;
+  }
+  return `R$ ${preco.toFixed(2).replace(".", ",")}`;
+}
 
 /* ---------- carregamento inicial ---------- */
 

@@ -504,11 +504,13 @@ export type Database = {
           margem: number
           preco_normal: number
           preco_promocional: number
+          quantidade_minima: number
           sellout_fornecedor: string
           sellout_obs: string
           sellout_tem_verba: boolean
           sellout_valor: number
           status: string
+          tipo_promocao: string
           updated_at: string
         }
         Insert: {
@@ -531,11 +533,13 @@ export type Database = {
           margem?: number
           preco_normal?: number
           preco_promocional?: number
+          quantidade_minima?: number
           sellout_fornecedor?: string
           sellout_obs?: string
           sellout_tem_verba?: boolean
           sellout_valor?: number
           status?: string
+          tipo_promocao?: string
           updated_at?: string
         }
         Update: {
@@ -558,11 +562,13 @@ export type Database = {
           margem?: number
           preco_normal?: number
           preco_promocional?: number
+          quantidade_minima?: number
           sellout_fornecedor?: string
           sellout_obs?: string
           sellout_tem_verba?: boolean
           sellout_valor?: number
           status?: string
+          tipo_promocao?: string
           updated_at?: string
         }
         Relationships: [
