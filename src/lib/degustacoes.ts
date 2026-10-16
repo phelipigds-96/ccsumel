@@ -421,8 +421,8 @@ export interface AnexoDegustacao {
   criado_em?: string;
 }
 
-export const DEGUSTACOES_STORAGE_BUCKET = "degustacao-materiais";
-export const DEGUSTACOES_FALLBACK_BUCKET = "campanha-materiais";
+export const DEGUSTACOES_STORAGE_BUCKET = "campanha-materiais";
+export const DEGUSTACOES_FALLBACK_BUCKET = "degustacao-materiais";
 export const DEGUSTACOES_FILE_ACCEPT = "image/jpeg,image/jpg,image/png,application/pdf";
 export const DEGUSTACOES_MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
@@ -442,7 +442,7 @@ export function parseDegustacaoAnexos(
 
 /**
  * Faz o upload de um arquivo de material de degustação (PDF, JPG, PNG).
- * Tenta o bucket principal e faz fallback transparente caso o bucket ainda não tenha sido criado.
+ * Salva no bucket de materiais sob a pasta organizada 'degustacoes/{degustacaoId}/...'.
  */
 export async function uploadDegustacaoArquivo(
   degustacaoId: string,
@@ -457,9 +457,9 @@ export async function uploadDegustacaoArquivo(
   }
 
   const ext = file.name.split(".").pop() || "bin";
-  const path = `${degustacaoId}/${crypto.randomUUID()}.${ext}`;
+  const path = `degustacoes/${degustacaoId}/${crypto.randomUUID()}.${ext}`;
 
-  // Tenta primeiro no bucket dedicado de degustações
+  // Salva no bucket de materiais configurado na aplicação
   let bucketUsed = DEGUSTACOES_STORAGE_BUCKET;
   let { error } = await supabase.storage.from(bucketUsed).upload(path, file, {
     cacheControl: "3600",
@@ -467,10 +467,11 @@ export async function uploadDegustacaoArquivo(
     contentType: file.type,
   });
 
-  // Se o bucket não existir ainda, tenta o bucket geral já existente de materiais
+  // Fallback caso seja utilizado o bucket dedicado
   if (error && (error.message?.toLowerCase().includes("bucket") || (error as any).statusCode === 404)) {
     bucketUsed = DEGUSTACOES_FALLBACK_BUCKET;
-    const fallbackUpload = await supabase.storage.from(bucketUsed).upload(`degustacoes/${path}`, file, {
+    const fallbackPath = `${degustacaoId}/${crypto.randomUUID()}.${ext}`;
+    const fallbackUpload = await supabase.storage.from(bucketUsed).upload(fallbackPath, file, {
       cacheControl: "3600",
       upsert: false,
       contentType: file.type,
@@ -479,7 +480,7 @@ export async function uploadDegustacaoArquivo(
       throw fallbackUpload.error;
     }
     return {
-      path: `degustacoes/${path}`,
+      path: fallbackPath,
       nome: file.name,
       tipo: file.type,
       tamanho: file.size,
