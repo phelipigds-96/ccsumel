@@ -37,7 +37,7 @@ function unwrapInput<T>(input: any): T {
 
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => unwrapInput<UpsertInput>(input))
+  .validator((input: any) => unwrapInput<UpsertInput>(input))
   .handler(async ({ data, context }): Promise<Result<{ id: string }>> => {
     try {
       await assertAdmin(context as any);
@@ -96,7 +96,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
 
 export const adminUpdateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => unwrapInput<UpsertInput & { id: string }>(input))
+  .validator((input: any) => unwrapInput<UpsertInput & { id: string }>(input))
   .handler(async ({ data, context }): Promise<Result<{ id: string }>> => {
     try {
       await assertAdmin(context as any);
@@ -206,7 +206,7 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
 
 export const adminDeleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => unwrapInput<{ id: string }>(input))
+  .validator((input: any) => unwrapInput<{ id: string }>(input))
   .handler(async ({ data, context }): Promise<Result<{ id: string }>> => {
     try {
       await assertAdmin(context as any);
