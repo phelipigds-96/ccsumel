@@ -24,6 +24,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandList,
+} from "@/components/ui/command";
+import { Check, ChevronsUpDown, Search, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
   LOJAS_DEGUSTACOES,
   type Degustacao,
   type DegustacaoInsert,
@@ -107,6 +118,10 @@ export function AgendamentoDialog({
   const selectedFornecedorId = watch("fornecedor_id");
   const selectedLoja = watch("loja");
 
+  // Estados para busca do fornecedor no Combobox
+  const [openFornecedorPopover, setOpenFornecedorPopover] = useState(false);
+  const [fornecedorSearch, setFornecedorSearch] = useState("");
+
   // Carregar lista de fornecedores
   useEffect(() => {
     async function loadFornecedores() {
@@ -115,7 +130,8 @@ export function AgendamentoDialog({
         const { data, error } = await supabase
           .from("fornecedores")
           .select("id, nome, codigo_interno, razao_social")
-          .order("razao_social", { ascending: true });
+          .order("razao_social", { ascending: true })
+          .limit(5000);
 
         if (!error && data) {
           setFornecedores(data as any);
@@ -166,6 +182,47 @@ export function AgendamentoDialog({
       }
     }
   }, [open, degustacaoToEdit, reset, userDefaultName]);
+
+  // Normalização e busca de fornecedores em tempo real (sem lentidão com 1.700+ itens)
+  const filteredFornecedores = React.useMemo(() => {
+    const query = fornecedorSearch.trim();
+    if (!query) {
+      return fornecedores.slice(0, 50);
+    }
+
+    const normalize = (str: string) =>
+      str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+    const normQuery = normalize(query);
+
+    const matches: FornecedorOption[] = [];
+    for (const f of fornecedores) {
+      const nome = f.razao_social || f.nome || "";
+      const cod = f.codigo_interno || "";
+      if (normalize(nome).includes(normQuery) || cod.toLowerCase().includes(normQuery)) {
+        matches.push(f);
+        if (matches.length >= 60) break;
+      }
+    }
+    return matches;
+  }, [fornecedores, fornecedorSearch]);
+
+  const selectedFornecedor = React.useMemo(() => {
+    if (!selectedFornecedorId) return null;
+    const found = fornecedores.find((f) => f.id === selectedFornecedorId);
+    if (found) return found;
+    const nomeForm = watch("fornecedor_nome");
+    if (nomeForm) {
+      return { id: selectedFornecedorId, nome: nomeForm, razao_social: nomeForm };
+    }
+    return null;
+  }, [fornecedores, selectedFornecedorId, watch]);
+
+  const handleSelectFornecedor = (fornecedor: FornecedorOption) => {
+    handleFornecedorChange(fornecedor.id);
+    setOpenFornecedorPopover(false);
+    setFornecedorSearch("");
+  };
 
   const handleFornecedorChange = (fornecedorId: string) => {
     const found = fornecedores.find((f) => f.id === fornecedorId);
@@ -277,33 +334,108 @@ export function AgendamentoDialog({
               <Label htmlFor="fornecedor-select" className="text-xs font-semibold">
                 Fornecedor Parceiro <span className="text-red-500">*</span>
               </Label>
-              <Select
-                value={selectedFornecedorId}
-                onValueChange={handleFornecedorChange}
-                disabled={loadingFornecedores}
-              >
-                <SelectTrigger id="fornecedor-select">
-                  <SelectValue
-                    placeholder={
-                      loadingFornecedores
-                        ? "Carregando fornecedores..."
-                        : "Selecione o fornecedor..."
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent className="max-h-56">
-                  {fornecedores.map((f) => {
-                    const label = f.codigo_interno
-                      ? `[${f.codigo_interno}] ${f.razao_social || f.nome}`
-                      : (f.razao_social || f.nome);
-                    return (
-                      <SelectItem key={f.id} value={f.id}>
-                        {label}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <Popover open={openFornecedorPopover} onOpenChange={setOpenFornecedorPopover}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="fornecedor-select"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openFornecedorPopover}
+                    disabled={loadingFornecedores}
+                    className={cn(
+                      "w-full justify-between font-normal text-left h-10 px-3 border-input bg-background",
+                      !selectedFornecedor && "text-muted-foreground",
+                      errors.fornecedor_id && "border-red-500 ring-1 ring-red-500",
+                    )}
+                  >
+                    {selectedFornecedor ? (
+                      <span className="truncate flex items-center gap-2">
+                        {selectedFornecedor.codigo_interno && (
+                          <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground">
+                            [{selectedFornecedor.codigo_interno}]
+                          </span>
+                        )}
+                        <span className="truncate font-medium text-foreground">
+                          {selectedFornecedor.razao_social || selectedFornecedor.nome}
+                        </span>
+                      </span>
+                    ) : (
+                      <span>
+                        {loadingFornecedores
+                          ? "Carregando fornecedores..."
+                          : "Clique para buscar ou digitar o fornecedor..."}
+                      </span>
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[320px] p-0 shadow-lg" align="start">
+                  <Command shouldFilter={false} className="w-full">
+                    <div className="flex items-center border-b px-3">
+                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                      <input
+                        value={fornecedorSearch}
+                        onChange={(e) => setFornecedorSearch(e.target.value)}
+                        placeholder="Digite o nome ou código..."
+                        className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                        autoFocus
+                      />
+                      {fornecedorSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setFornecedorSearch("")}
+                          className="h-5 w-5 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    <CommandList className="max-h-60 overflow-y-auto p-1">
+                      {filteredFornecedores.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          Nenhum fornecedor encontrado para "{fornecedorSearch}".
+                        </div>
+                      ) : (
+                        filteredFornecedores.map((f) => {
+                          const isSelected = f.id === selectedFornecedorId;
+                          return (
+                            <div
+                              key={f.id}
+                              onClick={() => handleSelectFornecedor(f)}
+                              className={cn(
+                                "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground transition-colors",
+                                isSelected && "bg-accent font-semibold",
+                              )}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4 text-primary shrink-0",
+                                  isSelected ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              <div className="flex-1 truncate">
+                                {f.codigo_interno && (
+                                  <span className="font-mono text-xs font-semibold mr-1.5 px-1 py-0.5 rounded bg-muted">
+                                    [{f.codigo_interno}]
+                                  </span>
+                                )}
+                                <span>{f.razao_social || f.nome}</span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </CommandList>
+                    <div className="border-t px-3 py-1.5 text-[11px] text-muted-foreground bg-muted/30 flex justify-between items-center">
+                      <span>{fornecedores.length.toLocaleString("pt-BR")} cadastrados</span>
+                      {fornecedorSearch && (
+                        <span>Exibindo até 60 resultados</span>
+                      )}
+                    </div>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {errors.fornecedor_id && (
                 <p className="text-xs text-red-600 font-medium">
                   {errors.fornecedor_id.message}
