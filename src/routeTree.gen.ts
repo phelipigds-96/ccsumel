@@ -22,6 +22,7 @@ import { Route as AppCatalogoDeProdutosRouteImport } from './routes/_app.catalog
 import { Route as AppCentralProdutosEmFaltaRouteImport } from './routes/_app.central-produtos-em-falta'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppDegustacoesRouteImport } from './routes/_app.degustacoes'
 import { Route as AppFornecedoresRouteImport } from './routes/_app.fornecedores'
 import { Route as AppFracionamentoRouteImport } from './routes/_app.fracionamento'
 import { Route as AppPontasDeGondolaRouteImport } from './routes/_app.pontas-de-gondola'
@@ -100,6 +101,11 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDegustacoesRoute = AppDegustacoesRouteImport.update({
+  id: '/degustacoes',
+  path: '/degustacoes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppFornecedoresRoute = AppFornecedoresRouteImport.update({
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
+  '/degustacoes': typeof AppDegustacoesRoute
   '/fornecedores': typeof AppFornecedoresRoute
   '/fracionamento': typeof AppFracionamentoRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByTo {
   '/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
+  '/degustacoes': typeof AppDegustacoesRoute
   '/fornecedores': typeof AppFornecedoresRoute
   '/fracionamento': typeof AppFracionamentoRoute
   '/pontas-de-gondola': typeof AppPontasDeGondolaRoute
@@ -236,6 +244,7 @@ export interface FileRoutesById {
   '/_app/central-produtos-em-falta': typeof AppCentralProdutosEmFaltaRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/degustacoes': typeof AppDegustacoesRoute
   '/_app/fornecedores': typeof AppFornecedoresRoute
   '/_app/fracionamento': typeof AppFracionamentoRoute
   '/_app/pontas-de-gondola': typeof AppPontasDeGondolaRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/central-produtos-em-falta'
     | '/configuracoes'
     | '/dashboard'
+    | '/degustacoes'
     | '/fornecedores'
     | '/fracionamento'
     | '/pontas-de-gondola'
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/central-produtos-em-falta'
     | '/configuracoes'
     | '/dashboard'
+    | '/degustacoes'
     | '/fornecedores'
     | '/fracionamento'
     | '/pontas-de-gondola'
@@ -319,6 +330,7 @@ export interface FileRouteTypes {
     | '/_app/central-produtos-em-falta'
     | '/_app/configuracoes'
     | '/_app/dashboard'
+    | '/_app/degustacoes'
     | '/_app/fornecedores'
     | '/_app/fracionamento'
     | '/_app/pontas-de-gondola'
@@ -434,6 +446,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/degustacoes': {
+      id: '/_app/degustacoes'
+      path: '/degustacoes'
+      fullPath: '/degustacoes'
+      preLoaderRoute: typeof AppDegustacoesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/fornecedores': {
@@ -553,6 +572,7 @@ interface AppRouteChildren {
   AppCentralProdutosEmFaltaRoute: typeof AppCentralProdutosEmFaltaRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppDegustacoesRoute: typeof AppDegustacoesRoute
   AppFornecedoresRoute: typeof AppFornecedoresRoute
   AppFracionamentoRoute: typeof AppFracionamentoRoute
   AppPontasDeGondolaRoute: typeof AppPontasDeGondolaRoute
@@ -574,6 +594,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCentralProdutosEmFaltaRoute: AppCentralProdutosEmFaltaRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppDegustacoesRoute: AppDegustacoesRoute,
   AppFornecedoresRoute: AppFornecedoresRoute,
   AppFracionamentoRoute: AppFracionamentoRoute,
   AppPontasDeGondolaRoute: AppPontasDeGondolaRoute,

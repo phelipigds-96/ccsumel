@@ -324,7 +324,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
       degustacoes_historico: {
         Row: {
           acao: string
@@ -333,12 +332,15 @@ export type Database = {
           created_at: string
           dados_anteriores: Json | null
           dados_novos: Json | null
-          degustacao_id: string
+          degustacao_id: string | null
+          degustacao_id_original: string
+          degustacao_nome: string
           id: string
+          justificativa: string | null
           observacao: string
-          status_anterior:
-            | Database["public"]["Enums"]["degustacao_status"]
-            | null
+          produto_id: string | null
+          produto_descricao: string | null
+          status_anterior: Database["public"]["Enums"]["degustacao_status"] | null
           status_novo: Database["public"]["Enums"]["degustacao_status"]
         }
         Insert: {
@@ -348,12 +350,15 @@ export type Database = {
           created_at?: string
           dados_anteriores?: Json | null
           dados_novos?: Json | null
-          degustacao_id: string
+          degustacao_id?: string | null
+          degustacao_id_original: string
+          degustacao_nome: string
           id?: string
+          justificativa?: string | null
           observacao?: string
-          status_anterior?:
-            | Database["public"]["Enums"]["degustacao_status"]
-            | null
+          produto_id?: string | null
+          produto_descricao?: string | null
+          status_anterior?: Database["public"]["Enums"]["degustacao_status"] | null
           status_novo: Database["public"]["Enums"]["degustacao_status"]
         }
         Update: {
@@ -363,12 +368,15 @@ export type Database = {
           created_at?: string
           dados_anteriores?: Json | null
           dados_novos?: Json | null
-          degustacao_id?: string
+          degustacao_id?: string | null
+          degustacao_id_original?: string
+          degustacao_nome?: string
           id?: string
+          justificativa?: string | null
           observacao?: string
-          status_anterior?:
-            | Database["public"]["Enums"]["degustacao_status"]
-            | null
+          produto_id?: string | null
+          produto_descricao?: string | null
+          status_anterior?: Database["public"]["Enums"]["degustacao_status"] | null
           status_novo?: Database["public"]["Enums"]["degustacao_status"]
         }
         Relationships: [
@@ -377,6 +385,13 @@ export type Database = {
             columns: ["degustacao_id"]
             isOneToOne: false
             referencedRelation: "degustacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degustacoes_historico_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
         ]

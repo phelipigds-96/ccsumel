@@ -14,6 +14,7 @@ export const PERMISSIONS: { key: string; label: string }[] = [
   { key: "/sell-out", label: "Sell Out" },
   { key: "/sell-out/acertos", label: "Sell Out › Acertos" },
   { key: "/pontas-de-gondola", label: "Pontas de Gôndola" },
+  { key: "/degustacoes", label: "Degustações" },
   { key: "/fornecedores", label: "Fornecedores" },
   { key: "/fracionamento", label: "Fracionamento" },
   { key: "/produtos-em-falta", label: "Produtos em Falta › Registrar Produtos em Falta" },

@@ -23,6 +23,7 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  UtensilsCrossed,
 } from "lucide-react";
 import {
   Sidebar,
@@ -61,6 +62,7 @@ const items: Item[] = [
   { title: "Verbas Cooperadas", url: "/verbas-cooperadas", icon: HandCoins },
   { title: "Sell Out", url: "/sell-out/acertos", icon: TrendingUp },
   { title: "Pontas de Gôndola", url: "/pontas-de-gondola", icon: LayoutGrid },
+  { title: "Degustações", url: "/degustacoes", icon: UtensilsCrossed },
   { title: "Fornecedores", url: "/fornecedores", icon: Truck },
   { title: "Fracionamento", url: "/fracionamento", icon: Scale },
   { title: "Produtos em Falta", url: "/produtos-em-falta", icon: PackageSearch },
