@@ -1,14 +1,32 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { Plus, ArrowRight, Eye, CalendarDays, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Plus,
+  ArrowRight,
+  Eye,
+  CalendarDays,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Utensils,
+  Store,
+  Truck,
+  Clock,
+  Calendar,
+  User,
+} from "lucide-react";
 import { useCampanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
-import { CampanhaQuickView } from "@/components/campanha-quick-view";
+import { CampanhaQuickView, fmtDate } from "@/components/campanha-quick-view";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { listDegustacoes, type DegustacaoWithProdutosCount, type Degustacao } from "@/lib/degustacoes";
+import { DegustacaoQuickView } from "@/components/degustacoes/degustacao-quick-view";
+import { DegustacaoStatusBadge } from "@/components/degustacoes/degustacao-status-badge";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
@@ -145,6 +163,51 @@ function DashboardPage() {
       <Eye className="h-3.5 w-3.5" />
     </button>
   );
+
+  // ── Degustações no Chão de Loja ──
+  const [degustacoes, setDegustacoes] = useState<DegustacaoWithProdutosCount[]>([]);
+  const [loadingDegustacoes, setLoadingDegustacoes] = useState(true);
+  const [quickViewDegustacao, setQuickViewDegustacao] = useState<Degustacao | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    listDegustacoes()
+      .then((data) => {
+        if (isMounted) setDegustacoes(data);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar degustações no dashboard:", err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingDegustacoes(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
+
+  const degustacoesHoje = useMemo(() => {
+    return degustacoes.filter(
+      (d) =>
+        (d.status === "Ativa" || d.data === todayStr) &&
+        d.status !== "Cancelada" &&
+        d.status !== "Concluída",
+    );
+  }, [degustacoes, todayStr]);
+
+  const degustacoesFuturas = useMemo(() => {
+    return degustacoes
+      .filter((d) => d.status === "Programada" && d.data > todayStr)
+      .sort((a, b) => a.data.localeCompare(b.data));
+  }, [degustacoes, todayStr]);
 
   // ── Timeline Gantt: 37 dias (−7 a +30 a partir de hoje) ───────────────
   const [tlOffset, setTlOffset] = useState(0);
@@ -485,10 +548,201 @@ function DashboardPage() {
           </div>
         </div>
 
+        {/* ── Bloco Degustações (Chão de Loja) ── */}
+        <div className="rounded-xl border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b px-5 py-3.5 flex-wrap gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Utensils className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold text-navy">Degustações</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Ações no chão de loja ativas e programadas
+                </p>
+              </div>
+            </div>
+
+            <Button asChild variant="ghost" size="sm" className="h-8 text-xs text-navy font-semibold hover:text-primary">
+              <Link to="/degustacoes">
+                Ver todas as degustações <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="p-5">
+            {loadingDegustacoes ? (
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                Carregando degustações...
+              </div>
+            ) : degustacoesHoje.length === 0 && degustacoesFuturas.length === 0 ? (
+              <div className="rounded-lg border border-dashed py-8 text-center text-xs text-muted-foreground bg-muted/5">
+                Nenhuma degustação ativa ou programada no momento.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Coluna 1: Hoje / Em Andamento */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      Hoje / Em Andamento ({degustacoesHoje.length})
+                    </span>
+                  </div>
+
+                  {degustacoesHoje.length === 0 ? (
+                    <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/5">
+                      Nenhuma degustação acontecendo hoje.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {degustacoesHoje.map((d) => (
+                        <div
+                          key={d.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setQuickViewDegustacao(d)}
+                          onKeyDown={(e) => e.key === "Enter" && setQuickViewDegustacao(d)}
+                          className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-emerald-200/70 bg-emerald-50/25 p-3.5 transition-all hover:border-emerald-400 hover:shadow-xs cursor-pointer dark:bg-emerald-950/15 dark:border-emerald-900"
+                        >
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-xs text-navy group-hover:text-primary transition-colors">
+                                {d.nome}
+                              </span>
+                              <DegustacaoStatusBadge status={d.status} />
+                              {d.campanha_nome && (
+                                <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20">
+                                  {d.campanha_nome}
+                                </Badge>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+                              <span className="flex items-center gap-1 text-foreground font-medium">
+                                <Store className="h-3 w-3 text-muted-foreground" /> {d.loja}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Truck className="h-3 w-3 text-muted-foreground" /> {d.fornecedor_nome}
+                              </span>
+                              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
+                                <Clock className="h-3 w-3" />
+                                {d.horario_inicio ? d.horario_inicio.slice(0, 5) : "--:--"}
+                                {d.horario_fim ? ` às ${d.horario_fim.slice(0, 5)}` : ""}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <User className="h-3 w-3 text-muted-foreground" /> {d.responsavel_nome}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs gap-1 border-emerald-300 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300 pointer-events-none"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Ver Detalhes
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Coluna 2: Próximas Programadas */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-navy flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-navy" />
+                      Próximas Programadas ({degustacoesFuturas.length})
+                    </span>
+                  </div>
+
+                  {degustacoesFuturas.length === 0 ? (
+                    <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/5">
+                      Nenhuma degustação futura agendada.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                      {degustacoesFuturas.map((d) => (
+                        <div
+                          key={d.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setQuickViewDegustacao(d)}
+                          onKeyDown={(e) => e.key === "Enter" && setQuickViewDegustacao(d)}
+                          className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border bg-card p-3.5 transition-all hover:border-primary/40 hover:shadow-xs cursor-pointer"
+                        >
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-xs text-navy group-hover:text-primary transition-colors">
+                                {d.nome}
+                              </span>
+                              <Badge variant="outline" className="text-[10px] bg-sky-50 text-sky-700 border-sky-200">
+                                {fmtDate(d.data)}
+                              </Badge>
+                            </div>
+
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+                              <span className="flex items-center gap-1 text-foreground font-medium">
+                                <Store className="h-3 w-3 text-muted-foreground" /> {d.loja}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Truck className="h-3 w-3 text-muted-foreground" /> {d.fornecedor_nome}
+                              </span>
+                              {d.horario_inicio && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3 text-muted-foreground" />
+                                  {d.horario_inicio.slice(0, 5)}
+                                  {d.horario_fim ? ` às ${d.horario_fim.slice(0, 5)}` : ""}
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <User className="h-3 w-3 text-muted-foreground" /> {d.responsavel_nome}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs gap-1 text-muted-foreground group-hover:text-primary pointer-events-none"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Ver
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <CampanhaQuickView
           campanha={quickView}
           ofertas={quickView ? rawOfertas.filter((o) => o.campanhaId === quickView.id) : []}
           onOpenChange={(v) => { if (!v) setQuickView(null); }}
+        />
+
+        <DegustacaoQuickView
+          degustacao={quickViewDegustacao}
+          open={!!quickViewDegustacao}
+          onOpenChange={(v) => {
+            if (!v) setQuickViewDegustacao(null);
+          }}
         />
 
         <div className="flex justify-end">
