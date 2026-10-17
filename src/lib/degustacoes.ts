@@ -305,7 +305,6 @@ export async function addDegustacaoProduto(
     quantidade_vendida: qtd,
     preco_praticado: preco,
     faturamento_total: faturamento,
-    justificativa_alteracao: justificativa?.trim() || null,
   };
 
   const { data, error } = await supabase
@@ -317,6 +316,32 @@ export async function addDegustacaoProduto(
   if (error) {
     console.error("Erro ao adicionar produto à degustação:", error);
     throw error;
+  }
+
+  // Se houver justificativa (ex: alteração pós-conclusão), registrar na auditoria
+  if (justificativa?.trim()) {
+    try {
+      const { data: degustacao } = await supabase
+        .from("degustacoes")
+        .select("status, nome")
+        .eq("id", payload.degustacao_id)
+        .single();
+
+      await supabase.from("degustacoes_historico").insert({
+        degustacao_id: payload.degustacao_id,
+        degustacao_nome: degustacao?.nome || "Degustação",
+        produto_id: data.produto_id,
+        produto_descricao: data.descricao,
+        status_anterior: degustacao?.status || "Concluída",
+        status_novo: degustacao?.status || "Concluída",
+        acao: "Inclusão de Produto",
+        justificativa: justificativa.trim(),
+        observacao: `Produto adicionado: ${data.descricao}`,
+        changed_by_name: "Master",
+      });
+    } catch (e) {
+      console.warn("Auditoria de justificativa manual:", e);
+    }
   }
 
   return data;
@@ -341,10 +366,6 @@ export async function updateDegustacaoProduto(
     updateData.faturamento_total = Number((qtd * preco).toFixed(2));
   }
 
-  if (justificativa?.trim()) {
-    updateData.justificativa_alteracao = justificativa.trim();
-  }
-
   const { data, error } = await supabase
     .from("degustacao_produtos")
     .update(updateData)
@@ -355,6 +376,31 @@ export async function updateDegustacaoProduto(
   if (error) {
     console.error("Erro ao atualizar produto da degustação:", error);
     throw error;
+  }
+
+  if (justificativa?.trim() && data) {
+    try {
+      const { data: degustacao } = await supabase
+        .from("degustacoes")
+        .select("status, nome")
+        .eq("id", data.degustacao_id)
+        .single();
+
+      await supabase.from("degustacoes_historico").insert({
+        degustacao_id: data.degustacao_id,
+        degustacao_nome: degustacao?.nome || "Degustação",
+        produto_id: data.produto_id,
+        produto_descricao: data.descricao,
+        status_anterior: degustacao?.status || "Concluída",
+        status_novo: degustacao?.status || "Concluída",
+        acao: "Ajuste de Vendas do Item",
+        justificativa: justificativa.trim(),
+        observacao: `Produto alterado: ${data.descricao}`,
+        changed_by_name: "Master",
+      });
+    } catch (e) {
+      console.warn("Auditoria de justificativa manual:", e);
+    }
   }
 
   return data;
@@ -368,18 +414,53 @@ export async function deleteDegustacaoProduto(
   degustacaoId: string,
   justificativa?: string,
 ): Promise<void> {
+  let produtoDesc = "";
+  let produtoId: string | null = null;
   if (justificativa?.trim()) {
-    // Registra a justificativa no registro antes do delete para que a trigger capture no OLD
-    await supabase
-      .from("degustacao_produtos")
-      .update({ justificativa_alteracao: justificativa.trim() })
-      .eq("id", id);
+    try {
+      const { data: prod } = await supabase
+        .from("degustacao_produtos")
+        .select("descricao, produto_id")
+        .eq("id", id)
+        .single();
+      if (prod) {
+        produtoDesc = prod.descricao;
+        produtoId = prod.produto_id;
+      }
+    } catch (e) {
+      // Ignora erro de busca prévia
+    }
   }
 
   const { error } = await supabase.from("degustacao_produtos").delete().eq("id", id);
   if (error) {
     console.error("Erro ao remover produto da degustação:", error);
     throw error;
+  }
+
+  if (justificativa?.trim()) {
+    try {
+      const { data: degustacao } = await supabase
+        .from("degustacoes")
+        .select("status, nome")
+        .eq("id", degustacaoId)
+        .single();
+
+      await supabase.from("degustacoes_historico").insert({
+        degustacao_id: degustacaoId,
+        degustacao_nome: degustacao?.nome || "Degustação",
+        produto_id: produtoId,
+        produto_descricao: produtoDesc,
+        status_anterior: degustacao?.status || "Concluída",
+        status_novo: degustacao?.status || "Concluída",
+        acao: "Remoção de Produto",
+        justificativa: justificativa.trim(),
+        observacao: `Produto removido: ${produtoDesc}`,
+        changed_by_name: "Master",
+      });
+    } catch (e) {
+      console.warn("Auditoria de justificativa manual:", e);
+    }
   }
 }
 
