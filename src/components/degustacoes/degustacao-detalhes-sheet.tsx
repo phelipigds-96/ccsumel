@@ -21,6 +21,7 @@ import {
   Upload,
   ImageIcon,
   ExternalLink,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -53,6 +55,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProductSearch } from "@/components/product-search";
+import { OfertaSearch, type SelectedOfertaItem } from "@/components/degustacoes/oferta-search";
 import { DegustacaoStatusBadge } from "@/components/degustacoes/degustacao-status-badge";
 import { JustificativaDialog } from "@/components/degustacoes/justificativa-dialog";
 import {
@@ -65,6 +68,7 @@ import {
   concluirDegustacao,
   reabrirDegustacao,
   mudarStatusDegustacao,
+  updateDegustacao,
   type Degustacao,
   type DegustacaoProduto,
   type DegustacaoHistorico,
@@ -106,6 +110,7 @@ export function DegustacaoDetalhesSheet({
   const [loadingProdutos, setLoadingProdutos] = useState(false);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [activeTab, setActiveTab] = useState("produtos");
+  const [addProductMode, setAddProductMode] = useState<"oferta" | "produto">("oferta");
 
   // State para edição de preços e quantidades na tabela de produtos
   const [editValues, setEditValues] = useState<
@@ -301,6 +306,82 @@ export function DegustacaoDetalhesSheet({
     }
   };
 
+  // Adicionar oferta específica de campanha
+  const handleAddOferta = async (item: SelectedOfertaItem) => {
+    if (!currentDegustacao) return;
+
+    const { oferta, campanha } = item;
+
+    // Verificar se já existe (por oferta_id, código ou gtin)
+    const exists = produtos.some(
+      (p) =>
+        (p.oferta_id && p.oferta_id === oferta.id) ||
+        (oferta.codigo && p.codigo === oferta.codigo) ||
+        (oferta.gtin && p.gtin === oferta.gtin)
+    );
+    if (exists) {
+      toast.info("Esta oferta já foi adicionada a esta degustação.");
+      return;
+    }
+
+    if (currentDegustacao.status === "Concluída") {
+      setJustificativaModal({
+        open: true,
+        title: "Justificativa Obrigatória",
+        description:
+          "Esta degustação já foi concluída. Adicionar um novo item exige o registro de uma justificativa no histórico de auditoria.",
+        confirmLabel: "Adicionar Item",
+        confirmVariant: "default",
+        actionType: "ITEM_UPDATE",
+        payload: {
+          insertData: {
+            degustacao_id: currentDegustacao.id,
+            oferta_id: oferta.id,
+            codigo: oferta.codigo || null,
+            gtin: oferta.gtin || null,
+            descricao: oferta.descricao,
+            preco_base: oferta.precoNormal || 0,
+            preco_praticado: oferta.precoPromocional || 0,
+            quantidade_vendida: 0,
+          },
+          campanhaToAdd: campanha,
+        },
+      });
+      return;
+    }
+
+    try {
+      await addDegustacaoProduto({
+        degustacao_id: currentDegustacao.id,
+        oferta_id: oferta.id,
+        codigo: oferta.codigo || null,
+        gtin: oferta.gtin || null,
+        descricao: oferta.descricao,
+        preco_base: oferta.precoNormal || 0,
+        preco_praticado: oferta.precoPromocional || 0,
+        quantidade_vendida: 0,
+      });
+
+      // Se a degustação ainda não tiver campanha vinculada, vincula a campanha desta oferta
+      if (!currentDegustacao.campanha_id) {
+        await updateDegustacao(currentDegustacao.id, {
+          campanha_id: campanha.id,
+          campanha_nome: campanha.nome,
+        });
+        setCurrentDegustacao((prev) =>
+          prev ? { ...prev, campanha_id: campanha.id, campanha_nome: campanha.nome } : prev,
+        );
+      }
+
+      toast.success(`Oferta "${oferta.descricao}" adicionada à degustação!`);
+      await loadProdutos(currentDegustacao.id);
+      await loadHistorico(currentDegustacao.id);
+      onRefreshList();
+    } catch (err) {
+      toast.error("Falha ao adicionar oferta", { description: (err as Error).message });
+    }
+  };
+
   // Salvar alterações de um produto
   const handleSaveProduto = async (p: DegustacaoProduto) => {
     if (!currentDegustacao) return;
@@ -470,8 +551,24 @@ export function DegustacaoDetalhesSheet({
       await loadHistorico(currentDegustacao.id);
       onRefreshList();
     } else if (justificativaModal.actionType === "ITEM_UPDATE") {
-      const { produtoId, values, produtoToAdd } = justificativaModal.payload || {};
-      if (produtoToAdd) {
+      const { produtoId, values, produtoToAdd, insertData, campanhaToAdd } = justificativaModal.payload || {};
+      if (insertData) {
+        await addDegustacaoProduto(insertData, justificativa);
+        if (campanhaToAdd && !currentDegustacao.campanha_id) {
+          await updateDegustacao(
+            currentDegustacao.id,
+            {
+              campanha_id: campanhaToAdd.id,
+              campanha_nome: campanhaToAdd.nome,
+            },
+            justificativa,
+          );
+          setCurrentDegustacao((prev) =>
+            prev ? { ...prev, campanha_id: campanhaToAdd.id, campanha_nome: campanhaToAdd.nome } : prev,
+          );
+        }
+        toast.success("Oferta adicionada à degustação concluída.");
+      } else if (produtoToAdd) {
         await addDegustacaoProduto(
           {
             degustacao_id: currentDegustacao.id,
@@ -539,6 +636,12 @@ export function DegustacaoDetalhesSheet({
                 <Truck className="h-3.5 w-3.5 text-muted-foreground" />
                 <strong>Fornecedor:</strong> {currentDegustacao.fornecedor_nome}
               </span>
+              {currentDegustacao.campanha_nome && (
+                <span className="flex items-center gap-1 text-primary font-semibold">
+                  <Tag className="h-3.5 w-3.5" />
+                  <strong>Campanha:</strong> {currentDegustacao.campanha_nome}
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                 <strong>Data:</strong>{" "}
@@ -677,15 +780,52 @@ export function DegustacaoDetalhesSheet({
             <TabsContent value="produtos" className="p-6 space-y-5 flex-1 m-0">
               {/* Se for Master e não estiver cancelada, permite adicionar produtos */}
               {isMaster && currentDegustacao.status !== "Cancelada" && (
-                <div className="rounded-lg border bg-card p-4 space-y-2 shadow-xs">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Adicionar Produto à Degustação
-                  </h4>
-                  <ProductSearch
-                    autoFocus={false}
-                    placeholder="Localize por código, EAN ou descrição do produto..."
-                    onSelect={handleAddProduto}
-                  />
+                <div className="rounded-lg border bg-card p-4 space-y-3 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Plus className="h-3.5 w-3.5 text-primary" /> Adicionar Produto à Degustação
+                    </h4>
+                    <div className="inline-flex rounded-lg border bg-muted/40 p-0.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setAddProductMode("oferta")}
+                        className={cn(
+                          "px-2.5 py-1 rounded-md font-medium transition text-xs",
+                          addProductMode === "oferta"
+                            ? "bg-card text-navy shadow-xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        🏷️ Oferta em Campanha
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAddProductMode("produto")}
+                        className={cn(
+                          "px-2.5 py-1 rounded-md font-medium transition text-xs",
+                          addProductMode === "produto"
+                            ? "bg-card text-navy shadow-xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        📦 Produto Regular
+                      </button>
+                    </div>
+                  </div>
+
+                  {addProductMode === "oferta" ? (
+                    <OfertaSearch
+                      defaultCampanhaId={currentDegustacao.campanha_id || undefined}
+                      selectedLoja={currentDegustacao.loja}
+                      onSelect={handleAddOferta}
+                    />
+                  ) : (
+                    <ProductSearch
+                      autoFocus={false}
+                      placeholder="Localize produto regular por código, EAN ou descrição..."
+                      onSelect={handleAddProduto}
+                    />
+                  )}
                 </div>
               )}
 
@@ -734,8 +874,25 @@ export function DegustacaoDetalhesSheet({
                         return (
                           <TableRow key={p.id} className="hover:bg-muted/30">
                             <TableCell>
-                              <div className="font-medium text-navy text-sm leading-tight">
-                                {p.descricao}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-navy text-sm leading-tight">
+                                  {p.descricao}
+                                </span>
+                                {p.oferta_id ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20 shrink-0 font-medium"
+                                  >
+                                    🏷️ Promoção
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] px-1.5 py-0 text-muted-foreground shrink-0 font-normal"
+                                  >
+                                    Regular
+                                  </Badge>
+                                )}
                               </div>
                               <div className="text-[11px] text-muted-foreground mt-0.5">
                                 Cód: {p.codigo ?? "-"} | EAN: {p.gtin ?? "-"}

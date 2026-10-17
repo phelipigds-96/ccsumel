@@ -32,7 +32,21 @@ import {
   Command,
   CommandList,
 } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Search, X, Paperclip, Upload, ImageIcon, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Check,
+  ChevronsUpDown,
+  Search,
+  X,
+  Paperclip,
+  Upload,
+  ImageIcon,
+  FileText,
+  Plus,
+  Tag,
+  Package,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   LOJAS_DEGUSTACOES,
@@ -45,8 +59,14 @@ import {
   parseDegustacaoAnexos,
   isDegustacaoImage,
   DEGUSTACOES_FILE_ACCEPT,
+  listDegustacaoProdutos,
 } from "@/lib/degustacoes";
 import type { Json } from "@/integrations/supabase/types";
+import { OfertaSearch, type SelectedOfertaItem } from "@/components/degustacoes/oferta-search";
+import { ProductSearch } from "@/components/product-search";
+import type { Produto } from "@/lib/produtos";
+import { useCampanhasStore, statusCampanha, type Campanha } from "@/lib/campanhas-store";
+import { brl, fmtDate } from "@/components/campanha-quick-view";
 
 const agendamentoSchema = z
   .object({
@@ -102,6 +122,38 @@ export function AgendamentoDialog({
   const [submitting, setSubmitting] = useState(false);
   const [anexos, setAnexos] = useState<AnexoDegustacao[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  // Campanhas ativas / programadas disponíveis para vinculação
+  const { campanhas } = useCampanhasStore();
+  const campanhasValidas = React.useMemo(() => {
+    return campanhas.filter((c) => {
+      const st = statusCampanha(c);
+      return st === "Ativa" || st === "Programada";
+    });
+  }, [campanhas]);
+
+  const [selectedCampanhaId, setSelectedCampanhaId] = useState<string | null>(null);
+  const [selectedCampanhaNome, setSelectedCampanhaNome] = useState<string | null>(null);
+
+  // Produtos e ofertas selecionados para a degustação
+  interface ProdutoAgendamentoItem {
+    tempId: string;
+    id?: string;
+    oferta_id?: string | null;
+    produto_id?: string | null;
+    codigo?: string | null;
+    gtin?: string | null;
+    descricao: string;
+    preco_base: number;
+    preco_praticado: number;
+    campanha_nome?: string | null;
+    isExisting?: boolean;
+  }
+
+  const [produtosIniciais, setProdutosIniciais] = useState<ProdutoAgendamentoItem[]>([]);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [addMode, setAddMode] = useState<"oferta" | "produto">("oferta");
+  const [loadingInitialProdutos, setLoadingInitialProdutos] = useState(false);
 
   // ID persistente para vinculação dos anexos (mesmo para novo registro criado)
   const targetId = React.useMemo(() => {
@@ -168,6 +220,37 @@ export function AgendamentoDialog({
     if (open) {
       if (degustacaoToEdit) {
         setAnexos(parseDegustacaoAnexos(degustacaoToEdit));
+        setSelectedCampanhaId(degustacaoToEdit.campanha_id || null);
+        setSelectedCampanhaNome(degustacaoToEdit.campanha_nome || null);
+        setShowAddProduct(false);
+
+        // Carregar produtos vinculados se for edição
+        setLoadingInitialProdutos(true);
+        listDegustacaoProdutos(degustacaoToEdit.id)
+          .then((items) => {
+            setProdutosIniciais(
+              items.map((p) => ({
+                tempId: p.id,
+                id: p.id,
+                oferta_id: p.oferta_id,
+                produto_id: p.produto_id,
+                codigo: p.codigo,
+                gtin: p.gtin,
+                descricao: p.descricao,
+                preco_base: Number(p.preco_base) || 0,
+                preco_praticado: Number(p.preco_praticado) || 0,
+                campanha_nome: p.oferta_id ? (degustacaoToEdit.campanha_nome || "Campanha") : null,
+                isExisting: true,
+              }))
+            );
+          })
+          .catch((err) => {
+            console.error("Erro ao carregar produtos vinculados:", err);
+          })
+          .finally(() => {
+            setLoadingInitialProdutos(false);
+          });
+
         reset({
           loja: degustacaoToEdit.loja,
           fornecedor_id: degustacaoToEdit.fornecedor_id,
@@ -185,6 +268,11 @@ export function AgendamentoDialog({
         });
       } else {
         setAnexos([]);
+        setSelectedCampanhaId(null);
+        setSelectedCampanhaNome(null);
+        setProdutosIniciais([]);
+        setShowAddProduct(false);
+        setAddMode("oferta");
         reset({
           loja: LOJAS_DEGUSTACOES[0],
           fornecedor_id: "",
@@ -256,6 +344,102 @@ export function AgendamentoDialog({
     }
   };
 
+  const handleCampanhaSelectChange = (val: string) => {
+    if (val === "NENHUMA") {
+      setSelectedCampanhaId(null);
+      setSelectedCampanhaNome(null);
+    } else {
+      const found = campanhasValidas.find((c) => c.id === val);
+      if (found) {
+        setSelectedCampanhaId(found.id);
+        setSelectedCampanhaNome(found.nome);
+      }
+    }
+  };
+
+  const handleAddOfertaAgendamento = (item: SelectedOfertaItem) => {
+    const { oferta, campanha } = item;
+    const exists = produtosIniciais.some(
+      (p) =>
+        (p.oferta_id && p.oferta_id === oferta.id) ||
+        (oferta.codigo && p.codigo === oferta.codigo) ||
+        (oferta.gtin && p.gtin === oferta.gtin)
+    );
+    if (exists) {
+      toast.info("Esta oferta já foi adicionada à lista de produtos.");
+      return;
+    }
+
+    setProdutosIniciais((prev) => [
+      ...prev,
+      {
+        tempId: crypto.randomUUID(),
+        oferta_id: oferta.id,
+        codigo: oferta.codigo || null,
+        gtin: oferta.gtin || null,
+        descricao: oferta.descricao,
+        preco_base: oferta.precoNormal || 0,
+        preco_praticado: oferta.precoPromocional || 0,
+        campanha_nome: campanha.nome,
+        isExisting: false,
+      },
+    ]);
+
+    // Se ainda não vinculou campanha na degustação, vincula automaticamente
+    if (!selectedCampanhaId) {
+      setSelectedCampanhaId(campanha.id);
+      setSelectedCampanhaNome(campanha.nome);
+    }
+
+    toast.success(`Oferta "${oferta.descricao}" adicionada!`);
+    setShowAddProduct(false);
+  };
+
+  const handleAddProdutoAgendamento = (produto: Produto) => {
+    const exists = produtosIniciais.some(
+      (p) =>
+        (p.produto_id && p.produto_id === produto.id) ||
+        (produto.codigo && p.codigo === produto.codigo) ||
+        (produto.gtin && p.gtin === produto.gtin)
+    );
+    if (exists) {
+      toast.info("Este produto já foi adicionado à lista.");
+      return;
+    }
+
+    setProdutosIniciais((prev) => [
+      ...prev,
+      {
+        tempId: crypto.randomUUID(),
+        produto_id: produto.id,
+        codigo: produto.codigo || null,
+        gtin: produto.gtin || null,
+        descricao: produto.descricao,
+        preco_base: produto.preco_venda || 0,
+        preco_praticado: produto.preco_venda || 0,
+        campanha_nome: null,
+        isExisting: false,
+      },
+    ]);
+
+    toast.success(`Produto "${produto.descricao}" adicionado!`);
+    setShowAddProduct(false);
+  };
+
+  const handleRemoveProdutoAgendamento = async (item: ProdutoAgendamentoItem) => {
+    if (item.isExisting && item.id) {
+      try {
+        const { error } = await supabase.from("degustacao_produtos").delete().eq("id", item.id);
+        if (error) throw error;
+        toast.success("Produto removido.");
+      } catch (err) {
+        toast.error("Erro ao remover produto: " + (err as Error).message);
+        return;
+      }
+    }
+    setProdutosIniciais((prev) => prev.filter((p) => p.tempId !== item.tempId));
+  };
+
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploadingFiles(true);
@@ -309,6 +493,8 @@ export function AgendamentoDialog({
         observacoes: values.observacoes?.trim() ?? "",
         status: degustacaoToEdit ? degustacaoToEdit.status : "Programada",
         anexos: anexos as unknown as Json,
+        campanha_id: selectedCampanhaId || null,
+        campanha_nome: selectedCampanhaNome || null,
       };
 
       if (degustacaoToEdit) {
@@ -320,6 +506,29 @@ export function AgendamentoDialog({
           .single();
 
         if (error) throw error;
+
+        // Salvar novos produtos adicionados durante a edição
+        const novosItens = produtosIniciais.filter((p) => !p.isExisting);
+        if (novosItens.length > 0) {
+          const insertRows = novosItens.map((p) => ({
+            degustacao_id: degustacaoToEdit.id,
+            oferta_id: p.oferta_id || null,
+            produto_id: p.produto_id || null,
+            codigo: p.codigo || null,
+            gtin: p.gtin || null,
+            descricao: p.descricao,
+            preco_base: p.preco_base,
+            preco_praticado: p.preco_praticado,
+            quantidade_vendida: 0,
+            faturamento_total: 0,
+          }));
+          const { error: errInsert } = await supabase.from("degustacao_produtos").insert(insertRows);
+          if (errInsert) {
+            console.error("Erro ao salvar novos produtos:", errInsert);
+            toast.error("Degustação salva, mas houve falha ao registrar novos produtos.");
+          }
+        }
+
         toast.success("Agendamento atualizado com sucesso!");
         onSuccess(data);
       } else {
@@ -333,6 +542,28 @@ export function AgendamentoDialog({
           .single();
 
         if (error) throw error;
+
+        // Inserir itens vinculados na criação
+        if (produtosIniciais.length > 0) {
+          const insertRows = produtosIniciais.map((p) => ({
+            degustacao_id: targetId,
+            oferta_id: p.oferta_id || null,
+            produto_id: p.produto_id || null,
+            codigo: p.codigo || null,
+            gtin: p.gtin || null,
+            descricao: p.descricao,
+            preco_base: p.preco_base,
+            preco_praticado: p.preco_praticado,
+            quantidade_vendida: 0,
+            faturamento_total: 0,
+          }));
+          const { error: errInsert } = await supabase.from("degustacao_produtos").insert(insertRows);
+          if (errInsert) {
+            console.error("Erro ao vincular produtos na criação:", errInsert);
+            toast.error("Degustação agendada, mas houve falha ao vincular produtos.");
+          }
+        }
+
         toast.success("Degustação agendada com sucesso!");
         onSuccess(data);
       }
@@ -577,6 +808,249 @@ export function AgendamentoDialog({
                 className="resize-none min-h-[65px]"
                 {...register("observacoes")}
               />
+            </div>
+
+            {/* Campanha Promocional Vinculada (Opcional) */}
+            <div className="space-y-1.5 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="campanha-select" className="text-xs font-semibold text-navy flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5 text-primary" />
+                  Campanha Promocional Vinculada <span className="text-[11px] font-normal text-muted-foreground">(Opcional)</span>
+                </Label>
+                {selectedCampanhaId && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[11px] text-muted-foreground hover:text-destructive px-1.5"
+                    onClick={() => {
+                      setSelectedCampanhaId(null);
+                      setSelectedCampanhaNome(null);
+                    }}
+                  >
+                    Desvincular
+                  </Button>
+                )}
+              </div>
+              <Select
+                value={selectedCampanhaId || "NENHUMA"}
+                onValueChange={handleCampanhaSelectChange}
+              >
+                <SelectTrigger id="campanha-select" className="w-full">
+                  <SelectValue placeholder="Selecione uma campanha ativa ou programada..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NENHUMA">
+                    <span className="text-muted-foreground">Nenhuma campanha vinculada (Apenas em loja)</span>
+                  </SelectItem>
+                  {campanhasValidas.map((camp) => {
+                    const st = statusCampanha(camp);
+                    return (
+                      <SelectItem key={camp.id} value={camp.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{camp.nome}</span>
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold px-1.5 py-0.2 rounded uppercase",
+                              st === "Ativa"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
+                            )}
+                          >
+                            {st}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            ({fmtDate(camp.dataInicial)} a {fmtDate(camp.dataFinal)})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Exibe apenas campanhas com status Ativa ou Programada do módulo de Campanhas.
+              </p>
+            </div>
+
+            {/* Produtos & Ofertas da Degustação */}
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs font-semibold text-navy flex items-center gap-1.5">
+                    <Package className="h-3.5 w-3.5 text-primary" />
+                    Produtos & Ofertas da Degustação
+                    {produtosIniciais.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-bold">
+                        {produtosIniciais.length}
+                      </Badge>
+                    )}
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Vincule ofertas específicas em promoção ou adicione produtos regulares do catálogo.
+                  </p>
+                </div>
+
+                {!showAddProduct && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddProduct(true)}
+                    className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Adicionar Produto
+                  </Button>
+                )}
+              </div>
+
+              {/* Painel de Inclusão de Produto / Oferta */}
+              {showAddProduct && (
+                <div className="p-3 rounded-lg border bg-muted/20 space-y-3 animate-in fade-in-50 duration-200">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    {/* Toggle entre Oferta em Campanha e Produto Regular */}
+                    <div className="flex items-center gap-1.5 p-0.5 bg-muted rounded-md text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setAddMode("oferta")}
+                        className={cn(
+                          "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition",
+                          addMode === "oferta"
+                            ? "bg-primary text-primary-foreground shadow-2xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Tag className="h-3.5 w-3.5" />
+                        Oferta em Campanha
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAddMode("produto")}
+                        className={cn(
+                          "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition",
+                          addMode === "produto"
+                            ? "bg-primary text-primary-foreground shadow-2xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Package className="h-3.5 w-3.5" />
+                        Produto Regular
+                      </button>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAddProduct(false)}
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {addMode === "oferta" ? (
+                    <div>
+                      <div className="mb-2 text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Tag className="h-3 w-3 text-emerald-600" />
+                        Selecione a oferta específica da campanha desejada (Ex: Alfajores Odara):
+                      </div>
+                      <OfertaSearch
+                        defaultCampanhaId={selectedCampanhaId || undefined}
+                        onSelect={handleAddOfertaAgendamento}
+                        placeholder="Buscar oferta específica por produto, código, GTIN ou campanha..."
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="mb-2 text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Package className="h-3 w-3 text-blue-600" />
+                        Buscar produto regular cadastrado no catálogo geral:
+                      </div>
+                      <ProductSearch
+                        onSelect={handleAddProdutoAgendamento}
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Lista dos produtos adicionados */}
+              {loadingInitialProdutos ? (
+                <div className="text-center py-4 text-xs text-muted-foreground">
+                  Carregando produtos vinculados...
+                </div>
+              ) : produtosIniciais.length === 0 ? (
+                <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/5">
+                  Nenhum produto vinculado ainda. Você pode adicionar produtos agora ou durante a execução do evento.
+                </div>
+              ) : (
+                <ul className="grid gap-1.5 max-h-52 overflow-y-auto pr-1">
+                  {produtosIniciais.map((item) => (
+                    <li
+                      key={item.tempId}
+                      className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-2 text-xs shadow-2xs hover:border-primary/40 transition"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-navy truncate">
+                            {item.descricao}
+                          </span>
+                          {item.codigo && (
+                            <span className="font-mono text-[10px] bg-muted px-1 py-0.5 rounded text-muted-foreground">
+                              Cód: {item.codigo}
+                            </span>
+                          )}
+                          {item.oferta_id ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-4 px-1.5 bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 gap-1"
+                            >
+                              <Tag className="h-2.5 w-2.5" />
+                              Oferta {item.campanha_nome ? `• ${item.campanha_nome}` : "Campanha"}
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-4 px-1.5 bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 gap-1"
+                            >
+                              <Package className="h-2.5 w-2.5" />
+                              Regular
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
+                          {item.oferta_id ? (
+                            <>
+                              <span>De: <span className="line-through">{brl(item.preco_base)}</span></span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                Por: {brl(item.preco_praticado)}
+                              </span>
+                            </>
+                          ) : (
+                            <span>Preço Base: <strong className="text-foreground">{brl(item.preco_praticado)}</strong></span>
+                          )}
+                        </div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveProdutoAgendamento(item)}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                        title="Remover produto"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Materiais para Impressão e Decoração do Espaço */}
