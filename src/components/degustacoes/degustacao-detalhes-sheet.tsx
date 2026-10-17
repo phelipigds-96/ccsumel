@@ -54,6 +54,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ProductSearch } from "@/components/product-search";
 import { OfertaSearch, type SelectedOfertaItem } from "@/components/degustacoes/oferta-search";
 import { DegustacaoStatusBadge } from "@/components/degustacoes/degustacao-status-badge";
@@ -741,39 +748,89 @@ export function DegustacaoDetalhesSheet({
             )}
           </div>
 
-          {/* Abas Principais */}
+          {/* Navegação de Seções da Degustação: Caixa Suspensa (Select) */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <div className="px-3 sm:px-6 border-b overflow-x-auto no-scrollbar">
-              <TabsList className="bg-transparent border-b-0 p-0 h-11 gap-3 sm:gap-6 flex-nowrap inline-flex min-w-max">
-                <TabsTrigger
-                  value="produtos"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs sm:text-sm font-medium"
+            <div className="px-3.5 sm:px-6 py-2.5 sm:py-3 border-b bg-muted/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider shrink-0">
+                  Seção:
+                </span>
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full sm:w-[320px] h-10 sm:h-9 bg-background font-semibold text-navy text-xs sm:text-sm shadow-2xs border-input cursor-pointer">
+                    <SelectValue placeholder="Selecione a seção..." />
+                  </SelectTrigger>
+                  <SelectContent className="shadow-lg">
+                    <SelectItem value="produtos" className="cursor-pointer text-xs sm:text-sm font-medium py-2">
+                      📦 Produtos & Resultados ({produtos.length})
+                    </SelectItem>
+                    <SelectItem value="detalhes" className="cursor-pointer text-xs sm:text-sm font-medium py-2">
+                      📄 Dados do Agendamento
+                    </SelectItem>
+                    <SelectItem value="anexos" className="cursor-pointer text-xs sm:text-sm font-medium py-2">
+                      📎 Materiais & Anexos ({anexos.length})
+                    </SelectItem>
+                    <SelectItem value="auditoria" className="cursor-pointer text-xs sm:text-sm font-medium py-2">
+                      🕒 Histórico de Auditoria ({historico.length})
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Atalhos rápidos em telas médias/grandes */}
+              <div className="hidden lg:flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant={activeTab === "produtos" ? "secondary" : "ghost"}
+                  size="sm"
+                  className={cn(
+                    "h-8 text-xs font-medium gap-1",
+                    activeTab === "produtos" && "bg-background text-primary font-bold shadow-xs border"
+                  )}
+                  onClick={() => setActiveTab("produtos")}
                 >
-                  <Package className="h-4 w-4 mr-1.5" />
-                  Produtos & Resultados ({produtos.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="detalhes"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs sm:text-sm font-medium"
+                  <Package className="h-3.5 w-3.5 text-primary" />
+                  Produtos ({produtos.length})
+                </Button>
+                <Button
+                  type="button"
+                  variant={activeTab === "detalhes" ? "secondary" : "ghost"}
+                  size="sm"
+                  className={cn(
+                    "h-8 text-xs font-medium gap-1",
+                    activeTab === "detalhes" && "bg-background text-primary font-bold shadow-xs border"
+                  )}
+                  onClick={() => setActiveTab("detalhes")}
                 >
-                  <FileText className="h-4 w-4 mr-1.5" />
-                  Dados do Agendamento
-                </TabsTrigger>
-                <TabsTrigger
-                  value="anexos"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs sm:text-sm font-medium"
+                  <FileText className="h-3.5 w-3.5 text-primary" />
+                  Dados
+                </Button>
+                <Button
+                  type="button"
+                  variant={activeTab === "anexos" ? "secondary" : "ghost"}
+                  size="sm"
+                  className={cn(
+                    "h-8 text-xs font-medium gap-1",
+                    activeTab === "anexos" && "bg-background text-primary font-bold shadow-xs border"
+                  )}
+                  onClick={() => setActiveTab("anexos")}
                 >
-                  <Paperclip className="h-4 w-4 mr-1.5" />
-                  Materiais & Anexos ({anexos.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="auditoria"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs sm:text-sm font-medium"
+                  <Paperclip className="h-3.5 w-3.5 text-primary" />
+                  Anexos ({anexos.length})
+                </Button>
+                <Button
+                  type="button"
+                  variant={activeTab === "auditoria" ? "secondary" : "ghost"}
+                  size="sm"
+                  className={cn(
+                    "h-8 text-xs font-medium gap-1",
+                    activeTab === "auditoria" && "bg-background text-navy font-bold shadow-xs border"
+                  )}
+                  onClick={() => setActiveTab("auditoria")}
                 >
-                  <History className="h-4 w-4 mr-1.5" />
+                  <History className="h-3.5 w-3.5 text-navy" />
                   Auditoria ({historico.length})
-                </TabsTrigger>
-              </TabsList>
+                </Button>
+              </div>
             </div>
 
             {/* CONTEÚDO TAB PRODUTOS */}
