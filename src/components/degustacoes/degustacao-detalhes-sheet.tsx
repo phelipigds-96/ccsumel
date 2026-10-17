@@ -619,37 +619,37 @@ export function DegustacaoDetalhesSheet({
           className="w-full sm:max-w-2xl md:max-w-3xl overflow-y-auto p-0 flex flex-col"
         >
           {/* Header Superior */}
-          <div className="bg-navy/5 p-6 border-b border-border/80">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <div className="bg-navy/5 p-4 sm:p-6 border-b border-border/80">
+            <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2">
               <DegustacaoStatusBadge status={currentDegustacao.status} />
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5 text-primary" />
+                <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="font-semibold text-navy">{currentDegustacao.loja}</span>
               </div>
             </div>
 
-            <SheetTitle className="text-xl font-bold text-navy">
+            <SheetTitle className="text-lg sm:text-xl font-bold text-navy leading-snug">
               {currentDegustacao.nome}
             </SheetTitle>
-            <SheetDescription className="text-sm mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <SheetDescription className="text-xs sm:text-sm mt-1 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1">
               <span className="flex items-center gap-1">
-                <Truck className="h-3.5 w-3.5 text-muted-foreground" />
+                <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <strong>Fornecedor:</strong> {currentDegustacao.fornecedor_nome}
               </span>
               {currentDegustacao.campanha_nome && (
                 <span className="flex items-center gap-1 text-primary font-semibold">
-                  <Tag className="h-3.5 w-3.5" />
+                  <Tag className="h-3.5 w-3.5 shrink-0" />
                   <strong>Campanha:</strong> {currentDegustacao.campanha_nome}
                 </span>
               )}
               <span className="flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <strong>Data:</strong>{" "}
                 {new Date(currentDegustacao.data + "T00:00:00").toLocaleDateString("pt-BR")}
               </span>
               {(currentDegustacao.horario_inicio || currentDegustacao.horario_fim) && (
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <strong>Horário:</strong>{" "}
                   {currentDegustacao.horario_inicio?.slice(0, 5) ?? "--:--"} às{" "}
                   {currentDegustacao.horario_fim?.slice(0, 5) ?? "--:--"}
@@ -659,14 +659,14 @@ export function DegustacaoDetalhesSheet({
 
             {/* Banner de Ações Rápidas de Ciclo de Vida */}
             {isMaster ? (
-              <div className="mt-4 pt-3 border-t border-border/60 flex flex-wrap items-center gap-2">
+              <div className="mt-3.5 sm:mt-4 pt-3 border-t border-border/60 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
                 {currentDegustacao.status === "Programada" && (
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="col-span-2 sm:col-span-1 h-10 sm:h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs"
                     onClick={() => handleStatusChange("Ativa")}
                   >
-                    <Play className="h-3.5 w-3.5 mr-1" /> Iniciar Degustação
+                    <Play className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1.5" /> Iniciar Degustação
                   </Button>
                 )}
 
@@ -675,17 +675,17 @@ export function DegustacaoDetalhesSheet({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100"
+                      className="col-span-1 h-10 sm:h-8 border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 font-semibold text-xs"
                       onClick={() => handleStatusChange("Aguardando Resultados")}
                     >
-                      <Clock className="h-3.5 w-3.5 mr-1 text-amber-600" /> Aguardar Apuração
+                      <Clock className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1 text-amber-600 shrink-0" /> Aguardar Apuração
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-primary hover:bg-primary/90 text-white"
+                      className="col-span-1 h-10 sm:h-8 bg-primary hover:bg-primary/90 text-white font-semibold text-xs"
                       onClick={handleOpenConcluirModal}
                     >
-                      <CheckCircle className="h-3.5 w-3.5 mr-1" /> Concluir Degustação
+                      <CheckCircle className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1 shrink-0" /> Concluir
                     </Button>
                   </>
                 )}
@@ -693,10 +693,10 @@ export function DegustacaoDetalhesSheet({
                 {currentDegustacao.status === "Aguardando Resultados" && (
                   <Button
                     size="sm"
-                    className="bg-primary hover:bg-primary/90 text-white"
+                    className="col-span-2 sm:col-span-1 h-10 sm:h-8 bg-primary hover:bg-primary/90 text-white font-semibold text-xs"
                     onClick={handleOpenConcluirModal}
                   >
-                    <CheckCircle className="h-3.5 w-3.5 mr-1" /> Apurar e Concluir
+                    <CheckCircle className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1.5" /> Apurar e Concluir
                   </Button>
                 )}
 
@@ -705,10 +705,10 @@ export function DegustacaoDetalhesSheet({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      className="col-span-1 h-10 sm:h-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 text-xs font-semibold"
                       onClick={handleTriggerCancelar}
                     >
-                      <Ban className="h-3.5 w-3.5 mr-1" /> Cancelar
+                      <Ban className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1" /> Cancelar
                     </Button>
                   )}
 
@@ -717,10 +717,10 @@ export function DegustacaoDetalhesSheet({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-navy hover:bg-navy/10"
+                    className="col-span-2 sm:col-span-1 h-10 sm:h-8 text-navy hover:bg-navy/10 text-xs font-semibold"
                     onClick={handleTriggerReabrir}
                   >
-                    <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reabrir Degustação
+                    <RotateCcw className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1" /> Reabrir Degustação
                   </Button>
                 )}
 
@@ -728,14 +728,14 @@ export function DegustacaoDetalhesSheet({
                   size="sm"
                   variant="outline"
                   onClick={() => onEditAgendamento(currentDegustacao)}
-                  className="ml-auto"
+                  className="col-span-1 sm:ml-auto h-10 sm:h-8 text-xs font-semibold"
                 >
                   Editar Agendamento
                 </Button>
               </div>
             ) : (
               <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5 italic bg-muted/40 p-2 rounded">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                 Modo leitura: apenas administradores ativos podem alterar produtos, status ou agendamentos.
               </div>
             )}
@@ -743,72 +743,72 @@ export function DegustacaoDetalhesSheet({
 
           {/* Abas Principais */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <div className="px-6 border-b">
-              <TabsList className="bg-transparent border-b-0 p-0 h-11 gap-6">
+            <div className="px-3 sm:px-6 border-b overflow-x-auto no-scrollbar">
+              <TabsList className="bg-transparent border-b-0 p-0 h-11 gap-3 sm:gap-6 flex-nowrap inline-flex min-w-max">
                 <TabsTrigger
                   value="produtos"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs sm:text-sm font-medium"
                 >
                   <Package className="h-4 w-4 mr-1.5" />
                   Produtos & Resultados ({produtos.length})
                 </TabsTrigger>
                 <TabsTrigger
                   value="detalhes"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs sm:text-sm font-medium"
                 >
                   <FileText className="h-4 w-4 mr-1.5" />
                   Dados do Agendamento
                 </TabsTrigger>
                 <TabsTrigger
                   value="anexos"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs sm:text-sm font-medium"
                 >
                   <Paperclip className="h-4 w-4 mr-1.5" />
                   Materiais & Anexos ({anexos.length})
                 </TabsTrigger>
                 <TabsTrigger
                   value="auditoria"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs sm:text-sm font-medium"
                 >
                   <History className="h-4 w-4 mr-1.5" />
-                  Histórico de Auditoria ({historico.length})
+                  Auditoria ({historico.length})
                 </TabsTrigger>
               </TabsList>
             </div>
 
             {/* CONTEÚDO TAB PRODUTOS */}
-            <TabsContent value="produtos" className="p-6 space-y-5 flex-1 m-0">
+            <TabsContent value="produtos" className="p-3.5 sm:p-6 space-y-4 sm:space-y-5 flex-1 m-0">
               {/* Se for Master e não estiver cancelada, permite adicionar produtos */}
               {isMaster && currentDegustacao.status !== "Cancelada" && (
-                <div className="rounded-lg border bg-card p-4 space-y-3 shadow-xs">
+                <div className="rounded-xl border bg-card p-3.5 sm:p-4 space-y-3 shadow-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                       <Plus className="h-3.5 w-3.5 text-primary" /> Adicionar Produto à Degustação
                     </h4>
-                    <div className="inline-flex rounded-lg border bg-muted/40 p-0.5 text-xs">
+                    <div className="grid grid-cols-2 sm:inline-flex rounded-lg border bg-muted/40 p-0.5 text-xs">
                       <button
                         type="button"
                         onClick={() => setAddProductMode("oferta")}
                         className={cn(
-                          "px-2.5 py-1 rounded-md font-medium transition text-xs",
+                          "px-2.5 py-1.5 rounded-md font-medium transition text-xs flex items-center justify-center gap-1",
                           addProductMode === "oferta"
                             ? "bg-card text-navy shadow-xs font-semibold"
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        🏷️ Oferta em Campanha
+                        <span>🏷️</span> Oferta em Campanha
                       </button>
                       <button
                         type="button"
                         onClick={() => setAddProductMode("produto")}
                         className={cn(
-                          "px-2.5 py-1 rounded-md font-medium transition text-xs",
+                          "px-2.5 py-1.5 rounded-md font-medium transition text-xs flex items-center justify-center gap-1",
                           addProductMode === "produto"
                             ? "bg-card text-navy shadow-xs font-semibold"
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        📦 Produto Regular
+                        <span>📦</span> Produto Regular
                       </button>
                     </div>
                   </div>
@@ -829,8 +829,8 @@ export function DegustacaoDetalhesSheet({
                 </div>
               )}
 
-              {/* Tabela de Produtos */}
-              <div className="rounded-md border overflow-hidden">
+              {/* VISUALIZAÇÃO DESKTOP: TABELA TRADICIONAL */}
+              <div className="hidden md:block rounded-md border overflow-hidden">
                 <Table>
                   <TableHeader className="bg-muted/50">
                     <TableRow>
@@ -990,59 +990,217 @@ export function DegustacaoDetalhesSheet({
                 </Table>
               </div>
 
+              {/* VISUALIZAÇÃO MOBILE: CARDS ERGONÔMICOS PARA PRODUTOS */}
+              <div className="block md:hidden space-y-3">
+                {loadingProdutos ? (
+                  <div className="text-center py-8 text-muted-foreground border rounded-xl bg-card text-xs">
+                    Carregando produtos vinculados...
+                  </div>
+                ) : produtos.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground border rounded-xl bg-card p-4 space-y-2">
+                    <Package className="h-8 w-8 mx-auto text-muted-foreground/50 mb-1" />
+                    <p className="text-sm font-medium">Nenhum produto cadastrado para esta degustação.</p>
+                    {isMaster && (
+                      <p className="text-xs text-amber-600 font-medium">
+                        É necessário adicionar pelo menos 1 produto antes de concluir.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  produtos.map((p) => {
+                    const edit = editValues[p.id] || {
+                      preco_praticado: p.preco_praticado,
+                      quantidade_vendida: p.quantidade_vendida,
+                    };
+                    const rowTotal = (Number(edit.quantidade_vendida) || 0) * (Number(edit.preco_praticado) || 0);
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="rounded-xl border bg-card p-3.5 shadow-2xs space-y-3"
+                      >
+                        {/* Topo do Card de Produto */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-navy text-sm leading-snug">
+                                {p.descricao}
+                              </span>
+                              {p.oferta_id ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20 shrink-0 font-medium"
+                                >
+                                  🏷️ Promoção
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0 text-muted-foreground shrink-0 font-normal"
+                                >
+                                  Regular
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                              Cód: {p.codigo ?? "-"} &bull; EAN: {p.gtin ?? "-"}
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className="text-[10px] uppercase text-muted-foreground block font-medium">Preço Base</span>
+                            <span className="text-xs text-muted-foreground font-mono line-through">{brl(p.preco_base)}</span>
+                          </div>
+                        </div>
+
+                        {/* Grid de Inputs de Preço Praticado e Quantidade Vendida */}
+                        <div className="grid grid-cols-2 gap-2.5 p-2.5 bg-muted/30 rounded-lg">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-navy block">
+                              Preço Praticado (R$)
+                            </label>
+                            {isMaster && currentDegustacao.status !== "Cancelada" ? (
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                className="h-10 font-mono text-sm bg-background font-semibold"
+                                value={edit.preco_praticado}
+                                onChange={(e) =>
+                                  setEditValues((prev) => ({
+                                    ...prev,
+                                    [p.id]: {
+                                      ...edit,
+                                      preco_praticado: parseFloat(e.target.value) || 0,
+                                    },
+                                  }))
+                                }
+                              />
+                            ) : (
+                              <div className="h-10 flex items-center font-mono text-sm font-semibold text-navy">
+                                {brl(p.preco_praticado)}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-navy block">
+                              Qtd Vendida (un)
+                            </label>
+                            {isMaster && currentDegustacao.status !== "Cancelada" ? (
+                              <Input
+                                type="number"
+                                step="1"
+                                min="0"
+                                className="h-10 font-mono text-sm bg-background font-semibold"
+                                value={edit.quantidade_vendida}
+                                onChange={(e) =>
+                                  setEditValues((prev) => ({
+                                    ...prev,
+                                    [p.id]: {
+                                      ...edit,
+                                      quantidade_vendida: parseInt(e.target.value, 10) || 0,
+                                    },
+                                  }))
+                                }
+                              />
+                            ) : (
+                              <div className="h-10 flex items-center font-mono text-sm font-semibold text-navy">
+                                {p.quantidade_vendida} un
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Rodapé do Card: Total e Botões de Ação */}
+                        <div className="flex items-center justify-between pt-1">
+                          <div>
+                            <span className="text-[10px] uppercase text-muted-foreground block font-medium">Subtotal</span>
+                            <span className="text-base font-extrabold text-primary font-mono">{brl(rowTotal)}</span>
+                          </div>
+
+                          {isMaster && currentDegustacao.status !== "Cancelada" && (
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                size="sm"
+                                className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs gap-1 shadow-2xs active:scale-95"
+                                disabled={savingProdutoId === p.id}
+                                onClick={() => handleSaveProduto(p)}
+                              >
+                                <Save className="h-3.5 w-3.5" />
+                                Salvar
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 active:scale-95"
+                                title="Remover produto"
+                                onClick={() => handleDeleteProduto(p)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
               {/* Totais Gerais */}
-              <div className="rounded-lg bg-navy/5 p-4 border flex flex-wrap items-center justify-between gap-4">
+              <div className="rounded-xl bg-navy/5 p-3.5 sm:p-4 border grid grid-cols-3 gap-2 text-center sm:text-left sm:flex sm:items-center sm:justify-between sm:gap-4">
                 <div>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                    Produtos Cadastrados
+                  <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-semibold block">
+                    Produtos
                   </span>
-                  <div className="text-lg font-bold text-navy">{produtos.length} item(s)</div>
+                  <div className="text-sm sm:text-lg font-bold text-navy">{produtos.length} <span className="hidden sm:inline">item(s)</span></div>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                    Volume Total Vendido
+                <div className="border-x sm:border-x-0 border-border/60 px-1 sm:px-0">
+                  <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-semibold block">
+                    Qtd Total
                   </span>
-                  <div className="text-lg font-bold text-navy">{totais.qtd} un</div>
+                  <div className="text-sm sm:text-lg font-bold text-navy">{totais.qtd} un</div>
                 </div>
 
-                <div className="text-right border-l pl-4 border-border/80">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                    Faturamento Apurado
+                <div className="sm:border-l sm:pl-4 sm:border-border/80 sm:text-right">
+                  <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-semibold block">
+                    Faturamento
                   </span>
-                  <div className="text-xl font-extrabold text-primary">{brl(totais.fat)}</div>
+                  <div className="text-sm sm:text-xl font-extrabold text-primary truncate">{brl(totais.fat)}</div>
                 </div>
               </div>
             </TabsContent>
 
             {/* CONTEÚDO TAB DETALHES DO AGENDAMENTO */}
-            <TabsContent value="detalhes" className="p-6 space-y-4 m-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-lg border p-4 bg-card space-y-2">
+            <TabsContent value="detalhes" className="p-3.5 sm:p-6 space-y-3 sm:space-y-4 m-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                <div className="rounded-xl border p-3.5 sm:p-4 bg-card space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Loja de Realização</Label>
                   <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-                    <MapPin className="h-4 w-4 text-primary" /> {currentDegustacao.loja}
+                    <MapPin className="h-4 w-4 text-primary shrink-0" /> {currentDegustacao.loja}
                   </p>
                 </div>
 
-                <div className="rounded-lg border p-4 bg-card space-y-2">
+                <div className="rounded-xl border p-3.5 sm:p-4 bg-card space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Fornecedor Parceiro</Label>
                   <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-                    <Truck className="h-4 w-4 text-primary" /> {currentDegustacao.fornecedor_nome}
+                    <Truck className="h-4 w-4 text-primary shrink-0" /> {currentDegustacao.fornecedor_nome}
                   </p>
                 </div>
 
-                <div className="rounded-lg border p-4 bg-card space-y-2">
+                <div className="rounded-xl border p-3.5 sm:p-4 bg-card space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Promotor / Responsável</Label>
                   <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-                    <User className="h-4 w-4 text-primary" /> {currentDegustacao.responsavel_nome}
+                    <User className="h-4 w-4 text-primary shrink-0" /> {currentDegustacao.responsavel_nome}
                   </p>
                 </div>
 
-                <div className="rounded-lg border p-4 bg-card space-y-2">
+                <div className="rounded-xl border p-3.5 sm:p-4 bg-card space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Data e Horários</Label>
                   <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4 text-primary" />
+                    <Calendar className="h-4 w-4 text-primary shrink-0" />
                     {new Date(currentDegustacao.data + "T00:00:00").toLocaleDateString("pt-BR")}{" "}
                     ({currentDegustacao.horario_inicio?.slice(0, 5) ?? "--"} às{" "}
                     {currentDegustacao.horario_fim?.slice(0, 5) ?? "--"})
@@ -1050,7 +1208,7 @@ export function DegustacaoDetalhesSheet({
                 </div>
               </div>
 
-              <div className="rounded-lg border p-4 bg-card space-y-2">
+              <div className="rounded-xl border p-3.5 sm:p-4 bg-card space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Observações e Orientações</Label>
                 <p className="text-sm text-foreground whitespace-pre-line">
                   {currentDegustacao.observacoes || (
@@ -1060,7 +1218,7 @@ export function DegustacaoDetalhesSheet({
               </div>
 
               {currentDegustacao.observacoes_resultados && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4 space-y-2">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 sm:p-4 space-y-2">
                   <Label className="text-xs text-emerald-800 font-semibold">
                     Parecer de Resultados e Fechamento
                   </Label>
@@ -1080,10 +1238,10 @@ export function DegustacaoDetalhesSheet({
               )}
 
               {/* Resumo de Materiais Anexados */}
-              <div className="rounded-lg border p-4 bg-card space-y-2.5">
+              <div className="rounded-xl border p-3.5 sm:p-4 bg-card space-y-2.5">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Paperclip className="h-3.5 w-3.5 text-primary" />
+                    <Paperclip className="h-3.5 w-3.5 text-primary shrink-0" />
                     Materiais de Impressão e Decoração ({anexos.length})
                   </Label>
                   <Button
@@ -1093,7 +1251,7 @@ export function DegustacaoDetalhesSheet({
                     className="h-auto p-0 text-xs text-primary font-semibold"
                     onClick={() => setActiveTab("anexos")}
                   >
-                    Ver todos os anexos &rarr;
+                    Ver todos &rarr;
                   </Button>
                 </div>
 
@@ -1108,7 +1266,7 @@ export function DegustacaoDetalhesSheet({
                         key={m.path}
                         type="button"
                         onClick={() => handleOpenAnexo(m)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium bg-background hover:bg-muted text-navy truncate max-w-[220px]"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium bg-background hover:bg-muted text-navy truncate max-w-[220px]"
                         title="Clique para visualizar ou baixar"
                       >
                         {isDegustacaoImage(m.tipo) ? (
@@ -1125,18 +1283,18 @@ export function DegustacaoDetalhesSheet({
             </TabsContent>
 
             {/* CONTEÚDO TAB MATERIAIS & ANEXOS */}
-            <TabsContent value="anexos" className="p-6 space-y-5 m-0">
+            <TabsContent value="anexos" className="p-3.5 sm:p-6 space-y-4 sm:space-y-5 m-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b">
                 <div>
                   <h3 className="text-sm font-bold text-navy flex items-center gap-1.5">
-                    <Paperclip className="h-4 w-4 text-primary" />
+                    <Paperclip className="h-4 w-4 text-primary shrink-0" />
                     Materiais para Impressão & Decoração do Espaço
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     Cartazes de oferta, testeiras para gôndola, manual de instruções e artes de ponto de degustação.
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-muted rounded-full text-foreground shrink-0">
+                <span className="text-xs font-semibold px-2.5 py-1 bg-muted rounded-full text-foreground shrink-0 self-start sm:self-auto">
                   {anexos.length} anexo(s)
                 </span>
               </div>
@@ -1145,17 +1303,17 @@ export function DegustacaoDetalhesSheet({
               {isMaster && currentDegustacao.status !== "Cancelada" && (
                 <label
                   className={cn(
-                    "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 cursor-pointer transition text-center",
+                    "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-4 sm:p-6 cursor-pointer transition text-center",
                     uploadingFiles
                       ? "opacity-60 pointer-events-none bg-muted/40"
                       : "hover:border-primary hover:bg-primary/5 border-muted-foreground/25 bg-muted/10"
                   )}
                 >
-                  <Upload className="h-6 w-6 text-primary" />
-                  <span className="text-sm font-semibold text-navy">
+                  <Upload className="h-6 w-6 text-primary shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold text-navy">
                     {uploadingFiles ? "Fazendo upload do arquivo..." : "Clique para anexar ou arraste arquivos aqui"}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-[11px] sm:text-xs text-muted-foreground">
                     Suporta arquivos em PDF, JPG e PNG de até 20 MB por arquivo
                   </span>
                   <input
@@ -1182,13 +1340,13 @@ export function DegustacaoDetalhesSheet({
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                   {anexos.map((m) => {
                     const isImg = isDegustacaoImage(m.tipo);
                     return (
                       <div
                         key={m.path}
-                        className="rounded-lg border bg-card p-3 shadow-2xs hover:shadow-xs hover:border-primary/40 transition flex flex-col justify-between gap-3 group"
+                        className="rounded-xl border bg-card p-3 shadow-2xs hover:shadow-xs hover:border-primary/40 transition flex flex-col justify-between gap-3 group"
                       >
                         <div className="flex items-start gap-2.5">
                           <div className="p-2 rounded-md bg-muted/50 shrink-0">
@@ -1217,10 +1375,10 @@ export function DegustacaoDetalhesSheet({
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2 text-xs font-medium text-primary hover:text-primary/80 gap-1"
+                            className="h-8 px-2.5 text-xs font-medium text-primary hover:text-primary/80 gap-1 active:scale-95"
                             onClick={() => handleOpenAnexo(m)}
                           >
-                            <ExternalLink className="h-3 w-3" />
+                            <ExternalLink className="h-3.5 w-3.5" />
                             Visualizar
                           </Button>
 
@@ -1229,10 +1387,10 @@ export function DegustacaoDetalhesSheet({
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-destructive gap-1"
+                              className="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-destructive gap-1 active:scale-95"
                               onClick={() => handleRemoveAnexo(m)}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-3.5 w-3.5" />
                               Excluir
                             </Button>
                           )}
@@ -1245,9 +1403,9 @@ export function DegustacaoDetalhesSheet({
             </TabsContent>
 
             {/* CONTEÚDO TAB AUDITORIA */}
-            <TabsContent value="auditoria" className="p-6 space-y-4 m-0">
+            <TabsContent value="auditoria" className="p-3.5 sm:p-6 space-y-3 sm:space-y-4 m-0">
               <div className="text-xs text-muted-foreground flex items-center gap-1.5 mb-2">
-                <History className="h-4 w-4 text-navy" />
+                <History className="h-4 w-4 text-navy shrink-0" />
                 Registros gravados permanentemente via triggers e functions no Supabase.
               </div>
 
@@ -1260,17 +1418,17 @@ export function DegustacaoDetalhesSheet({
                   Nenhum registro de auditoria encontrado para este evento.
                 </p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5 sm:space-y-3">
                   {historico.map((h) => (
                     <div
                       key={h.id}
-                      className="rounded-lg border bg-card p-4 text-xs space-y-2 shadow-2xs"
+                      className="rounded-xl border bg-card p-3 sm:p-4 text-xs space-y-2 shadow-2xs"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
-                        <span className="font-bold text-navy uppercase tracking-wider">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 border-b pb-2">
+                        <span className="font-bold text-navy uppercase tracking-wider text-[11px]">
                           {h.acao}
                         </span>
-                        <span className="text-muted-foreground font-mono">
+                        <span className="text-muted-foreground font-mono text-[10px] sm:text-xs">
                           {new Date(h.created_at).toLocaleString("pt-BR")}
                         </span>
                       </div>
@@ -1296,7 +1454,7 @@ export function DegustacaoDetalhesSheet({
                       )}
 
                       {h.justificativa && (
-                        <div className="bg-amber-50 border border-amber-200 rounded p-2 text-amber-900 mt-2">
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-amber-900 mt-2">
                           <strong className="block text-[11px] uppercase tracking-wider text-amber-800">
                             Justificativa Registrada:
                           </strong>
@@ -1318,10 +1476,10 @@ export function DegustacaoDetalhesSheet({
 
       {/* Modal de Conclusão / Apuração de Resultados */}
       <Dialog open={concluirModalOpen} onOpenChange={setConcluirModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-navy">Concluir Degustação e Apurar Resultados</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="w-[95vw] sm:max-w-md p-4 sm:p-6 rounded-xl">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-navy text-lg sm:text-xl font-bold">Concluir Degustação e Apurar Resultados</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Confirme a finalização desta degustação. O faturamento e volume total serão
               consolidados no histórico do módulo.
             </DialogDescription>
@@ -1357,18 +1515,19 @@ export function DegustacaoDetalhesSheet({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-2 pt-2 border-t">
             <Button
               type="button"
               variant="outline"
               onClick={() => setConcluirModalOpen(false)}
               disabled={concluding}
+              className="w-full sm:w-auto h-11 sm:h-9 text-xs sm:text-sm"
             >
               Voltar
             </Button>
             <Button
               type="button"
-              className="bg-primary hover:bg-primary/90"
+              className="w-full sm:w-auto h-11 sm:h-9 bg-primary hover:bg-primary/90 text-xs sm:text-sm font-semibold"
               onClick={handleConfirmConcluir}
               disabled={concluding}
             >

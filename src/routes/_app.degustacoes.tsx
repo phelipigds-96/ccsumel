@@ -222,114 +222,120 @@ function DegustacoesPage() {
       />
 
       {/* Grid de Cards de Métricas / KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <Card className="bg-emerald-50/40 border-emerald-200/70 shadow-2xs">
-          <CardHeader className="p-4 pb-1">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-emerald-800 flex items-center justify-between">
+          <CardHeader className="p-3 sm:p-4 pb-1">
+            <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-emerald-800 flex items-center justify-between">
               <span>Hoje & Ativas</span>
-              <Sparkles className="h-4 w-4 text-emerald-500" />
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500 shrink-0" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <div className="text-2xl font-bold text-emerald-700">{stats.hojeAtivas}</div>
-            <p className="text-[11px] text-emerald-600/80 mt-0.5">
-              Eventos em andamento ou agendados para hoje
+          <CardContent className="p-3 sm:p-4 pt-1">
+            <div className="text-xl sm:text-2xl font-bold text-emerald-700">{stats.hojeAtivas}</div>
+            <p className="text-[10px] sm:text-[11px] text-emerald-600/80 mt-0.5 line-clamp-1 sm:line-clamp-none">
+              Em andamento ou hoje
             </p>
           </CardContent>
         </Card>
 
         <Card className="bg-sky-50/40 border-sky-200/70 shadow-2xs">
-          <CardHeader className="p-4 pb-1">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-sky-800 flex items-center justify-between">
+          <CardHeader className="p-3 sm:p-4 pb-1">
+            <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-sky-800 flex items-center justify-between">
               <span>Programadas</span>
-              <Calendar className="h-4 w-4 text-sky-500" />
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-sky-500 shrink-0" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <div className="text-2xl font-bold text-sky-700">{stats.programadas}</div>
-            <p className="text-[11px] text-sky-600/80 mt-0.5">Degustações agendadas futuras</p>
+          <CardContent className="p-3 sm:p-4 pt-1">
+            <div className="text-xl sm:text-2xl font-bold text-sky-700">{stats.programadas}</div>
+            <p className="text-[10px] sm:text-[11px] text-sky-600/80 mt-0.5 line-clamp-1 sm:line-clamp-none">
+              Agendadas futuras
+            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-amber-50/40 border-amber-200/70 shadow-2xs">
-          <CardHeader className="p-4 pb-1">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-amber-800 flex items-center justify-between">
-              <span>Aguardando Resultados</span>
-              <Clock className="h-4 w-4 text-amber-500" />
+          <CardHeader className="p-3 sm:p-4 pb-1">
+            <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-amber-800 flex items-center justify-between">
+              <span>Aguardando</span>
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500 shrink-0" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <div className="text-2xl font-bold text-amber-700">{stats.aguardando}</div>
-            <p className="text-[11px] text-amber-600/80 mt-0.5">Eventos realizados pendentes de fechamento</p>
+          <CardContent className="p-3 sm:p-4 pt-1">
+            <div className="text-xl sm:text-2xl font-bold text-amber-700">{stats.aguardando}</div>
+            <p className="text-[10px] sm:text-[11px] text-amber-600/80 mt-0.5 line-clamp-1 sm:line-clamp-none">
+              Pendentes de apuração
+            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-navy/5 border-border shadow-2xs">
-          <CardHeader className="p-4 pb-1">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-navy flex items-center justify-between">
-              <span>Concluídas & Faturado</span>
-              <TrendingUp className="h-4 w-4 text-primary" />
+          <CardHeader className="p-3 sm:p-4 pb-1">
+            <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-navy flex items-center justify-between">
+              <span>Concluídas</span>
+              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-navy">{stats.concluidas}</span>
-              <span className="text-xs text-muted-foreground font-medium">concluídas</span>
+          <CardContent className="p-3 sm:p-4 pt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-bold text-navy">{stats.concluidas}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">concl.</span>
             </div>
-            <p className="text-xs font-semibold text-primary mt-0.5">
-              {brl(stats.faturamentoTotal)} gerados
+            <p className="text-[10px] sm:text-xs font-semibold text-primary mt-0.5 truncate">
+              {brl(stats.faturamentoTotal)}
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Barra de Filtros e Busca */}
-      <div className="rounded-xl border bg-card p-4 shadow-2xs space-y-3">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="rounded-xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
           {/* Busca textual */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por degustação, fornecedor, promotor ou loja..."
-              className="pl-9 bg-background"
+              className="pl-9 bg-background h-9 text-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Seletor de Loja */}
-            <Select value={selectedLoja} onValueChange={setSelectedLoja}>
-              <SelectTrigger className="w-[170px] bg-background">
-                <SelectValue placeholder="Loja" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODAS">Todas as Lojas</SelectItem>
-                {LOJAS_DEGUSTACOES.map((loja) => (
-                  <SelectItem key={loja} value={loja}>
-                    {loja}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="grid grid-cols-2 gap-2 flex-1 sm:flex sm:w-auto">
+              {/* Seletor de Loja */}
+              <Select value={selectedLoja} onValueChange={setSelectedLoja}>
+                <SelectTrigger className="w-full sm:w-[170px] bg-background h-9 text-xs sm:text-sm">
+                  <SelectValue placeholder="Loja" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODAS">Todas as Lojas</SelectItem>
+                  {LOJAS_DEGUSTACOES.map((loja) => (
+                    <SelectItem key={loja} value={loja}>
+                      {loja}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Seletor de Status */}
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[180px] bg-background">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODOS">Todos os Status</SelectItem>
-                <SelectItem value="Programada">Programada</SelectItem>
-                <SelectItem value="Ativa">Ativa</SelectItem>
-                <SelectItem value="Aguardando Resultados">Aguardando Resultados</SelectItem>
-                <SelectItem value="Concluída">Concluída</SelectItem>
-                <SelectItem value="Cancelada">Cancelada</SelectItem>
-              </SelectContent>
-            </Select>
+              {/* Seletor de Status */}
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-full sm:w-[180px] bg-background h-9 text-xs sm:text-sm">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODOS">Todos os Status</SelectItem>
+                  <SelectItem value="Programada">Programada</SelectItem>
+                  <SelectItem value="Ativa">Ativa</SelectItem>
+                  <SelectItem value="Aguardando Resultados">Aguardando Resultados</SelectItem>
+                  <SelectItem value="Concluída">Concluída</SelectItem>
+                  <SelectItem value="Cancelada">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Toggle de Visualização (Tabela / Cards) */}
-            <div className="flex border rounded-md p-0.5 bg-muted/40 shrink-0">
+            <div className="flex border rounded-md p-0.5 bg-muted/40 shrink-0 h-9 items-center">
               <Button
                 variant={viewMode === "table" ? "secondary" : "ghost"}
                 size="icon"
@@ -353,44 +359,46 @@ function DegustacoesPage() {
         </div>
 
         {/* Filtros Rápidos de Período */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/60 text-xs">
-          <span className="text-muted-foreground font-semibold flex items-center gap-1">
-            <Filter className="h-3 w-3" /> Período:
-          </span>
-          <Button
-            size="sm"
-            variant={periodo === "TODOS" ? "secondary" : "ghost"}
-            className="h-7 text-xs"
-            onClick={() => setPeriodo("TODOS")}
-          >
-            Todas as Datas
-          </Button>
-          <Button
-            size="sm"
-            variant={periodo === "HOJE" ? "secondary" : "ghost"}
-            className="h-7 text-xs"
-            onClick={() => setPeriodo("HOJE")}
-          >
-            Hoje
-          </Button>
-          <Button
-            size="sm"
-            variant={periodo === "SEMANA" ? "secondary" : "ghost"}
-            className="h-7 text-xs"
-            onClick={() => setPeriodo("SEMANA")}
-          >
-            Esta Semana
-          </Button>
-          <Button
-            size="sm"
-            variant={periodo === "MES" ? "secondary" : "ghost"}
-            className="h-7 text-xs"
-            onClick={() => setPeriodo("MES")}
-          >
-            Este Mês
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1 sm:mx-0 sm:px-0">
+            <span className="text-muted-foreground font-semibold flex items-center gap-1 shrink-0 text-[11px] sm:text-xs">
+              <Filter className="h-3 w-3" /> Período:
+            </span>
+            <Button
+              size="sm"
+              variant={periodo === "TODOS" ? "secondary" : "ghost"}
+              className="h-7 text-xs shrink-0 px-2.5"
+              onClick={() => setPeriodo("TODOS")}
+            >
+              Todas as Datas
+            </Button>
+            <Button
+              size="sm"
+              variant={periodo === "HOJE" ? "secondary" : "ghost"}
+              className="h-7 text-xs shrink-0 px-2.5"
+              onClick={() => setPeriodo("HOJE")}
+            >
+              Hoje
+            </Button>
+            <Button
+              size="sm"
+              variant={periodo === "SEMANA" ? "secondary" : "ghost"}
+              className="h-7 text-xs shrink-0 px-2.5"
+              onClick={() => setPeriodo("SEMANA")}
+            >
+              Esta Semana
+            </Button>
+            <Button
+              size="sm"
+              variant={periodo === "MES" ? "secondary" : "ghost"}
+              className="h-7 text-xs shrink-0 px-2.5"
+              onClick={() => setPeriodo("MES")}
+            >
+              Este Mês
+            </Button>
+          </div>
 
-          <span className="ml-auto text-muted-foreground">
+          <span className="text-[11px] sm:text-xs text-muted-foreground shrink-0 text-right">
             Exibindo <strong>{filteredDegustacoes.length}</strong> de{" "}
             <strong>{degustacoes.length}</strong> degustações
           </span>
@@ -410,7 +418,7 @@ function DegustacoesPage() {
         />
       ) : viewMode === "table" ? (
         /* VISUALIZAÇÃO EM TABELA */
-        <div className="rounded-xl border bg-card overflow-hidden shadow-2xs">
+        <div className="rounded-xl border bg-card overflow-x-auto shadow-2xs">
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
@@ -503,11 +511,11 @@ function DegustacoesPage() {
         </div>
       ) : (
         /* VISUALIZAÇÃO EM CARDS */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredDegustacoes.map((item) => (
             <div
               key={item.id}
-              className="rounded-xl border bg-card p-5 hover:border-primary/50 transition-all hover:shadow-md cursor-pointer flex flex-col justify-between space-y-4"
+              className="rounded-xl border bg-card p-4 sm:p-5 hover:border-primary/50 transition-all hover:shadow-md active:scale-[0.99] cursor-pointer flex flex-col justify-between space-y-3 sm:space-y-4"
               onClick={() => handleOpenDetalhes(item)}
             >
               <div className="space-y-2.5">
@@ -569,7 +577,7 @@ function DegustacoesPage() {
               <Button
                 size="sm"
                 variant="outline"
-                className="w-full text-xs font-semibold text-navy"
+                className="w-full text-xs font-semibold text-navy h-9 sm:h-8 hover:bg-primary/5 active:bg-primary/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleOpenDetalhes(item);

@@ -580,20 +580,20 @@ export function AgendamentoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-xl max-h-[92vh] overflow-y-auto p-4 sm:p-6 rounded-xl">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogHeader>
-            <DialogTitle className="text-navy text-xl">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-navy text-lg sm:text-xl font-bold">
               {degustacaoToEdit ? "Editar Degustação" : "Novo Agendamento de Degustação"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {degustacaoToEdit
                 ? "Atualize os dados e horários previstos da degustação."
                 : "Cadastre uma nova sessão de degustação vinculando a loja, fornecedor e promotor."}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 space-y-4">
+          <div className="py-3 sm:py-4 space-y-3.5 sm:space-y-4">
             {/* Loja */}
             <div className="space-y-1.5">
               <Label htmlFor="loja-select" className="text-xs font-semibold">
@@ -603,7 +603,7 @@ export function AgendamentoDialog({
                 value={selectedLoja}
                 onValueChange={(val) => setValue("loja", val, { shouldValidate: true })}
               >
-                <SelectTrigger id="loja-select">
+                <SelectTrigger id="loja-select" className="h-10 text-sm">
                   <SelectValue placeholder="Selecione a loja..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -634,7 +634,7 @@ export function AgendamentoDialog({
                     aria-expanded={openFornecedorPopover}
                     disabled={loadingFornecedores}
                     className={cn(
-                      "w-full justify-between font-normal text-left h-10 px-3 border-input bg-background",
+                      "w-full justify-between font-normal text-left h-10 px-3 border-input bg-background text-sm",
                       !selectedFornecedor && "text-muted-foreground",
                       errors.fornecedor_id && "border-red-500 ring-1 ring-red-500",
                     )}
@@ -642,7 +642,7 @@ export function AgendamentoDialog({
                     {selectedFornecedor ? (
                       <span className="truncate flex items-center gap-2">
                         {selectedFornecedor.codigo_interno && (
-                          <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground">
+                          <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground shrink-0">
                             [{selectedFornecedor.codigo_interno}]
                           </span>
                         )}
@@ -651,7 +651,7 @@ export function AgendamentoDialog({
                         </span>
                       </span>
                     ) : (
-                      <span>
+                      <span className="truncate">
                         {loadingFornecedores
                           ? "Carregando fornecedores..."
                           : "Clique para buscar ou digitar o fornecedor..."}
@@ -660,7 +660,7 @@ export function AgendamentoDialog({
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[320px] p-0 shadow-lg" align="start">
+                <PopoverContent className="w-[calc(100vw-2.5rem)] sm:w-[var(--radix-popover-trigger-width)] max-w-lg p-0 shadow-lg" align="start">
                   <Command shouldFilter={false} className="w-full">
                     <div className="flex items-center border-b px-3">
                       <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -749,29 +749,29 @@ export function AgendamentoDialog({
             </div>
 
             {/* Data e Horários */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+              <div className="col-span-2 sm:col-span-1 space-y-1.5">
                 <Label htmlFor="data-input" className="text-xs font-semibold">
                   Data do Evento <span className="text-red-500">*</span>
                 </Label>
-                <Input id="data-input" type="date" {...register("data")} />
+                <Input id="data-input" type="date" className="h-10 text-sm" {...register("data")} />
                 {errors.data && (
                   <p className="text-xs text-red-600 font-medium">{errors.data.message}</p>
                 )}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="col-span-1 space-y-1.5">
                 <Label htmlFor="horario-inicio" className="text-xs font-semibold">
                   Início
                 </Label>
-                <Input id="horario-inicio" type="time" {...register("horario_inicio")} />
+                <Input id="horario-inicio" type="time" className="h-10 text-sm" {...register("horario_inicio")} />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="col-span-1 space-y-1.5">
                 <Label htmlFor="horario-fim" className="text-xs font-semibold">
                   Término
                 </Label>
-                <Input id="horario-fim" type="time" {...register("horario_fim")} />
+                <Input id="horario-fim" type="time" className="h-10 text-sm" {...register("horario_fim")} />
               </div>
             </div>
             {errors.horario_fim && (
@@ -907,66 +907,70 @@ export function AgendamentoDialog({
 
               {/* Painel de Inclusão de Produto / Oferta */}
               {showAddProduct && (
-                <div className="p-3 rounded-lg border bg-muted/20 space-y-3 animate-in fade-in-50 duration-200">
+                <div className="p-3 sm:p-3.5 rounded-lg border bg-muted/20 space-y-3 animate-in fade-in-50 duration-200">
                   <div className="flex items-center justify-between border-b pb-2">
-                    {/* Toggle entre Oferta em Campanha e Produto Regular */}
-                    <div className="flex items-center gap-1.5 p-0.5 bg-muted rounded-md text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setAddMode("oferta")}
-                        className={cn(
-                          "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition",
-                          addMode === "oferta"
-                            ? "bg-primary text-primary-foreground shadow-2xs"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        <Tag className="h-3.5 w-3.5" />
-                        Oferta em Campanha
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAddMode("produto")}
-                        className={cn(
-                          "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition",
-                          addMode === "produto"
-                            ? "bg-primary text-primary-foreground shadow-2xs"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        <Package className="h-3.5 w-3.5" />
-                        Produto Regular
-                      </button>
-                    </div>
-
+                    <span className="text-xs font-semibold text-navy flex items-center gap-1.5">
+                      <Plus className="h-3.5 w-3.5 text-primary" />
+                      Adicionar Item à Degustação
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowAddProduct(false)}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-full active:scale-95"
                     >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
 
+                  {/* Toggle entre Oferta em Campanha e Produto Regular */}
+                  <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setAddMode("oferta")}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-semibold transition min-h-[36px]",
+                        addMode === "oferta"
+                          ? "bg-primary text-primary-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                      )}
+                    >
+                      <Tag className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Oferta Campanha</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddMode("produto")}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-semibold transition min-h-[36px]",
+                        addMode === "produto"
+                          ? "bg-primary text-primary-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                      )}
+                    >
+                      <Package className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Produto Regular</span>
+                    </button>
+                  </div>
+
                   {addMode === "oferta" ? (
                     <div>
                       <div className="mb-2 text-[11px] text-muted-foreground flex items-center gap-1">
-                        <Tag className="h-3 w-3 text-emerald-600" />
-                        Selecione a oferta específica da campanha desejada (Ex: Alfajores Odara):
+                        <Tag className="h-3 w-3 text-emerald-600 shrink-0" />
+                        Selecione a oferta específica da campanha desejada:
                       </div>
                       <OfertaSearch
                         defaultCampanhaId={selectedCampanhaId || undefined}
                         onSelect={handleAddOfertaAgendamento}
-                        placeholder="Buscar oferta específica por produto, código, GTIN ou campanha..."
+                        placeholder="Buscar oferta por produto, código, GTIN ou campanha..."
                         autoFocus
                       />
                     </div>
                   ) : (
                     <div>
                       <div className="mb-2 text-[11px] text-muted-foreground flex items-center gap-1">
-                        <Package className="h-3 w-3 text-blue-600" />
+                        <Package className="h-3 w-3 text-blue-600 shrink-0" />
                         Buscar produto regular cadastrado no catálogo geral:
                       </div>
                       <ProductSearch
@@ -988,34 +992,34 @@ export function AgendamentoDialog({
                   Nenhum produto vinculado ainda. Você pode adicionar produtos agora ou durante a execução do evento.
                 </div>
               ) : (
-                <ul className="grid gap-1.5 max-h-52 overflow-y-auto pr-1">
+                <ul className="grid gap-2 max-h-56 overflow-y-auto pr-1">
                   {produtosIniciais.map((item) => (
                     <li
                       key={item.tempId}
-                      className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-2 text-xs shadow-2xs hover:border-primary/40 transition"
+                      className="flex items-center justify-between gap-2.5 rounded-lg border bg-card p-2.5 sm:px-3 sm:py-2 text-xs shadow-2xs hover:border-primary/40 transition"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-navy truncate">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-navy truncate block max-w-full">
                             {item.descricao}
                           </span>
                           {item.codigo && (
-                            <span className="font-mono text-[10px] bg-muted px-1 py-0.5 rounded text-muted-foreground">
+                            <span className="font-mono text-[10px] bg-muted px-1 py-0.5 rounded text-muted-foreground shrink-0">
                               Cód: {item.codigo}
                             </span>
                           )}
                           {item.oferta_id ? (
                             <Badge
                               variant="outline"
-                              className="text-[10px] h-4 px-1.5 bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 gap-1"
+                              className="text-[10px] h-4 px-1.5 bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 gap-1 shrink-0"
                             >
                               <Tag className="h-2.5 w-2.5" />
-                              Oferta {item.campanha_nome ? `• ${item.campanha_nome}` : "Campanha"}
+                              Oferta {item.campanha_nome ? `• ${item.campanha_nome}` : ""}
                             </Badge>
                           ) : (
                             <Badge
                               variant="outline"
-                              className="text-[10px] h-4 px-1.5 bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 gap-1"
+                              className="text-[10px] h-4 px-1.5 bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 gap-1 shrink-0"
                             >
                               <Package className="h-2.5 w-2.5" />
                               Regular
@@ -1023,7 +1027,7 @@ export function AgendamentoDialog({
                           )}
                         </div>
 
-                        <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
+                        <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground flex-wrap">
                           {item.oferta_id ? (
                             <>
                               <span>De: <span className="line-through">{brl(item.preco_base)}</span></span>
@@ -1042,10 +1046,10 @@ export function AgendamentoDialog({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRemoveProdutoAgendamento(item)}
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                        className="h-8 w-8 sm:h-7 sm:w-7 p-0 text-muted-foreground hover:text-destructive shrink-0 active:scale-95"
                         title="Remover produto"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                       </Button>
                     </li>
                   ))}
@@ -1129,16 +1133,21 @@ export function AgendamentoDialog({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-2 pt-3 border-t mt-3">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={submitting}
+              className="w-full sm:w-auto h-11 sm:h-9 text-xs sm:text-sm font-medium"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={submitting} className="bg-primary hover:bg-primary/90">
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full sm:w-auto h-11 sm:h-9 bg-primary hover:bg-primary/90 text-xs sm:text-sm font-semibold"
+            >
               {submitting ? "Salvando..." : degustacaoToEdit ? "Salvar Alterações" : "Criar Agendamento"}
             </Button>
           </DialogFooter>
