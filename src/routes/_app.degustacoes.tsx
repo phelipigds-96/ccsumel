@@ -42,6 +42,7 @@ import { DegustacaoDetalhesSheet } from "@/components/degustacoes/degustacao-det
 import {
   listDegustacoes,
   LOJAS_DEGUSTACOES,
+  getStatusEfetivoDegustacao,
   type Degustacao,
   type DegustacaoWithProdutosCount,
   type DegustacaoStatus,
@@ -151,16 +152,20 @@ function DegustacoesPage() {
     let faturamentoTotal = 0;
 
     degustacoes.forEach((d) => {
-      if (d.status === "Ativa" || (d.data === todayStr && d.status !== "Cancelada")) {
+      const statusEfetivo = getStatusEfetivoDegustacao(d);
+      if (
+        statusEfetivo === "Ativa" ||
+        (d.data === todayStr && statusEfetivo !== "Cancelada" && statusEfetivo !== "Concluída")
+      ) {
         hojeAtivas++;
       }
-      if (d.status === "Programada") {
+      if (statusEfetivo === "Programada") {
         programadas++;
       }
-      if (d.status === "Aguardando Resultados") {
+      if (statusEfetivo === "Aguardando Resultados") {
         aguardando++;
       }
-      if (d.status === "Concluída") {
+      if (statusEfetivo === "Concluída") {
         concluidas++;
         faturamentoTotal += Number(d.faturamento_total_calculado) || 0;
       }

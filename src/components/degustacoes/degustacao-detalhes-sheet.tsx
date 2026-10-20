@@ -76,6 +76,8 @@ import {
   reabrirDegustacao,
   mudarStatusDegustacao,
   updateDegustacao,
+  getTodayDegustacaoIso,
+  getStatusEfetivoDegustacao,
   type Degustacao,
   type DegustacaoProduto,
   type DegustacaoHistorico,
@@ -205,9 +207,16 @@ export function DegustacaoDetalhesSheet({
     }
   };
 
-  // Sincroniza dados da degustação selecionada
+  // Sincroniza dados da degustação selecionada com status de ciclo de vida atualizado
   useEffect(() => {
-    setCurrentDegustacao(degustacao);
+    if (degustacao) {
+      setCurrentDegustacao({
+        ...degustacao,
+        status: getStatusEfetivoDegustacao(degustacao),
+      });
+    } else {
+      setCurrentDegustacao(null);
+    }
     if (degustacao && open) {
       loadProdutos(degustacao.id);
       loadHistorico(degustacao.id);
@@ -422,7 +431,26 @@ export function DegustacaoDetalhesSheet({
         quantidade_vendida: values.quantidade_vendida,
       });
 
-      toast.success("Resultados do produto atualizados!");
+      // Se a degustação ainda estava em 'Programada' ou 'Ativa', atualiza seu status para 'Aguardando Resultados'
+      // para refletir que a apuração de resultados já foi iniciada
+      let statusAvisado = false;
+      if (currentDegustacao.status === "Programada" || currentDegustacao.status === "Ativa") {
+        try {
+          const updated = await updateDegustacao(currentDegustacao.id, {
+            status: "Aguardando Resultados",
+          });
+          setCurrentDegustacao(updated);
+          statusAvisado = true;
+        } catch (statusErr) {
+          console.warn("Avanço de status para Aguardando Resultados:", statusErr);
+        }
+      }
+
+      toast.success("Resultados do produto salvos!", {
+        description: statusAvisado
+          ? "Status da degustação avançou para 'Aguardando Resultados'. Ao terminar de lançar os itens, clique em 'Apurar e Concluir'."
+          : undefined,
+      });
       await loadProdutos(currentDegustacao.id);
       await loadHistorico(currentDegustacao.id);
       onRefreshList();
@@ -478,8 +506,8 @@ export function DegustacaoDetalhesSheet({
     }
   };
 
-  // Concluir degustação (com validação de produtos)
-  const handleOpenConcluirModal = () => {
+  // Concluir degustação (com validação de produtos e auto-save de edições pendentes)
+  const handleOpenConcluirModal = async () => {
     if (!currentDegustacao) return;
     if (produtos.length === 0) {
       toast.error(
@@ -487,6 +515,31 @@ export function DegustacaoDetalhesSheet({
       );
       return;
     }
+
+    // Auto-save: Salva automaticamente valores pendentes que ainda não tenham sido gravados manualmente
+    let houveAlteracao = false;
+    for (const p of produtos) {
+      const val = editValues[p.id];
+      if (
+        val &&
+        (Number(val.quantidade_vendida) !== Number(p.quantidade_vendida) ||
+          Number(val.preco_praticado) !== Number(p.preco_praticado))
+      ) {
+        houveAlteracao = true;
+        try {
+          await updateDegustacaoProduto(p.id, {
+            preco_praticado: Number(val.preco_praticado) || 0,
+            quantidade_vendida: Number(val.quantidade_vendida) || 0,
+          });
+        } catch (e) {
+          console.warn("Falha no auto-save de item pendente antes de concluir:", e);
+        }
+      }
+    }
+    if (houveAlteracao) {
+      await loadProdutos(currentDegustacao.id);
+    }
+
     setConcluirModalOpen(true);
   };
 
@@ -668,13 +721,25 @@ export function DegustacaoDetalhesSheet({
             {isMaster ? (
               <div className="mt-3.5 sm:mt-4 pt-3 border-t border-border/60 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
                 {currentDegustacao.status === "Programada" && (
-                  <Button
-                    size="sm"
-                    className="col-span-2 sm:col-span-1 h-10 sm:h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs"
-                    onClick={() => handleStatusChange("Ativa")}
-                  >
-                    <Play className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1.5" /> Iniciar Degustação
-                  </Button>
+                  <>
+                    {currentDegustacao.data < getTodayDegustacaoIso() ? (
+                      <Button
+                        size="sm"
+                        className="col-span-2 sm:col-span-1 h-10 sm:h-8 bg-primary hover:bg-primary/90 text-white font-semibold text-xs"
+                        onClick={handleOpenConcluirModal}
+                      >
+                        <CheckCircle className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1.5" /> Apurar e Concluir
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="col-span-2 sm:col-span-1 h-10 sm:h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs"
+                        onClick={() => handleStatusChange("Ativa")}
+                      >
+                        <Play className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1.5" /> Iniciar Degustação
+                      </Button>
+                    )}
+                  </>
                 )}
 
                 {currentDegustacao.status === "Ativa" && (
@@ -1228,6 +1293,34 @@ export function DegustacaoDetalhesSheet({
                   <div className="text-sm sm:text-xl font-extrabold text-primary truncate">{brl(totais.fat)}</div>
                 </div>
               </div>
+
+              {/* Caixa de Finalização e Oficialização de Resultados */}
+              {isMaster &&
+                currentDegustacao.status !== "Cancelada" &&
+                currentDegustacao.status !== "Concluída" &&
+                produtos.length > 0 && (
+                  <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                    <div className="space-y-0.5 text-center sm:text-left">
+                      <p className="text-xs font-bold text-navy flex items-center justify-center sm:justify-start gap-1.5">
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                        Finalizar e Oficializar Degustação
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {currentDegustacao.data <= getTodayDegustacaoIso()
+                          ? "Esta degustação já foi executada em loja. Oficialize os números de vendas para consolidar no histórico e na auditoria."
+                          : "Ao concluir, o status mudará para 'Concluída' e os resultados financeiros serão consolidados permanentemente."}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full sm:w-auto h-9 px-4 bg-primary hover:bg-primary/90 text-white font-semibold text-xs gap-1.5 shrink-0 shadow-xs"
+                      onClick={handleOpenConcluirModal}
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Apurar e Concluir
+                    </Button>
+                  </div>
+                )}
             </TabsContent>
 
             {/* CONTEÚDO TAB DETALHES DO AGENDAMENTO */}

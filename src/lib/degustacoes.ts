@@ -20,6 +20,76 @@ export const DEGUSTACAO_STATUS_LIST: DegustacaoStatus[] = [
   "Cancelada",
 ];
 
+/**
+ * Retorna a data de hoje (local) no formato YYYY-MM-DD.
+ */
+export function getTodayDegustacaoIso(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Retorna o status de negócio real (efetivo) de uma degustação baseado em:
+ * 1. Resultados de venda lançados: Se já foram registradas vendas (quantidade_total_vendida > 0 ou faturamento > 0),
+ *    a degustação já ocorreu e está em apuração ("Aguardando Resultados").
+ * 2. Passagem da data: Se a data do evento já passou (data < hoje), está em "Aguardando Resultados".
+ * 3. Evento no dia de hoje:
+ *    - Se o horário de término já passou hoje, avança para "Aguardando Resultados".
+ *    - Se o horário de início já passou (ou está ocorrendo), avança para "Ativa".
+ *    - Se o horário de início é futuro hoje, permanece "Programada".
+ * 4. Concluída e Cancelada são estados terminais definitivos e nunca mudam.
+ */
+export function getStatusEfetivoDegustacao(d: {
+  data: string;
+  status: DegustacaoStatus;
+  horario_inicio?: string | null;
+  horario_fim?: string | null;
+  quantidade_total_vendida?: number | string | null;
+  faturamento_total_calculado?: number | string | null;
+}): DegustacaoStatus {
+  if (d.status === "Concluída" || d.status === "Cancelada") {
+    return d.status;
+  }
+
+  const qtdVendida = Number(d.quantidade_total_vendida) || 0;
+  const fatCalculado = Number(d.faturamento_total_calculado) || 0;
+
+  // 1. Se já foram informadas vendas/resultados na degustação, ela já ocorreu e está em apuração
+  if (qtdVendida > 0 || fatCalculado > 0) {
+    return "Aguardando Resultados";
+  }
+
+  const hoje = getTodayDegustacaoIso();
+
+  // 2. Se a data do evento já passou (dias anteriores a hoje)
+  if (d.data < hoje) {
+    return "Aguardando Resultados";
+  }
+
+  // 3. Se o evento está agendado para o dia de hoje
+  if (d.data === hoje) {
+    const agora = new Date();
+    const horaAtual = `${String(agora.getHours()).padStart(2, "0")}:${String(agora.getMinutes()).padStart(2, "0")}:${String(agora.getSeconds()).padStart(2, "0")}`;
+
+    // Se possui horário de término e esse horário já passou hoje
+    if (d.horario_fim && d.horario_fim <= horaAtual) {
+      return "Aguardando Resultados";
+    }
+
+    // Se possui horário de início e esse horário já iniciou hoje
+    if (d.horario_inicio && d.horario_inicio <= horaAtual) {
+      if (d.status === "Programada") {
+        return "Ativa";
+      }
+    }
+  }
+
+  return d.status;
+}
+
 export const LOJAS_DEGUSTACOES = [
   "Matriz",
   "Filial Esteio",
@@ -56,10 +126,6 @@ export async function listDegustacoes(
     query = query.eq("loja", filters.loja);
   }
 
-  if (filters.status && filters.status !== "TODOS") {
-    query = query.eq("status", filters.status);
-  }
-
   if (filters.dataInicio) {
     query = query.gte("data", filters.dataInicio);
   }
@@ -82,16 +148,46 @@ export async function listDegustacoes(
     throw error;
   }
 
-  return (data ?? []).map((row: any) => {
+  const rows = (data ?? []).map((row: any) => {
     const produtosCount = Array.isArray(row.degustacao_produtos)
       ? row.degustacao_produtos[0]?.count ?? 0
       : 0;
     const { degustacao_produtos, ...rest } = row;
+    const effectiveStatus = getStatusEfetivoDegustacao(rest);
+
+    // Se a data já passou e o status no banco ainda estiver como 'Programada' ou 'Ativa',
+    // sincronizamos em background para persistir o avanço para 'Aguardando Resultados'
+    if (
+      rest.status !== effectiveStatus &&
+      (rest.status === "Programada" || rest.status === "Ativa")
+    ) {
+      supabase
+        .from("degustacoes")
+        .update({ status: effectiveStatus, updated_at: new Date().toISOString() })
+        .eq("id", rest.id)
+        .then(({ error: syncErr }) => {
+          if (syncErr) {
+            console.warn(
+              `[degustacoes] Sincronização de status para degustação ${rest.id}:`,
+              syncErr.message,
+            );
+          }
+        });
+    }
+
     return {
       ...rest,
+      status: effectiveStatus,
       produtos_count: produtosCount,
     } as DegustacaoWithProdutosCount;
   });
+
+  // Filtra por status em memória usando o status de negócio real (efetivo)
+  if (filters.status && filters.status !== "TODOS") {
+    return rows.filter((r) => r.status === filters.status);
+  }
+
+  return rows;
 }
 
 /**
@@ -107,6 +203,21 @@ export async function getDegustacaoById(id: string): Promise<Degustacao | null> 
   if (error) {
     console.error("Erro ao obter degustação por ID:", error);
     throw error;
+  }
+
+  if (!data) return null;
+
+  const effectiveStatus = getStatusEfetivoDegustacao(data);
+  if (
+    data.status !== effectiveStatus &&
+    (data.status === "Programada" || data.status === "Ativa")
+  ) {
+    supabase
+      .from("degustacoes")
+      .update({ status: effectiveStatus, updated_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .then();
+    return { ...data, status: effectiveStatus };
   }
 
   return data;
@@ -206,6 +317,24 @@ export async function concluirDegustacao(
     throw new Error(
       "Não é possível concluir uma degustação sem produtos vinculados. Adicione pelo menos um produto antes de concluir.",
     );
+  }
+
+  // 2. Se a degustação no banco estiver em 'Programada' ou 'Ativa', transitamos para 'Aguardando Resultados'
+  // primeiro para satisfazer a máquina de estados do banco (fn_degustacoes_audit proíbe ir de Programada direto para Concluída)
+  const { data: current } = await supabase
+    .from("degustacoes")
+    .select("status")
+    .eq("id", id)
+    .single();
+
+  if (current && (current.status === "Programada" || current.status === "Ativa")) {
+    const { error: prepErr } = await supabase
+      .from("degustacoes")
+      .update({ status: "Aguardando Resultados", updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (prepErr) {
+      console.warn("Transição preparatória para Aguardando Resultados:", prepErr.message);
+    }
   }
 
   const patch: DegustacaoUpdate = {
