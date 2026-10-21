@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 
 interface ChecklistProps {
   campanha: Campanha;
+  className?: string;
 }
 
-export function CampanhaChecklist({ campanha }: ChecklistProps) {
+export function CampanhaChecklist({ campanha, className }: ChecklistProps) {
   const { user } = useAuth();
 
   if (!user?.isAdmin) return null;
@@ -32,48 +33,48 @@ export function CampanhaChecklist({ campanha }: ChecklistProps) {
   };
 
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-bold text-navy flex items-center gap-2">
+    <div className={cn("rounded-xl border border-border/60 bg-card p-3.5 shadow-xs flex flex-col justify-between h-full", className)}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             Checklist
-            {isDone && (
-              <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                <CheckCircle2 className="h-2.5 w-2.5" />
-                Campanha pronta
-              </span>
-            )}
           </h2>
-          <div className="flex items-center gap-2">
-            <Progress value={percentage} className="h-1.5 w-20" />
-            <span className={cn("text-[10px] font-bold", isDone ? "text-emerald-600" : "text-navy")}>
-              {completed}/{total}
+          {isDone && (
+            <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">
+              <CheckCircle2 className="h-2.5 w-2.5" /> Pronta
             </span>
-          </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Progress value={percentage} className="h-1.5 w-16" />
+          <span className={cn("text-[11px] font-bold tabular-nums", isDone ? "text-emerald-600" : "text-navy")}>
+            {completed}/{total}
+          </span>
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-0.5">
         {checklist.map((item) => (
           <button
             key={item.id}
+            type="button"
             onClick={() => toggleStatus(item.id, item.status)}
             className={cn(
-              "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-all hover:bg-slate-50",
+              "flex items-center gap-2 rounded-md px-2 py-1 text-left transition-colors hover:bg-muted/50",
               item.status === "Concluída" ? "opacity-60" : "opacity-100"
             )}
           >
             <div className={cn(
-              "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+              "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors",
               item.status === "Concluída" 
                 ? "bg-emerald-500 border-emerald-500 text-white" 
-                : "bg-white border-slate-300 text-slate-300"
+                : "bg-background border-muted-foreground/30 text-transparent"
             )}>
-              {item.status === "Concluída" ? <Check className="h-3 w-3" /> : <Circle className="h-2 w-2 fill-current" />}
+              {item.status === "Concluída" ? <Check className="h-2.5 w-2.5" /> : null}
             </div>
             <span className={cn(
-              "text-xs font-medium transition-colors",
-              item.status === "Concluída" ? "text-emerald-700 line-through" : "text-navy"
+              "text-[11px] font-medium transition-colors truncate",
+              item.status === "Concluída" ? "text-muted-foreground line-through" : "text-navy"
             )}>
               {item.task}
             </span>

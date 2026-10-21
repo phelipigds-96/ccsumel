@@ -153,7 +153,7 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
 
 const BUCKET = "campanha-materiais";
 
-export function MateriaisViewer({ materiais, onGerenciar }: { materiais: MaterialApoio[]; onGerenciar?: () => void }) {
+export function MateriaisViewer({ materiais, onGerenciar, className }: { materiais: MaterialApoio[]; onGerenciar?: () => void; className?: string }) {
   const openMaterial = async (m: MaterialApoio) => {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(m.path, 3600);
     if (error || !data?.signedUrl) {
@@ -170,12 +170,12 @@ export function MateriaisViewer({ materiais, onGerenciar }: { materiais: Materia
     window.open(data.signedUrl, "_blank", "noopener");
   };
   return (
-    <div className="rounded-xl border bg-card p-4 mb-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Paperclip className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold text-navy">Anexos da campanha</h3>
-          <span className="text-xs text-muted-foreground">({materiais.length})</span>
+    <div className={`rounded-xl border border-border/60 bg-card p-3 mb-3 shadow-xs ${className ?? ""}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Paperclip className="h-3.5 w-3.5 text-primary" />
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Materiais de apoio</h3>
+          <span className="text-[11px] font-medium text-navy/70">({materiais.length})</span>
         </div>
         {onGerenciar && (
           <Button
@@ -183,20 +183,20 @@ export function MateriaisViewer({ materiais, onGerenciar }: { materiais: Materia
             variant="ghost"
             size="sm"
             onClick={onGerenciar}
-            className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/5 px-2"
+            className="h-6 text-[11px] text-primary hover:text-primary hover:bg-primary/5 px-2"
           >
-            <Pencil className="h-3.5 w-3.5 mr-1" /> Gerenciar / Anexar
+            <Pencil className="h-3 w-3 mr-1" /> Gerenciar / Anexar
           </Button>
         )}
       </div>
-      <ul className="grid gap-1.5 sm:grid-cols-2">
+      <ul className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
         {materiais.map((m) => (
-          <li key={m.path} className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
-            {m.tipo.startsWith("image/") ? <ImageIcon className="h-4 w-4 text-navy shrink-0" /> : <FileText className="h-4 w-4 text-primary shrink-0" />}
-            <button type="button" onClick={() => openMaterial(m)} className="flex-1 text-left truncate hover:underline text-navy">
+          <li key={m.path} className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/80 px-2.5 py-1.5 text-xs transition-colors hover:border-primary/30">
+            {m.tipo.startsWith("image/") ? <ImageIcon className="h-3.5 w-3.5 text-navy shrink-0" /> : <FileText className="h-3.5 w-3.5 text-primary shrink-0" />}
+            <button type="button" onClick={() => openMaterial(m)} className="flex-1 text-left truncate hover:underline text-navy font-medium text-[11px]">
               {m.nome}
             </button>
-            <span className="text-xs text-muted-foreground">{(m.tamanho / 1024).toFixed(0)} KB</span>
+            <span className="text-[10px] text-muted-foreground shrink-0">{(m.tamanho / 1024).toFixed(0)} KB</span>
           </li>
         ))}
       </ul>

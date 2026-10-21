@@ -822,48 +822,101 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
 
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-4">
-        <ArrowLeft className="h-4 w-4" /> Voltar para campanhas
-      </button>
+      {/* Breadcrumb de navegação */}
+      <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 hover:text-primary transition-colors font-medium"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Campanhas
+        </button>
+        <span className="text-muted-foreground/40">/</span>
+        <span className="text-navy font-semibold truncate max-w-[320px]">{campanha.nome}</span>
+      </div>
 
-      <PageHeader
-        title={campanha.nome}
-        description={`Vigência ${fmtDate(campanha.dataInicial)} → ${fmtDate(campanha.dataFinal)}  •  Filial: ${formatFiliais(campanha.filiais)}  •  ${campanha.descricao || "Ofertas desta campanha."}`}
-        actions={
-          <>
-            <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} mr-1`}>{statusCampanha(campanha)}</Badge>
+      {/* Header Compacto e Moderno */}
+      <div className="rounded-xl border border-border/60 bg-card p-3.5 sm:p-4 mb-3 shadow-xs">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-navy">{campanha.nome}</h1>
+              <Badge variant="outline" className={`${statusVariant[statusCampanha(campanha)]} text-[11px] font-medium py-0.5 px-2`}>
+                {statusCampanha(campanha)}
+              </Badge>
+              {campanha.clubeSumel && (
+                <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] py-0.5 px-1.5">
+                  Clube Sumel
+                </Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground/70" />
+                {fmtDate(campanha.dataInicial)} → {fmtDate(campanha.dataFinal)}
+              </span>
+              <span className="text-muted-foreground/40">•</span>
+              <span className="flex items-center gap-1" title={formatFiliais(campanha.filiais)}>
+                <MapPin className="h-3.5 w-3.5 text-primary/70" />
+                <span className="max-w-[260px] truncate">{formatFiliais(campanha.filiais)}</span>
+              </span>
+              {campanha.descricao && (
+                <>
+                  <span className="text-muted-foreground/40">•</span>
+                  <span className="truncate max-w-[300px]">{campanha.descricao}</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Ações do Header */}
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/40">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline"><Share2 className="mr-2 h-4 w-4" />Exportar</Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs font-medium">
+                  <Share2 className="mr-1.5 h-3.5 w-3.5" /> Exportar
+                </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Exportar campanha</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel className="text-xs">Exportar campanha</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={printPDF}><Printer className="mr-2 h-4 w-4" />Imprimir PDF</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCartazOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Gerar Cartazes</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCvOpen(true)}><FileDown className="mr-2 h-4 w-4" />CresceVendas (.txt)</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDpOpen(true)}><ListOrdered className="mr-2 h-4 w-4" />Descrição + Preço</DropdownMenuItem>
+                <DropdownMenuItem onClick={printPDF} className="text-xs"><Printer className="mr-2 h-3.5 w-3.5" />Imprimir PDF</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCartazOpen(true)} className="text-xs"><ImageIcon className="mr-2 h-3.5 w-3.5" />Gerar Cartazes</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCvOpen(true)} className="text-xs"><FileDown className="mr-2 h-3.5 w-3.5" />CresceVendas (.txt)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDpOpen(true)} className="text-xs"><ListOrdered className="mr-2 h-3.5 w-3.5" />Descrição + Preço</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
             {!readOnly && (
               <>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={openEditCampanha}
-                  className="border-primary/30 text-primary hover:bg-primary/5"
+                  className="h-8 text-xs font-medium border-border/80 hover:bg-muted/50"
                   title="Editar campanha e anexar arquivos"
                 >
-                  <Pencil className="mr-2 h-4 w-4" /> Editar Campanha
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Editar
                 </Button>
-                <Button variant="outline" onClick={() => setOportunidadesOpen(true)} className="border-primary/30 text-primary hover:bg-primary/5">
-                  <Target className="mr-2 h-4 w-4" /> Banco de Oportunidades
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOportunidadesOpen(true)}
+                  className="h-8 text-xs font-medium border-primary/20 text-primary hover:bg-primary/5"
+                >
+                  <Target className="mr-1.5 h-3.5 w-3.5" /> Oportunidades
                 </Button>
-                <Button onClick={openNew} className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Nova Oferta</Button>
+                <Button
+                  size="sm"
+                  onClick={openNew}
+                  className="h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Nova Oferta
+                </Button>
               </>
             )}
-          </>
-        }
-      />
+          </div>
+        </div>
+      </div>
 
       <CresceVendasDialog campanha={campanha} ofertas={filtered} open={cvOpen} onOpenChange={setCvOpen} />
       <DescricaoPrecoDialog campanha={campanha} ofertas={filtered} open={dpOpen} onOpenChange={setDpOpen} />
@@ -879,7 +932,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             descricao: o.descricao,
             custo: o.custo,
             precoNormal: o.preco_venda,
-            precoPromocional: o.preco_venda, // Inicia igual
+            precoPromocional: o.preco_venda,
           };
           setEditing(novaOferta);
           setIsNew(true);
@@ -888,98 +941,133 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         }}
       />
 
-
-
-
-      {/* Resumo Sell Out da campanha */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-4">
-        <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
-          <span className="absolute inset-y-0 left-0 w-1 bg-primary" />
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <DollarSign className="h-4 w-4 text-primary" /> Verba Sell Out
+      {/* Resumo da Campanha e Checklist integrados lado a lado */}
+      <div className="grid gap-2.5 lg:grid-cols-12 mb-3">
+        {/* KPIs (8 colunas em telas médias/grandes) */}
+        <div className="lg:col-span-7 xl:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          {/* Card 1: Sellout */}
+          <div className="rounded-xl border border-border/60 bg-card p-3 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <DollarSign className="h-3.5 w-3.5 text-primary" /> Verba Sell Out
+            </div>
+            <div className="mt-1.5">
+              <div className="text-lg sm:text-xl font-bold tracking-tight text-navy">{brl(selloutStats.total)}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">A cobrar dos fornecedores</div>
+            </div>
           </div>
-          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{brl(selloutStats.total)}</div>
-          <div className="mt-1 text-xs text-muted-foreground">A cobrar dos fornecedores</div>
-        </div>
-        <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
-          <span className="absolute inset-y-0 left-0 w-1 bg-navy/30" />
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <Tag className="h-4 w-4 text-navy" /> Ofertas com verba
-          </div>
-          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{selloutStats.qtd}</div>
-          <div className="mt-1 text-xs text-muted-foreground">de {ofertas.length} oferta(s) na campanha</div>
-        </div>
-        <div
-          onClick={!readOnly ? openEditCampanha : undefined}
-          className={`relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md ${!readOnly ? "cursor-pointer hover:border-primary/40 group" : ""}`}
-          title={!readOnly ? "Clique para gerenciar ou anexar arquivos" : undefined}
-        >
-          <span className="absolute inset-y-0 left-0 w-1 bg-navy/30" />
-          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <Paperclip className="h-4 w-4 text-primary" /> Anexos da campanha
-            </span>
-            {!readOnly && (
-              <span className="text-[10px] text-primary group-hover:underline flex items-center gap-0.5 font-normal">
-                <Pencil className="h-3 w-3" /> gerenciar
+
+          {/* Card 2: Ofertas */}
+          <div className="rounded-xl border border-border/60 bg-card p-3 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5 text-navy" /> Ofertas
               </span>
-            )}
+              {selloutStats.qtd > 0 && (
+                <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded font-medium">
+                  {selloutStats.qtd} c/ verba
+                </span>
+              )}
+            </div>
+            <div className="mt-1.5">
+              <div className="text-lg sm:text-xl font-bold tracking-tight text-navy">
+                {ofertas.length} <span className="text-xs font-normal text-muted-foreground">produtos</span>
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {selloutStats.qtd === 0 ? "Nenhuma com verba" : `${selloutStats.qtd} com verba`}
+              </div>
+            </div>
           </div>
-          <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{campanha.materiais.length}</div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            {!readOnly ? "Materiais de apoio • Clique para gerenciar" : "Materiais de apoio para as lojas"}
+
+          {/* Card 3: Anexos */}
+          <div
+            onClick={!readOnly ? openEditCampanha : undefined}
+            className={`rounded-xl border border-border/60 bg-card p-3 shadow-xs flex flex-col justify-between transition-colors ${!readOnly ? "cursor-pointer hover:border-primary/40 group" : ""}`}
+            title={!readOnly ? "Clique para gerenciar ou anexar arquivos" : undefined}
+          >
+            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Paperclip className="h-3.5 w-3.5 text-primary" /> Anexos
+              </span>
+              {!readOnly && (
+                <span className="text-[9px] text-primary group-hover:underline font-normal lowercase flex items-center gap-0.5">
+                  <Pencil className="h-2.5 w-2.5" /> gerenciar
+                </span>
+              )}
+            </div>
+            <div className="mt-1.5">
+              <div className="text-lg sm:text-xl font-bold tracking-tight text-navy">
+                {campanha.materiais.length} <span className="text-xs font-normal text-muted-foreground">anexo(s)</span>
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {!readOnly ? "Clique para gerenciar" : "Materiais de apoio"}
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Checklist (4 colunas em telas grandes, perfeitamente alinhado) */}
+        <div className="lg:col-span-5 xl:col-span-4">
+          <CampanhaChecklist campanha={campanha} className="h-full" />
         </div>
       </div>
 
-      <div className="mb-6">
-        <CampanhaChecklist campanha={campanha} />
-      </div>
-
+      {/* Seção de Anexos */}
       {campanha.materiais.length > 0 ? (
         <MateriaisViewer
           materiais={campanha.materiais}
           onGerenciar={!readOnly ? openEditCampanha : undefined}
         />
       ) : !readOnly ? (
-        <div className="rounded-xl border border-dashed bg-card/50 p-4 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-            <Paperclip className="h-4 w-4 text-primary shrink-0" />
-            <span>Nenhum anexo ou material de apoio cadastrado nesta campanha.</span>
+        <div className="rounded-xl border border-dashed border-border/70 bg-card/40 p-2 px-3.5 mb-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 truncate">
+            <Paperclip className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="truncate text-[11px]">Nenhum material de apoio anexado nesta campanha.</span>
           </div>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={openEditCampanha}
-            className="text-xs shrink-0 border-primary/30 text-primary hover:bg-primary/5"
+            className="h-6 text-[11px] text-primary hover:bg-primary/5 px-2 shrink-0 font-medium"
           >
-            <Paperclip className="h-3.5 w-3.5 mr-1.5" /> Anexar arquivos
+            <Plus className="h-3 w-3 mr-1" /> Anexar
           </Button>
         </div>
       ) : null}
 
-      <div className="mb-4 rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm backdrop-blur flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por código, descrição ou fornecedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-full border-border/70 bg-background w-full" />
+      {/* Filtros e Busca Compactos */}
+      <div className="mb-3 rounded-xl border border-border/60 bg-card p-2 shadow-xs flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por código, descrição ou fornecedor..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs rounded-lg border-border/60 bg-background w-full"
+          />
         </div>
         <Select value={fCategoria} onValueChange={setFCategoria}>
-          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs w-full sm:w-[170px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-8 rounded-lg border-border/60 bg-background text-xs w-full sm:w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas categorias</SelectItem>
             {CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs w-full sm:w-[170px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-8 rounded-lg border-border/60 bg-background text-xs w-full sm:w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos status</SelectItem>
             {STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={fClube} onValueChange={setFClube}>
-          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs w-full sm:w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-8 rounded-lg border-border/60 bg-background text-xs w-full sm:w-[130px]">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Clube: Todos</SelectItem>
             <SelectItem value="sim">Somente Clube</SelectItem>
@@ -987,7 +1075,9 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           </SelectContent>
         </Select>
         <Select value={fSellout} onValueChange={setFSellout}>
-          <SelectTrigger className="rounded-full border-border/70 bg-background text-xs w-full sm:w-[170px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-8 rounded-lg border-border/60 bg-background text-xs w-full sm:w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Sell Out: Todos</SelectItem>
             <SelectItem value="com">Com verba</SelectItem>
@@ -996,12 +1086,12 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         </Select>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="justify-start rounded-full border-border/70 text-xs w-full sm:w-[140px]">
-              <Columns3 className="h-4 w-4 mr-2" /> Colunas
+            <Button variant="outline" size="sm" className="h-8 rounded-lg border-border/60 text-xs w-full sm:w-auto px-2.5">
+              <Columns3 className="h-3.5 w-3.5 mr-1.5" /> Colunas
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Colunas visíveis</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs">Colunas visíveis</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {COLUMNS.map((col) => {
               const on = isVisible(col.key);
@@ -1009,10 +1099,10 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                 <DropdownMenuItem
                   key={col.key}
                   onSelect={(e) => { e.preventDefault(); toggle(col.key); }}
-                  className="flex items-center justify-between cursor-pointer"
+                  className="flex items-center justify-between cursor-pointer text-xs"
                 >
                   <span>{col.label}</span>
-                  {on && <Check className="h-4 w-4 text-primary" />}
+                  {on && <Check className="h-3.5 w-3.5 text-primary" />}
                 </DropdownMenuItem>
               );
             })}
@@ -1020,18 +1110,18 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         </DropdownMenu>
       </div>
 
-
-      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-        <div className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
-          <h2 className="text-sm font-semibold tracking-tight text-navy">Produtos em oferta</h2>
-          <span className="rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+      {/* Tabela de Produtos */}
+      <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">
+        <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2.5 bg-muted/20">
+          <h2 className="text-xs font-semibold tracking-tight text-navy uppercase tracking-wider">Produtos em oferta</h2>
+          <span className="rounded-full bg-accent px-2 py-0.2 text-[10px] font-semibold text-muted-foreground">
             {filtered.length} de {ofertas.length}
           </span>
         </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-border/70 bg-navy/[0.04] hover:bg-navy/[0.04] [&>th]:h-10 [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
+              <TableRow className="border-border/60 bg-muted/30 hover:bg-muted/30 [&>th]:h-8 [&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
                 {isVisible("codigo") && <TableHead>Código</TableHead>}
                 {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
                 {isVisible("descricao") && <TableHead>Descrição</TableHead>}
