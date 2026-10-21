@@ -12,10 +12,17 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import type { Campanha, Oferta, MaterialApoio } from "@/lib/campanhas-store";
-import { formatFiliais, fmtCondicaoOferta } from "@/lib/campanhas-store";
+import { formatFiliais, mapFilial, fmtCondicaoOferta } from "@/lib/campanhas-store";
 
 export const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 export const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
+
+const formatFiliaisPDF = (filiais?: string[]) => {
+  if (!filiais || filiais.length === 0) return "Todas as filiais";
+  const nomes = filiais.map((f) => mapFilial(f).replace(/^Filial\s+/i, "").trim());
+  if (nomes.length === 1) return `Filial ${nomes[0]}`;
+  return `Filiais: ${nomes.join(", ")}`;
+};
 
 /** Limpa o texto para o PDF: remove caracteres de controle e colapsa espaços. */
 export const pdfText = (v: unknown) =>
@@ -102,8 +109,8 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
           0: { cellWidth: 46, halign: "center" }, // Código
           1: { cellWidth: "auto" }, // Descrição
           2: { cellWidth: 36, halign: "center" }, // Clube
-          3: { cellWidth: 55, halign: "right", textColor: [120, 128, 140] }, // De
-          4: { cellWidth: 58, halign: "right", fontStyle: "bold", textColor: [200, 16, 46] }, // Por
+          3: { cellWidth: 55, halign: "center", textColor: [120, 128, 140] }, // De
+          4: { cellWidth: 58, halign: "center", fontStyle: "bold", textColor: [200, 16, 46] }, // Por
           5: { cellWidth: 46, halign: "center", fontStyle: "bold", textColor: [13, 148, 136] }, // % Desc.
           6: { cellWidth: 94, halign: "center", fontSize: 8 }, // Condição
         }
@@ -111,24 +118,16 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
           0: { cellWidth: 42, halign: "center" }, // Código
           1: { cellWidth: "auto" }, // Descrição
           2: { cellWidth: 32, halign: "center" }, // Clube
-          3: { cellWidth: 50, halign: "right", textColor: [120, 128, 140] }, // De
-          4: { cellWidth: 54, halign: "right", fontStyle: "bold", textColor: [200, 16, 46] }, // Por
+          3: { cellWidth: 50, halign: "center", textColor: [120, 128, 140] }, // De
+          4: { cellWidth: 54, halign: "center", fontStyle: "bold", textColor: [200, 16, 46] }, // Por
           5: { cellWidth: 42, halign: "center", fontStyle: "bold", textColor: [13, 148, 136] }, // % Desc.
           6: { cellWidth: 80, halign: "center", fontSize: 7.5 }, // Condição
           7: { cellWidth: 70, halign: "center", fontSize: 7.5 }, // Período
         },
     didParseCell: (data) => {
       if (data.section === "head") {
-        if (
-          data.column.index === 0 ||
-          data.column.index === 2 ||
-          data.column.index === 5 ||
-          data.column.index === 6 ||
-          data.column.index === 7
-        ) {
+        if (data.column.index !== 1) {
           data.cell.styles.halign = "center";
-        } else if (data.column.index === 3 || data.column.index === 4) {
-          data.cell.styles.halign = "right";
         }
       }
     },
@@ -142,9 +141,9 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9.5);
       doc.setTextColor(200, 210, 225);
-      const filiaisText = formatFiliais(campanha.filiais);
+      const filiaisText = formatFiliaisPDF(campanha.filiais);
       doc.text(
-        `Sumel  •  Filial: ${filiaisText}  •  Vigência: ${periodo}  •  ${ofertas.length} produto(s)`,
+        `${filiaisText}  •  Vigência: ${periodo}  •  ${ofertas.length} produto(s)`,
         M,
         52,
       );
