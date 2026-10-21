@@ -10,7 +10,12 @@ export const mapFilial = (f: string) => {
 
 export const formatFiliais = (filiais?: string[], defaultText = "Todas as filiais") => {
   if (!filiais || filiais.length === 0) return defaultText;
-  return filiais.map(mapFilial).join(", ");
+  const nomes = filiais.map((f) => mapFilial(f).replace(/^Filial\s+/i, "").trim());
+  if (nomes.length === 1) {
+    const nome = nomes[0];
+    return nome.toLowerCase() === "matriz" ? "Matriz" : `Filial ${nome}`;
+  }
+  return `Filiais: ${nomes.join(", ")}`;
 };
 
 export type Status = "Ativa" | "Programada" | "Encerrada" | "Rascunho";

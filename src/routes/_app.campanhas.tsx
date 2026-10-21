@@ -314,7 +314,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
             </span>
             <span className="flex items-center gap-1.5" title={formatFiliais(c.filiais)}>
               <MapPin className="h-3.5 w-3.5 text-red-500" />
-              <strong className="text-foreground max-w-[200px] truncate">
+              <strong className="text-foreground max-w-[300px] truncate">
                 {formatFiliais(c.filiais)}
               </strong>
             </span>
@@ -539,7 +539,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmtDate(c.dataInicial)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmtDate(c.dataFinal)}</TableCell>
                       <TableCell className="text-center">
-                        <span className="text-[11px] text-muted-foreground truncate max-w-[150px] inline-block align-bottom" title={formatFiliais(c.filiais)}>
+                        <span className="text-[11px] text-muted-foreground truncate max-w-[220px] inline-block align-bottom" title={formatFiliais(c.filiais)}>
                           {formatFiliais(c.filiais)}
                         </span>
                       </TableCell>
@@ -859,7 +859,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
               <span className="text-muted-foreground/40">•</span>
               <span className="flex items-center gap-1" title={formatFiliais(campanha.filiais)}>
                 <MapPin className="h-3.5 w-3.5 text-primary/70" />
-                <span className="max-w-[260px] truncate">{formatFiliais(campanha.filiais)}</span>
+                <span className="max-w-[350px] truncate">{formatFiliais(campanha.filiais)}</span>
               </span>
               {campanha.descricao && (
                 <>
@@ -1230,7 +1230,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   )}
                   {isVisible("dataInicial") && <TableCell className="text-xs text-muted-foreground">{fmtDate(o.dataInicial)}</TableCell>}
                   {isVisible("dataFinal") && <TableCell className="text-xs text-muted-foreground">{fmtDate(o.dataFinal)}</TableCell>}
-                  {isVisible("filiais") && <TableCell className="text-xs text-muted-foreground">{o.filiais?.length ? o.filiais.join(", ") : "-"}</TableCell>}
+                  {isVisible("filiais") && <TableCell className="text-xs text-muted-foreground">{o.filiais?.length ? formatFiliais(o.filiais) : "—"}</TableCell>}
                   {isVisible("corredor") && <TableCell className="text-xs text-muted-foreground">{o.corredor}</TableCell>}
                   {isVisible("estoque") && <TableCell className="text-right tabular-nums">{o.estoque}</TableCell>}
                   {isVisible("margem") && <TableCell className="text-right tabular-nums">{o.margem.toFixed(1)}%</TableCell>}

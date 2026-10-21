@@ -12,17 +12,10 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import type { Campanha, Oferta, MaterialApoio } from "@/lib/campanhas-store";
-import { formatFiliais, mapFilial, fmtCondicaoOferta } from "@/lib/campanhas-store";
+import { formatFiliais, fmtCondicaoOferta } from "@/lib/campanhas-store";
 
 export const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 export const fmtDate = (s: string) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "-";
-
-const formatFiliaisPDF = (filiais?: string[]) => {
-  if (!filiais || filiais.length === 0) return "Todas as filiais";
-  const nomes = filiais.map((f) => mapFilial(f).replace(/^Filial\s+/i, "").trim());
-  if (nomes.length === 1) return `Filial ${nomes[0]}`;
-  return `Filiais: ${nomes.join(", ")}`;
-};
 
 /** Limpa o texto para o PDF: remove caracteres de controle e colapsa espaços. */
 export const pdfText = (v: unknown) =>
@@ -141,7 +134,7 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9.5);
       doc.setTextColor(200, 210, 225);
-      const filiaisText = formatFiliaisPDF(campanha.filiais);
+      const filiaisText = formatFiliais(campanha.filiais);
       doc.text(
         `${filiaisText}  •  Vigência: ${periodo}  •  ${ofertas.length} produto(s)`,
         M,
@@ -242,7 +235,7 @@ export function CampanhaQuickView({
             <span>•</span>
             <span className="flex items-center gap-1 text-red-500/80" title={formatFiliais(campanha.filiais)}>
               <MapPin className="h-3.5 w-3.5" />
-              <span className="max-w-[250px] truncate">{formatFiliais(campanha.filiais)}</span>
+              <span className="max-w-[320px] truncate">{formatFiliais(campanha.filiais)}</span>
             </span>
             <span>•</span>
             <span>{ofertas.length} produto(s) em oferta</span>
