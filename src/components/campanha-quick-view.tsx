@@ -40,19 +40,23 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
   );
 
   const head = mesmoPeriodo
-    ? [["Código", "Descrição do Produto", "Clube", "De", "Por"]]
-    : [["Código", "Descrição do Produto", "Clube", "De", "Por", "Período"]];
+    ? [["Código", "Descrição do Produto", "Clube", "De", "Por", "% Desc.", "Condição"]]
+    : [["Código", "Descrição do Produto", "Clube", "De", "Por", "% Desc.", "Condição", "Período"]];
 
   const body = ofertas.map((o) => {
-    const porFormatado = (() => {
+    const desconto = o.precoNormal > 0 && o.precoPromocional > 0 && o.precoPromocional < o.precoNormal
+      ? Math.round((1 - o.precoPromocional / o.precoNormal) * 100)
+      : 0;
+
+    const condicao = (() => {
       if (o.tipoPromocao === "a_partir_de") {
-        return `A partir de ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada`;
+        return `A partir de ${o.quantidadeMinima} un`;
       }
       if (o.tipoPromocao === "a_cada") {
         const total = (o.quantidadeMinima || 1) * o.precoPromocional;
-        return `A cada ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada (${o.quantidadeMinima} por ${brl(total)})`;
+        return `A cada ${o.quantidadeMinima} un (${o.quantidadeMinima} por ${brl(total)})`;
       }
-      return brl(o.precoPromocional);
+      return "Preço direto";
     })();
 
     const base = [
@@ -60,7 +64,9 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
       pdfText(o.descricao),
       o.clubeSumel ? "SIM" : "—",
       brl(o.precoNormal),
-      porFormatado,
+      brl(o.precoPromocional),
+      desconto > 0 ? `-${desconto}%` : "—",
+      condicao,
     ];
     return mesmoPeriodo
       ? base
@@ -75,8 +81,8 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
     theme: "grid",
     styles: {
       font: "helvetica",
-      fontSize: 10,
-      cellPadding: { top: 6, right: 6, bottom: 6, left: 6 },
+      fontSize: 8.5,
+      cellPadding: { top: 5, right: 5, bottom: 5, left: 5 },
       overflow: "linebreak",
       valign: "middle",
       lineColor: [222, 226, 233],
@@ -84,32 +90,46 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
       textColor: [20, 26, 40],
     },
     headStyles: {
-      fillColor: [200, 16, 46],
+      fillColor: [11, 31, 58], // Navy institucional Sumel
       textColor: 255,
       fontStyle: "bold",
-      fontSize: 10,
+      fontSize: 9,
       halign: "left",
     },
-    alternateRowStyles: { fillColor: [247, 249, 251] },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: mesmoPeriodo
       ? {
-          0: { cellWidth: 62, halign: "center" },
-          1: { cellWidth: "auto" },
-          2: { cellWidth: 46, halign: "center" },
-          3: { cellWidth: 72, halign: "center", textColor: [120, 128, 140] },
-          4: { cellWidth: 78, halign: "center", fontStyle: "bold", textColor: [200, 16, 46] },
+          0: { cellWidth: 46, halign: "center" }, // Código
+          1: { cellWidth: "auto" }, // Descrição
+          2: { cellWidth: 36, halign: "center" }, // Clube
+          3: { cellWidth: 55, halign: "right", textColor: [120, 128, 140] }, // De
+          4: { cellWidth: 58, halign: "right", fontStyle: "bold", textColor: [200, 16, 46] }, // Por
+          5: { cellWidth: 46, halign: "center", fontStyle: "bold", textColor: [13, 148, 136] }, // % Desc.
+          6: { cellWidth: 94, halign: "center", fontSize: 8 }, // Condição
         }
       : {
-          0: { cellWidth: 56, halign: "center" },
-          1: { cellWidth: "auto" },
-          2: { cellWidth: 40, halign: "center" },
-          3: { cellWidth: 64, halign: "center", textColor: [120, 128, 140] },
-          4: { cellWidth: 70, halign: "center", fontStyle: "bold", textColor: [200, 16, 46] },
-          5: { cellWidth: 110, halign: "center", fontSize: 8 },
+          0: { cellWidth: 42, halign: "center" }, // Código
+          1: { cellWidth: "auto" }, // Descrição
+          2: { cellWidth: 32, halign: "center" }, // Clube
+          3: { cellWidth: 50, halign: "right", textColor: [120, 128, 140] }, // De
+          4: { cellWidth: 54, halign: "right", fontStyle: "bold", textColor: [200, 16, 46] }, // Por
+          5: { cellWidth: 42, halign: "center", fontStyle: "bold", textColor: [13, 148, 136] }, // % Desc.
+          6: { cellWidth: 80, halign: "center", fontSize: 7.5 }, // Condição
+          7: { cellWidth: 70, halign: "center", fontSize: 7.5 }, // Período
         },
     didParseCell: (data) => {
-      if (data.section === "head" && data.column.index !== 1) {
-        data.cell.styles.halign = "center";
+      if (data.section === "head") {
+        if (
+          data.column.index === 0 ||
+          data.column.index === 2 ||
+          data.column.index === 5 ||
+          data.column.index === 6 ||
+          data.column.index === 7
+        ) {
+          data.cell.styles.halign = "center";
+        } else if (data.column.index === 3 || data.column.index === 4) {
+          data.cell.styles.halign = "right";
+        }
       }
     },
     didDrawPage: () => {
@@ -124,7 +144,7 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
       doc.setTextColor(200, 210, 225);
       const filiaisText = formatFiliais(campanha.filiais);
       doc.text(
-        `Sumel  •  Filial: ${filiaisText}  •  Vigência ${periodo}  •  ${ofertas.length} produto(s)`,
+        `Sumel  •  Filial: ${filiaisText}  •  Vigência: ${periodo}  •  ${ofertas.length} produto(s)`,
         M,
         52,
       );
@@ -136,7 +156,7 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
       doc.line(M, pageH - 30, pageW - M, pageH - 30);
       doc.setFontSize(8);
       doc.setTextColor(140);
-      doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, M, pageH - 18);
+      doc.text(`Central de Campanhas Sumel  •  Gerado em ${new Date().toLocaleString("pt-BR")}`, M, pageH - 18);
       doc.text(`Página ${page}`, pageW - M, pageH - 18, { align: "right" });
     },
   });
