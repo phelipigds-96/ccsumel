@@ -1,4 +1,4 @@
-import { Printer, ChevronRight, Paperclip, FileText, Image as ImageIcon, MapPin } from "lucide-react";
+import { Printer, ChevronRight, Paperclip, FileText, Image as ImageIcon, MapPin, Pencil } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
@@ -153,7 +153,7 @@ export function printCampanhaPDF(campanha: Campanha, ofertas: Oferta[]) {
 
 const BUCKET = "campanha-materiais";
 
-export function MateriaisViewer({ materiais }: { materiais: MaterialApoio[] }) {
+export function MateriaisViewer({ materiais, onGerenciar }: { materiais: MaterialApoio[]; onGerenciar?: () => void }) {
   const openMaterial = async (m: MaterialApoio) => {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(m.path, 3600);
     if (error || !data?.signedUrl) {
@@ -171,10 +171,23 @@ export function MateriaisViewer({ materiais }: { materiais: MaterialApoio[] }) {
   };
   return (
     <div className="rounded-xl border bg-card p-4 mb-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Paperclip className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-navy">Anexos da campanha</h3>
-        <span className="text-xs text-muted-foreground">({materiais.length})</span>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Paperclip className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-navy">Anexos da campanha</h3>
+          <span className="text-xs text-muted-foreground">({materiais.length})</span>
+        </div>
+        {onGerenciar && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onGerenciar}
+            className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/5 px-2"
+          >
+            <Pencil className="h-3.5 w-3.5 mr-1" /> Gerenciar / Anexar
+          </Button>
+        )}
       </div>
       <ul className="grid gap-1.5 sm:grid-cols-2">
         {materiais.map((m) => (

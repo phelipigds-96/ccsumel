@@ -162,6 +162,7 @@ function CampanhasModulo() {
       onBack={() => setSelectedId(null)}
       onSaveOferta={saveOferta}
       onDeleteOferta={deleteOferta}
+      onSaveCampanha={saveCampanha}
     />
   ) : (
     <CampanhasList
@@ -670,9 +671,10 @@ interface DetalheProps {
   onSaveOferta: (o: Oferta) => void;
   onDeleteOferta: (id: string) => void;
   onAddFromOportunidades?: (oferta: Oferta, oportunidadeId: string) => void;
+  onSaveCampanha?: (c: Campanha) => void;
 }
 
-function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOferta }: DetalheProps) {
+function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOferta, onSaveCampanha }: DetalheProps) {
   const { user } = useAuth();
   const readOnly = !user?.isAdmin || !!user?.readOnly;
   const [search, setSearch] = useState("");
@@ -685,6 +687,46 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
   const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [oportunidadesOpen, setOportunidadesOpen] = useState(false);
+
+  // Edição rápida da campanha aberta e de seus anexos
+  const [campanhaDialogOpen, setCampanhaDialogOpen] = useState(false);
+  const [editingCampanha, setEditingCampanha] = useState<Campanha | null>(null);
+
+  const openEditCampanha = () => {
+    setEditingCampanha({ ...campanha });
+    setCampanhaDialogOpen(true);
+  };
+
+  const handleSaveCampanha = () => {
+    if (!editingCampanha) return;
+    if (!editingCampanha.nome.trim()) {
+      toast.error("Informe o nome da campanha.");
+      return;
+    }
+    if (onSaveCampanha) {
+      onSaveCampanha(editingCampanha);
+    } else {
+      campanhasStore.setCampanhas((prev) =>
+        prev.map((c) => (c.id === editingCampanha.id ? editingCampanha : c))
+      );
+    }
+    toast.success("Campanha atualizada.");
+    setCampanhaDialogOpen(false);
+    setEditingCampanha(null);
+  };
+
+  const handleSaveWithMateriais = (m: MaterialApoio[]) => {
+    if (!editingCampanha) return;
+    const updated = { ...editingCampanha, materiais: m };
+    if (onSaveCampanha) {
+      onSaveCampanha(updated);
+    } else {
+      campanhasStore.setCampanhas((prev) =>
+        prev.map((c) => (c.id === updated.id ? updated : c))
+      );
+    }
+    setEditingCampanha(updated);
+  };
 
   const COLUMNS: { key: string; label: string }[] = [
     { key: "codigo", label: "Código" },
@@ -805,6 +847,14 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
             </DropdownMenu>
             {!readOnly && (
               <>
+                <Button
+                  variant="outline"
+                  onClick={openEditCampanha}
+                  className="border-primary/30 text-primary hover:bg-primary/5"
+                  title="Editar campanha e anexar arquivos"
+                >
+                  <Pencil className="mr-2 h-4 w-4" /> Editar Campanha
+                </Button>
                 <Button variant="outline" onClick={() => setOportunidadesOpen(true)} className="border-primary/30 text-primary hover:bg-primary/5">
                   <Target className="mr-2 h-4 w-4" /> Banco de Oportunidades
                 </Button>
@@ -859,13 +909,26 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{selloutStats.qtd}</div>
           <div className="mt-1 text-xs text-muted-foreground">de {ofertas.length} oferta(s) na campanha</div>
         </div>
-        <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+        <div
+          onClick={!readOnly ? openEditCampanha : undefined}
+          className={`relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-shadow hover:shadow-md ${!readOnly ? "cursor-pointer hover:border-primary/40 group" : ""}`}
+          title={!readOnly ? "Clique para gerenciar ou anexar arquivos" : undefined}
+        >
           <span className="absolute inset-y-0 left-0 w-1 bg-navy/30" />
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <Paperclip className="h-4 w-4 text-primary" /> Anexos da campanha
+          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4 text-primary" /> Anexos da campanha
+            </span>
+            {!readOnly && (
+              <span className="text-[10px] text-primary group-hover:underline flex items-center gap-0.5 font-normal">
+                <Pencil className="h-3 w-3" /> gerenciar
+              </span>
+            )}
           </div>
           <div className="mt-2 font-display text-3xl font-bold tracking-tight text-navy">{campanha.materiais.length}</div>
-          <div className="mt-1 text-xs text-muted-foreground">Materiais de apoio para as lojas</div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {!readOnly ? "Materiais de apoio • Clique para gerenciar" : "Materiais de apoio para as lojas"}
+          </div>
         </div>
       </div>
 
@@ -873,9 +936,28 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
         <CampanhaChecklist campanha={campanha} />
       </div>
 
-      {campanha.materiais.length > 0 && (
-        <MateriaisViewer materiais={campanha.materiais} />
-      )}
+      {campanha.materiais.length > 0 ? (
+        <MateriaisViewer
+          materiais={campanha.materiais}
+          onGerenciar={!readOnly ? openEditCampanha : undefined}
+        />
+      ) : !readOnly ? (
+        <div className="rounded-xl border border-dashed bg-card/50 p-4 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+            <Paperclip className="h-4 w-4 text-primary shrink-0" />
+            <span>Nenhum anexo ou material de apoio cadastrado nesta campanha.</span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={openEditCampanha}
+            className="text-xs shrink-0 border-primary/30 text-primary hover:bg-primary/5"
+          >
+            <Paperclip className="h-3.5 w-3.5 mr-1.5" /> Anexar arquivos
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mb-4 rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm backdrop-blur flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[220px]">
@@ -1075,6 +1157,18 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CampanhaDialog
+        open={campanhaDialogOpen}
+        onOpenChange={(v) => {
+          setCampanhaDialogOpen(v);
+          if (!v) setEditingCampanha(null);
+        }}
+        campanha={editingCampanha}
+        setCampanha={setEditingCampanha}
+        onSave={handleSaveCampanha}
+        onSaveWithMateriais={handleSaveWithMateriais}
+      />
     </div>
   );
 }
