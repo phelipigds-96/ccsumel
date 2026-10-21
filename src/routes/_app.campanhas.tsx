@@ -734,6 +734,8 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
     { key: "descricao", label: "Descrição" },
     { key: "precoNormal", label: "Preço Normal" },
     { key: "precoPromocional", label: "Preço Promo" },
+    { key: "desconto", label: "% Desconto" },
+    { key: "mecanica", label: "Condição" },
     { key: "clubeSumel", label: "Clube" },
     { key: "sellout", label: "Sell Out" },
     { key: "dataInicial", label: "Início" },
@@ -1127,6 +1129,8 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                 {isVisible("descricao") && <TableHead>Descrição</TableHead>}
                 {isVisible("precoNormal") && <TableHead className="text-right">Normal</TableHead>}
                 {isVisible("precoPromocional") && <TableHead className="text-right">Promo</TableHead>}
+                {isVisible("desconto") && <TableHead className="text-center">% Desc.</TableHead>}
+                {isVisible("mecanica") && <TableHead className="text-center">Condição</TableHead>}
                 {isVisible("clubeSumel") && <TableHead className="text-center">Clube</TableHead>}
                 {isVisible("sellout") && <TableHead className="text-right">Sell Out</TableHead>}
                 {isVisible("dataInicial") && <TableHead>Início</TableHead>}
@@ -1151,7 +1155,7 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   </TableCell>
                 </TableRow>
               ) : filtered.map((o) => {
-                const desconto = o.precoNormal > 0 && o.precoPromocional > 0
+                const desconto = o.precoNormal > 0 && o.precoPromocional > 0 && o.precoPromocional < o.precoNormal
                   ? Math.round((1 - o.precoPromocional / o.precoNormal) * 100)
                   : 0;
                 return (
@@ -1159,34 +1163,53 @@ function CampanhaDetalhe({ campanha, ofertas, onBack, onSaveOferta, onDeleteOfer
                   {isVisible("codigo") && <TableCell className="font-mono text-xs text-muted-foreground">{o.codigo}</TableCell>}
                   {isVisible("gtin") && <TableCell className="font-mono text-xs text-muted-foreground">{o.gtin}</TableCell>}
                   {isVisible("descricao") && <TableCell className="max-w-[260px] truncate font-medium text-navy">{o.descricao}</TableCell>}
-                  {isVisible("precoNormal") && <TableCell className="text-right text-muted-foreground line-through tabular-nums">{brl(o.precoNormal)}</TableCell>}
+                  {isVisible("precoNormal") && (
+                    <TableCell className="text-right text-muted-foreground line-through tabular-nums text-xs">
+                      {brl(o.precoNormal)}
+                    </TableCell>
+                  )}
                   {isVisible("precoPromocional") && (
-                    <TableCell className="text-right">
-                      {o.tipoPromocao && o.tipoPromocao !== "simples" ? (
-                        <div className="flex flex-col items-end leading-tight gap-0.5">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            o.tipoPromocao === "a_partir_de"
-                              ? "bg-amber-500/10 text-amber-700 border border-amber-500/20"
-                              : "bg-purple-500/10 text-purple-700 border border-purple-500/20"
-                          }`}>
-                            {o.tipoPromocao === "a_partir_de" ? `📦 A partir de ${o.quantidadeMinima} un` : `🔁 A cada ${o.quantidadeMinima} un`}
-                          </span>
-                          <span className="font-semibold tabular-nums text-primary">
-                            {brl(o.precoPromocional)} <span className="text-[11px] font-normal text-muted-foreground">cada</span>
-                          </span>
-                          {o.tipoPromocao === "a_cada" && (
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                              {o.quantidadeMinima} un por {brl(o.quantidadeMinima * o.precoPromocional)}
-                            </span>
-                          )}
-                        </div>
+                    <TableCell
+                      className="text-right font-bold tabular-nums text-primary text-xs"
+                      title={
+                        o.tipoPromocao === "a_partir_de"
+                          ? `A partir de ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada`
+                          : o.tipoPromocao === "a_cada"
+                          ? `A cada ${o.quantidadeMinima} un (${o.quantidadeMinima} por ${brl(o.quantidadeMinima * o.precoPromocional)})`
+                          : undefined
+                      }
+                    >
+                      {brl(o.precoPromocional)}
+                    </TableCell>
+                  )}
+                  {isVisible("desconto") && (
+                    <TableCell className="text-center">
+                      {desconto > 0 ? (
+                        <span className="inline-flex items-center justify-center rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold tabular-nums">
+                          -{desconto}%
+                        </span>
                       ) : (
-                        <div className="inline-flex items-center gap-1.5">
-                          {desconto > 0 && (
-                            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">-{desconto}%</span>
-                          )}
-                          <span className="font-semibold tabular-nums text-primary">{brl(o.precoPromocional)}</span>
-                        </div>
+                        <span className="text-xs text-muted-foreground/50">—</span>
+                      )}
+                    </TableCell>
+                  )}
+                  {isVisible("mecanica") && (
+                    <TableCell className="text-center">
+                      {o.tipoPromocao === "a_partir_de" ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap">
+                          A partir de {o.quantidadeMinima} un
+                        </span>
+                      ) : o.tipoPromocao === "a_cada" ? (
+                        <span
+                          className="inline-flex items-center rounded-full bg-purple-500/10 text-purple-700 border border-purple-500/20 px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                          title={`${o.quantidadeMinima} un por ${brl(o.quantidadeMinima * o.precoPromocional)}`}
+                        >
+                          A cada {o.quantidadeMinima} un
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap">
+                          Preço direto
+                        </span>
                       )}
                     </TableCell>
                   )}

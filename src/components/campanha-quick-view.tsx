@@ -240,13 +240,14 @@ export function CampanhaQuickView({
                 <TableHead>Produto</TableHead>
                 <TableHead>Clube</TableHead>
                 <TableHead className="text-right">Preço normal</TableHead>
-                <TableHead className="text-right">Preço promocional</TableHead>
+                <TableHead className="text-right">Preço promo</TableHead>
+                <TableHead className="text-center">Condição</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {ofertas.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
                     Nenhum produto em oferta nesta campanha.
                   </TableCell>
                 </TableRow>
@@ -255,25 +256,23 @@ export function CampanhaQuickView({
                   <TableCell className="font-mono text-xs">{o.codigo}</TableCell>
                   <TableCell className="max-w-[280px] truncate">{o.descricao}</TableCell>
                   <TableCell>{o.clubeSumel ? "Sim" : "Não"}</TableCell>
-                  <TableCell className="text-right font-semibold text-primary">
-                    {o.tipoPromocao && o.tipoPromocao !== "simples" ? (
-                      <div className="flex flex-col items-end leading-tight gap-0.5">
-                        <Badge variant="outline" className={`text-[10px] py-0 px-1.5 font-normal ${
-                          o.tipoPromocao === "a_partir_de"
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-purple-50 text-purple-700 border-purple-200"
-                        }`}>
-                          {o.tipoPromocao === "a_partir_de" ? `A partir de ${o.quantidadeMinima} un` : `A cada ${o.quantidadeMinima} un`}
-                        </Badge>
-                        <span>{brl(o.precoPromocional)} cada</span>
-                        {o.tipoPromocao === "a_cada" && (
-                          <span className="text-[10px] text-muted-foreground font-normal">
-                            {o.quantidadeMinima} un por {brl(o.quantidadeMinima * o.precoPromocional)}
-                          </span>
-                        )}
-                      </div>
+                  <TableCell className="text-right text-muted-foreground line-through tabular-nums text-xs">
+                    {brl(o.precoNormal)}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold text-primary tabular-nums text-xs">
+                    {brl(o.precoPromocional)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {o.tipoPromocao === "a_partir_de" ? (
+                      <span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 text-[10px] font-medium whitespace-nowrap">
+                        A partir de {o.quantidadeMinima} un
+                      </span>
+                    ) : o.tipoPromocao === "a_cada" ? (
+                      <span className="inline-flex items-center rounded-full bg-purple-500/10 text-purple-700 border border-purple-500/20 px-2 py-0.5 text-[10px] font-medium whitespace-nowrap">
+                        A cada {o.quantidadeMinima} un
+                      </span>
                     ) : (
-                      brl(o.precoPromocional)
+                      <span className="text-[11px] text-muted-foreground">—</span>
                     )}
                   </TableCell>
                 </TableRow>
