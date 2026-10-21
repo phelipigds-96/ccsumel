@@ -196,17 +196,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const createUser: AuthContextValue["createUser"] = async (u) => {
     const payload = {
-      name: u.name,
-      username: u.username,
+      name: u.name.trim(),
+      username: u.username.trim().toLowerCase(),
       password: u.password ?? "",
       status: u.status,
-      notes: u.notes ?? "",
+      notes: (u.notes ?? "").trim(),
       permissions: u.permissions ?? [],
       isAdmin: !!u.isAdmin,
       readOnly: !!u.readOnly,
     };
-    const res = await adminCreateUser({ data: payload });
-    unwrap(res, "Não foi possível criar o usuário.");
+
+    // 1. Tenta executar via RPC segura no banco de dados (funciona na Vercel e Lovable sem precisar de service_role)
+    const { data: rpcRes, error: rpcError } = await (supabase.rpc as any)("admin_create_user", {
+      p_name: payload.name,
+      p_username: payload.username,
+      p_password: payload.password,
+      p_status: payload.status,
+      p_notes: payload.notes,
+      p_permissions: payload.permissions,
+      p_is_admin: payload.isAdmin,
+      p_read_only: payload.readOnly,
+    });
+
+    if (rpcError) {
+      // Se a função RPC não existir no banco (ex: migração pendente), tenta a server function como fallback
+      if (
+        rpcError.message?.toLowerCase().includes("function") &&
+        rpcError.message?.toLowerCase().includes("does not exist")
+      ) {
+        console.warn("[auth.createUser] RPC não encontrada no banco, tentando fallback via server function...");
+        const res = await adminCreateUser({ data: payload });
+        unwrap(res, "Não foi possível criar o usuário.");
+      } else {
+        throw new Error(rpcError.message || "Não foi possível criar o usuário.");
+      }
+    }
+
     await refresh();
   };
 
@@ -239,14 +264,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username,
       password: patch.password || undefined,
       status: patch.status ?? current?.status ?? "ativo",
-      notes: patch.notes ?? current?.notes ?? "",
+      notes: (patch.notes ?? current?.notes ?? "").trim(),
       permissions: patch.permissions ?? current?.permissions ?? [],
       isAdmin: patch.isAdmin !== undefined ? patch.isAdmin : !!current?.isAdmin,
       readOnly: patch.readOnly !== undefined ? patch.readOnly : !!current?.readOnly,
     };
 
-    const res = await adminUpdateUser({ data: payload });
-    unwrap(res, "Não foi possível salvar o usuário.");
+    // 1. Tenta executar via RPC segura no banco de dados (funciona na Vercel e Lovable sem precisar de service_role)
+    const { data: rpcRes, error: rpcError } = await (supabase.rpc as any)("admin_update_user", {
+      p_id: payload.id,
+      p_name: payload.name,
+      p_username: payload.username,
+      p_password: payload.password || null,
+      p_status: payload.status,
+      p_notes: payload.notes,
+      p_permissions: payload.permissions,
+      p_is_admin: payload.isAdmin,
+      p_read_only: payload.readOnly,
+    });
+
+    if (rpcError) {
+      // Se a função RPC não existir no banco (fallback), tenta a server function
+      if (
+        rpcError.message?.toLowerCase().includes("function") &&
+        rpcError.message?.toLowerCase().includes("does not exist")
+      ) {
+        console.warn("[auth.updateUser] RPC não encontrada no banco, tentando fallback via server function...");
+        const res = await adminUpdateUser({ data: payload });
+        unwrap(res, "Não foi possível salvar o usuário.");
+      } else {
+        throw new Error(rpcError.message || "Não foi possível salvar o usuário.");
+      }
+    }
 
     await refresh();
 
@@ -263,8 +312,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteUser: AuthContextValue["deleteUser"] = async (id) => {
-    const res = await adminDeleteUser({ data: { id } });
-    unwrap(res, "Não foi possível excluir o usuário.");
+    // 1. Tenta executar via RPC segura no banco de dados (funciona na Vercel e Lovable sem precisar de service_role)
+    const { data: rpcRes, error: rpcError } = await (supabase.rpc as any)("admin_delete_user", {
+      p_id: id,
+    });
+
+    if (rpcError) {
+      if (
+        rpcError.message?.toLowerCase().includes("function") &&
+        rpcError.message?.toLowerCase().includes("does not exist")
+      ) {
+        console.warn("[auth.deleteUser] RPC não encontrada no banco, tentando fallback via server function...");
+        const res = await adminDeleteUser({ data: { id } });
+        unwrap(res, "Não foi possível excluir o usuário.");
+      } else {
+        throw new Error(rpcError.message || "Não foi possível excluir o usuário.");
+      }
+    }
+
     await refresh();
   };
 

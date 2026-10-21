@@ -1175,6 +1175,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_user: {
+        Args: {
+          p_is_admin?: boolean
+          p_name: string
+          p_notes?: string
+          p_password: string
+          p_permissions?: Json
+          p_read_only?: boolean
+          p_status?: string
+          p_username: string
+        }
+        Returns: Json
+      }
+      admin_delete_user: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      admin_update_user: {
+        Args: {
+          p_id: string
+          p_is_admin?: boolean
+          p_name: string
+          p_notes?: string
+          p_password?: string | null
+          p_permissions?: Json
+          p_read_only?: boolean
+          p_status?: string
+          p_username: string
+        }
+        Returns: Json
+      }
       can_write: { Args: never; Returns: boolean }
       check_is_admin: { Args: never; Returns: boolean }
       has_role: {
