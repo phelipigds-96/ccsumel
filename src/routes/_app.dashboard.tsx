@@ -15,7 +15,7 @@ import {
   Calendar,
   User,
 } from "lucide-react";
-import { useCampanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
+import { useCampanhasStore, campanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView, fmtDate } from "@/components/campanha-quick-view";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,10 +102,18 @@ function DashboardPage() {
   hoje.setHours(0, 0, 0, 0);
   const hora = hoje.getHours();
   const { campanhas: rawCampanhas, ofertas: rawOfertas } = useCampanhasStore();
-  const [quickView, setQuickView] = useState<Campanha | null>(null);
+  const [quickViewId, setQuickViewId] = useState<string | null>(null);
+  const quickView = useMemo(
+    () => (quickViewId ? rawCampanhas.find((c) => c.id === quickViewId) ?? null : null),
+    [quickViewId, rawCampanhas],
+  );
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const { user } = useAuth();
   const primeiroNome = (user?.name ?? "").split(" ")[0];
+
+  useEffect(() => {
+    void campanhasStore.reload();
+  }, []);
 
   useEffect(() => {
     if (sessionStorage.getItem("justLoggedIn") === "1") {
@@ -149,8 +157,7 @@ function DashboardPage() {
   const produtosEmOferta = ativas.reduce((sum, c) => sum + c.ofertas, 0);
 
   const abrirQuickView = (id: string) => {
-    const c = rawCampanhas.find((x) => x.id === id);
-    if (c) setQuickView(c);
+    setQuickViewId(id);
   };
 
   const EyeBtn = ({ id }: { id: string }) => (
@@ -734,7 +741,7 @@ function DashboardPage() {
         <CampanhaQuickView
           campanha={quickView}
           ofertas={quickView ? rawOfertas.filter((o) => o.campanhaId === quickView.id) : []}
-          onOpenChange={(v) => { if (!v) setQuickView(null); }}
+          onOpenChange={(v) => { if (!v) setQuickViewId(null); }}
         />
 
         <DegustacaoQuickView

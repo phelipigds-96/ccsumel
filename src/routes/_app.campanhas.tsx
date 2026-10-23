@@ -213,7 +213,11 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Campanha | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [quickView, setQuickView] = useState<Campanha | null>(null);
+  const [quickViewId, setQuickViewId] = useState<string | null>(null);
+  const quickView = useMemo(
+    () => (quickViewId ? campanhas.find((c) => c.id === quickViewId) ?? null : null),
+    [quickViewId, campanhas],
+  );
   const [cvCampanha, setCvCampanha] = useState<Campanha | null>(null);
   const [dpCampanha, setDpCampanha] = useState<Campanha | null>(null);
 
@@ -332,7 +336,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
 
           <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
             <div className="flex items-center gap-0.5">
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Ver produtos e anexos" onClick={() => setQuickView(c)}>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Ver produtos e anexos" onClick={() => setQuickViewId(c.id)}>
                 <Eye className="h-4 w-4" />
               </Button>
               <Button
@@ -553,7 +557,7 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-0.5">
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Ver produtos e anexos" onClick={() => setQuickView(c)}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Ver produtos e anexos" onClick={() => setQuickViewId(c.id)}>
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button
@@ -621,8 +625,8 @@ function CampanhasList({ campanhas, ofertas, onOpen, onSave, onDelete }: ListPro
       <CampanhaQuickView
         campanha={quickView}
         ofertas={quickView ? ofertas.filter((o) => o.campanhaId === quickView.id) : []}
-        onOpenChange={(v) => { if (!v) setQuickView(null); }}
-        onAbrir={(id) => { setQuickView(null); onOpen(id); }}
+        onOpenChange={(v) => { if (!v) setQuickViewId(null); }}
+        onAbrir={(id) => { setQuickViewId(null); onOpen(id); }}
       />
 
       {cvCampanha && (

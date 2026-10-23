@@ -271,36 +271,52 @@ export async function carregarCampanhas() {
     carregando: false,
   };
   emit();
-  void alinharStatusOfertas();
+  void alinharOfertasComCampanhas();
 }
 
 /**
- * Mantém o status das ofertas igual ao status (derivado das datas) da campanha.
+ * Mantém as datas e o status das ofertas alinhados com a campanha pai.
+ * Se a campanha for prorrogada ou tiver datas alteradas, propaga para as ofertas.
  * Persiste no banco apenas as ofertas que estiverem divergentes.
  */
-async function alinharStatusOfertas() {
-  const statusPorCampanha = new Map(state.campanhas.map((c) => [c.id, statusCampanha(c)]));
+async function alinharOfertasComCampanhas() {
+  const campanhasMap = new Map(state.campanhas.map((c) => [c.id, c]));
   const divergentes = state.ofertas.filter((o) => {
-    const s = statusPorCampanha.get(o.campanhaId);
-    return s && o.status !== s;
+    const c = campanhasMap.get(o.campanhaId);
+    if (!c) return false;
+    const s = statusCampanha(c);
+    const dataIniDiverge = Boolean(c.dataInicial && o.dataInicial !== c.dataInicial);
+    const dataFimDiverge = Boolean(c.dataFinal && o.dataFinal !== c.dataFinal);
+    const statusDiverge = o.status !== s;
+    return dataIniDiverge || dataFimDiverge || statusDiverge;
   });
+
   if (!divergentes.length) return;
 
   const next = state.ofertas.map((o) => {
-    const s = statusPorCampanha.get(o.campanhaId);
-    return s && o.status !== s ? { ...o, status: s } : o;
+    const c = campanhasMap.get(o.campanhaId);
+    if (!c) return o;
+    const s = statusCampanha(c);
+    const dataInicial = c.dataInicial || o.dataInicial;
+    const dataFinal = c.dataFinal || o.dataFinal;
+    return { ...o, dataInicial, dataFinal, status: s };
   });
+
   state = { ...state, ofertas: next };
   emit();
 
-  const porStatus = new Map<Status, string[]>();
-  for (const o of divergentes) {
-    const s = statusPorCampanha.get(o.campanhaId)!;
-    porStatus.set(s, [...(porStatus.get(s) ?? []), o.id]);
-  }
-  for (const [s, ids] of porStatus) {
-    await supabase.from("ofertas" as any).update({ status: s }).in("id", ids);
-  }
+  const alterados = divergentes.map((o) => {
+    const c = campanhasMap.get(o.campanhaId)!;
+    return {
+      ...o,
+      dataInicial: c.dataInicial || o.dataInicial,
+      dataFinal: c.dataFinal || o.dataFinal,
+      status: statusCampanha(c),
+    };
+  });
+
+  const { error } = await supabase.from("ofertas" as any).upsert(alterados.map(fromOferta));
+  if (error) console.error("[campanhasStore] Erro ao alinhar ofertas com campanhas:", error);
 }
 
 
@@ -363,13 +379,41 @@ export const campanhasStore = {
   setCampanhas: (updater: (prev: Campanha[]) => Campanha[]) => {
     const prev = state.campanhas;
     const next = updater(prev);
-    state = { ...state, campanhas: next };
+    const prevMap = new Map(prev.map((c) => [c.id, c]));
+
+    // Propaga automaticamente alterações de data da campanha para suas ofertas
+    let nextOfertas = state.ofertas;
+    let ofertasAlteradas: Oferta[] = [];
+
+    const campanhasComDatasAlteradas = next.filter((c) => {
+      const p = prevMap.get(c.id);
+      return p && (p.dataInicial !== c.dataInicial || p.dataFinal !== c.dataFinal);
+    });
+
+    if (campanhasComDatasAlteradas.length > 0) {
+      const dataMap = new Map(campanhasComDatasAlteradas.map((c) => [c.id, { ini: c.dataInicial, fim: c.dataFinal, status: statusCampanha(c) }]));
+      nextOfertas = state.ofertas.map((o) => {
+        const d = dataMap.get(o.campanhaId);
+        if (d) {
+          const updatedO = { ...o, dataInicial: d.ini, dataFinal: d.fim, status: d.status };
+          ofertasAlteradas.push(updatedO);
+          return updatedO;
+        }
+        return o;
+      });
+    }
+
+    state = { ...state, campanhas: next, ofertas: nextOfertas };
     emit();
     console.log("[campanhasStore] syncCampanhas starting...");
     void syncCampanhas(prev, next)
-      .then(() => {
+      .then(async () => {
         console.log("[campanhasStore] syncCampanhas completed.");
-        alinharStatusOfertas();
+        if (ofertasAlteradas.length > 0) {
+          console.log("[campanhasStore] Propagando datas para ofertas no banco:", ofertasAlteradas.length);
+          await supabase.from("ofertas" as any).upsert(ofertasAlteradas.map(fromOferta));
+        }
+        void alinharOfertasComCampanhas();
       })
       .catch((err) => {
         console.error("[campanhasStore] syncCampanhas FAILED:", err);
