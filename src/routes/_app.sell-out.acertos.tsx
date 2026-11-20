@@ -1,6 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Copy, Search, ChevronDown, ChevronRight, ArrowUpDown, CheckCircle2, Undo2, FileText, DollarSign, Building2, ClipboardList, CalendarDays } from "lucide-react";
+import {
+  Copy,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  ArrowUpDown,
+  CheckCircle2,
+  Undo2,
+  FileText,
+  DollarSign,
+  Building2,
+  ClipboardList,
+  CalendarDays,
+  Columns3,
+  Check,
+} from "lucide-react";
 import { gerarRelatorioSelloutPDF } from "@/components/sellout-report-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
@@ -22,8 +37,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useColumnPrefs } from "@/lib/column-prefs";
 import {
   useCampanhasStore,
   campanhasStore,
@@ -62,6 +86,25 @@ function AcertosSellOut() {
   const [quantidades, setQuantidades] = useState<Record<string, string>>({});
   const [fornecedoresAbertos, setFornecedoresAbertos] = useState<Record<string, boolean>>({});
   const [aba, setAba] = useState<"pendentes" | "historico">("pendentes");
+
+  const COLUMNS = useMemo(
+    () => [
+      { key: "produto", label: "Produto" },
+      { key: "campanha", label: "Campanha atual" },
+      { key: "fornecedor", label: "Fornecedor" },
+      { key: "precoNormal", label: "Preço Normal" },
+      { key: "precoPromocional", label: "Preço Promo" },
+      { key: "verba", label: "Verba / un" },
+      { key: "qtdVendida", label: "Qtd. vendida" },
+      { key: "total", label: "Total a cobrar" },
+      { key: "ultimaCampanha", label: "Última campanha" },
+    ],
+    [],
+  );
+
+  const columnKeys = useMemo(() => COLUMNS.map((c) => c.key), [COLUMNS]);
+  const { isVisible, toggle } = useColumnPrefs("sellout.acertos", columnKeys);
+  const visibleColumnCount = COLUMNS.filter((c) => isVisible(c.key)).length + 1; // + Ações
 
   const campanhaById = useMemo(() => {
     const m = new Map<string, Campanha>();
@@ -265,12 +308,22 @@ function AcertosSellOut() {
     const historico = ultimaCampanha
       ? `\nNa última campanha (${ultimaCampanha.nome} — ${fmtData(ultimaCampanha.dataInicial)} a ${fmtData(ultimaCampanha.dataFinal)}) foram vendidas ${ultimaQtd} unidades deste produto.`
       : "";
+    const precosTxt = [
+      oferta.precoNormal > 0 ? `Preço normal de venda: ${brl(oferta.precoNormal)}` : "",
+      oferta.precoPromocional > 0
+        ? `Preço promocional praticado na ação: ${brl(oferta.precoPromocional)}${oferta.clubeSumel ? " (Clube Sumel)" : ""}`
+        : "",
+    ]
+      .filter(Boolean)
+      .map((p) => `\n${p}`)
+      .join("");
+
     return {
       periodo,
       historico,
       qtd,
       total,
-      linhaProduto: `Produto: ${oferta.descricao}\nCódigo interno: ${oferta.codigo || "—"}\nCódigo de barras: ${oferta.gtin || "—"}\nQuantidade vendida: ${qtd} un\nVerba acordada: ${brl(oferta.selloutValor || 0)} por unidade\nTotal a repassar: ${brl(total)}${oferta.selloutObs ? `\nObservações: ${oferta.selloutObs}` : ""}${historico}`,
+      linhaProduto: `Produto: ${oferta.descricao}\nCódigo interno: ${oferta.codigo || "—"}\nCódigo de barras: ${oferta.gtin || "—"}${precosTxt}\nQuantidade vendida: ${qtd} un\nVerba acordada: ${brl(oferta.selloutValor || 0)} por unidade\nTotal a repassar: ${brl(total)}${oferta.selloutObs ? `\nObservações: ${oferta.selloutObs}` : ""}${historico}`,
     };
   };
 
@@ -429,6 +482,35 @@ Central de Campanhas Sumel`;
               <SelectItem value="produto">Produto (A–Z)</SelectItem>
             </SelectContent>
           </Select>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-10 px-3.5 border-border/60 shrink-0 gap-2">
+                <Columns3 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">Colunas</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-xs">Colunas visíveis</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {COLUMNS.map((col) => {
+                const on = isVisible(col.key);
+                return (
+                  <DropdownMenuItem
+                    key={col.key}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      toggle(col.key);
+                    }}
+                    className="flex items-center justify-between cursor-pointer text-xs py-1.5"
+                  >
+                    <span>{col.label}</span>
+                    {on && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -478,6 +560,18 @@ Central de Campanhas Sumel`;
                   )}
                 </div>
               </div>
+
+              {(oferta.precoNormal > 0 || oferta.precoPromocional > 0) && (
+                <div className="flex items-center justify-between text-xs bg-muted/20 px-2.5 py-1.5 rounded-md border border-border/40">
+                  <span className="text-muted-foreground">
+                    Normal: <span className="line-through">{oferta.precoNormal > 0 ? brl(oferta.precoNormal) : "—"}</span>
+                  </span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    Promo: {oferta.precoPromocional > 0 ? brl(oferta.precoPromocional) : "—"}
+                    {oferta.clubeSumel && <span className="ml-1 text-[10px] font-normal text-purple-700 dark:text-purple-300">(Clube)</span>}
+                  </span>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2 mt-2 bg-muted/30 p-2 rounded-lg">
                 <div>
@@ -529,23 +623,25 @@ Central de Campanhas Sumel`;
       </div>
 
       <div className="hidden md:block rounded-xl border border-border/60 shadow-sm bg-card overflow-x-auto">
-        <Table>
+        <Table className="min-w-[1100px]">
           <TableHeader>
-            <TableRow>
-              <TableHead>Produto</TableHead>
-              <TableHead>Campanha atual</TableHead>
-              <TableHead>Fornecedor</TableHead>
-              <TableHead className="text-right">Verba / un</TableHead>
-              <TableHead className="w-32">Qtd. vendida</TableHead>
-              <TableHead className="text-right">Total a cobrar</TableHead>
-              <TableHead>Última campanha</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+            <TableRow className="border-border/60 bg-muted/30 hover:bg-muted/30 [&>th]:h-9 [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
+              {isVisible("produto") && <TableHead className="min-w-[200px]">Produto</TableHead>}
+              {isVisible("campanha") && <TableHead className="min-w-[150px]">Campanha atual</TableHead>}
+              {isVisible("fornecedor") && <TableHead className="min-w-[140px]">Fornecedor</TableHead>}
+              {isVisible("precoNormal") && <TableHead className="text-right whitespace-nowrap min-w-[95px]">Preço Normal</TableHead>}
+              {isVisible("precoPromocional") && <TableHead className="text-right whitespace-nowrap min-w-[100px]">Preço Promo</TableHead>}
+              {isVisible("verba") && <TableHead className="text-right whitespace-nowrap min-w-[95px]">Verba / un</TableHead>}
+              {isVisible("qtdVendida") && <TableHead className="w-32 whitespace-nowrap min-w-[120px]">Qtd. vendida</TableHead>}
+              {isVisible("total") && <TableHead className="text-right whitespace-nowrap min-w-[110px]">Total a cobrar</TableHead>}
+              {isVisible("ultimaCampanha") && <TableHead className="min-w-[140px]">Última campanha</TableHead>}
+              <TableHead className="text-right whitespace-nowrap w-[170px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtradas.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">
+                <TableCell colSpan={visibleColumnCount} className="text-center text-sm text-muted-foreground py-10">
                   {aba === "pendentes" ? "Nenhum sell out pendente com os filtros atuais." : "Nenhum acerto no histórico ainda."}
                 </TableCell>
               </TableRow>
@@ -555,69 +651,123 @@ Central de Campanhas Sumel`;
               const qtd = getQtd(oferta.id);
               const total = qtd * (oferta.selloutValor || 0);
               return (
-                <TableRow key={oferta.id}>
-                  <TableCell>
-                    <div className="font-medium text-navy">{oferta.descricao}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {oferta.codigo || "—"}{oferta.gtin ? ` · ${oferta.gtin}` : ""}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{campanha?.nome ?? "—"}</div>
-                    {campanha && (
-                      <div className="text-xs text-muted-foreground">
-                        {fmtData(campanha.dataInicial)} — {fmtData(campanha.dataFinal)}
+                <TableRow key={oferta.id} className="hover:bg-muted/20">
+                  {isVisible("produto") && (
+                    <TableCell className="py-2.5">
+                      <div className="font-medium text-navy leading-snug line-clamp-2" title={oferta.descricao}>
+                        {oferta.descricao}
                       </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {oferta.selloutFornecedor || oferta.fornecedor || "—"}
-                  </TableCell>
-                  <TableCell className="text-right text-sm">{brl(oferta.selloutValor || 0)}</TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={quantidades[oferta.id] ?? (acertos[oferta.id]?.quantidadeVendida ?? "")}
-                      onChange={(e) => setQtd(oferta.id, e.target.value)}
-                      onBlur={() => salvar(oferta.id)}
-                      className="h-9 w-28"
-                      placeholder="0"
-                    />
-                  </TableCell>
-                  <TableCell className="text-right font-semibold text-primary">
-                    {brl(total)}
-                  </TableCell>
-                  <TableCell>
-                    {ultimaCampanha ? (
-                      <div>
-                        <div className="text-sm">{ultimaCampanha.nome}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {fmtData(ultimaCampanha.dataInicial)} · vendeu {ultimaQtd} un
+                      <div className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
+                        {oferta.codigo || "—"}{oferta.gtin ? ` · ${oferta.gtin}` : ""}
+                      </div>
+                    </TableCell>
+                  )}
+                  {isVisible("campanha") && (
+                    <TableCell className="py-2.5">
+                      <div className="text-sm font-medium leading-snug">{campanha?.nome ?? "—"}</div>
+                      {campanha && (
+                        <div className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          {fmtData(campanha.dataInicial)} — {fmtData(campanha.dataFinal)}
                         </div>
-                      </div>
-                    ) : (
-                      <Badge variant="secondary" className="text-[10px]">Sem histórico</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                      )}
+                    </TableCell>
+                  )}
+                  {isVisible("fornecedor") && (
+                    <TableCell className="text-sm py-2.5 text-muted-foreground">
+                      <span className="line-clamp-2" title={oferta.selloutFornecedor || oferta.fornecedor || "—"}>
+                        {oferta.selloutFornecedor || oferta.fornecedor || "—"}
+                      </span>
+                    </TableCell>
+                  )}
+                  {isVisible("precoNormal") && (
+                    <TableCell className="text-right text-sm py-2.5 whitespace-nowrap tabular-nums text-muted-foreground">
+                      {oferta.precoNormal > 0 ? brl(oferta.precoNormal) : "—"}
+                    </TableCell>
+                  )}
+                  {isVisible("precoPromocional") && (
+                    <TableCell className="text-right text-sm py-2.5 whitespace-nowrap tabular-nums">
+                      {oferta.precoPromocional > 0 ? (
+                        <div className="flex flex-col items-end">
+                          <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                            {brl(oferta.precoPromocional)}
+                          </span>
+                          {oferta.clubeSumel && (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-purple-300 text-purple-700 dark:text-purple-300 bg-purple-50/50 dark:bg-purple-950/30">
+                              Clube
+                            </Badge>
+                          )}
+                          {oferta.tipoPromocao === "a_partir_de" && (
+                            <span className="text-[10px] text-muted-foreground">
+                              ≥ {oferta.quantidadeMinima} un
+                            </span>
+                          )}
+                          {oferta.tipoPromocao === "a_cada" && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {oferta.quantidadeMinima} un combo
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                  )}
+                  {isVisible("verba") && (
+                    <TableCell className="text-right text-sm py-2.5 whitespace-nowrap tabular-nums font-medium">
+                      {brl(oferta.selloutValor || 0)}
+                    </TableCell>
+                  )}
+                  {isVisible("qtdVendida") && (
+                    <TableCell className="py-2.5 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={quantidades[oferta.id] ?? (acertos[oferta.id]?.quantidadeVendida ?? "")}
+                        onChange={(e) => setQtd(oferta.id, e.target.value)}
+                        onBlur={() => salvar(oferta.id)}
+                        className="h-8 w-28 bg-background tabular-nums"
+                        placeholder="0"
+                      />
+                    </TableCell>
+                  )}
+                  {isVisible("total") && (
+                    <TableCell className="text-right font-bold text-primary py-2.5 whitespace-nowrap tabular-nums">
+                      {brl(total)}
+                    </TableCell>
+                  )}
+                  {isVisible("ultimaCampanha") && (
+                    <TableCell className="py-2.5">
+                      {ultimaCampanha ? (
+                        <div>
+                          <div className="text-xs font-medium leading-snug">{ultimaCampanha.nome}</div>
+                          <div className="text-[11px] text-muted-foreground whitespace-nowrap">
+                            {fmtData(ultimaCampanha.dataInicial)} · vendeu <span className="font-semibold text-foreground">{ultimaQtd} un</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px]">Sem histórico</Badge>
+                      )}
+                    </TableCell>
+                  )}
+                  <TableCell className="text-right py-2.5 whitespace-nowrap">
+                    <div className="flex justify-end items-center gap-1.5">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => copiarTexto(item)}
-                        className="gap-2"
+                        className="gap-1.5 h-8 px-2.5 text-xs shrink-0"
+                        title="Copiar texto para WhatsApp / E-mail"
                       >
                         <Copy className="h-3.5 w-3.5" />
                         Copiar
                       </Button>
                       {aba === "pendentes" ? (
-                        <Button size="sm" onClick={() => darBaixa(oferta.id)} className="gap-2">
+                        <Button size="sm" onClick={() => darBaixa(oferta.id)} className="gap-1.5 h-8 px-2.5 text-xs shrink-0">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Dar baixa
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="sm" onClick={() => reabrir(oferta.id)} className="gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => reabrir(oferta.id)} className="gap-1.5 h-8 px-2.5 text-xs shrink-0">
                           <Undo2 className="h-3.5 w-3.5" />
                           Reabrir
                         </Button>
