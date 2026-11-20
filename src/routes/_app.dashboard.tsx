@@ -57,10 +57,21 @@ const STATUS_COLOR: Record<CampanhaDash["status"], string> = {
   Encerrada: "bg-border",
 };
 
-function getSaudacao(hora: number, nome: string) {
-  if (hora < 12) return `Bom dia, ${nome}`;
-  if (hora < 18) return `Boa tarde, ${nome}`;
-  return `Boa noite, ${nome}`;
+function getSaudacao(agora: Date, nome: string) {
+  const minutos = agora.getHours() * 60 + agora.getMinutes();
+  const primeiroNome = (nome || "").trim();
+  const nomeFmt = primeiroNome ? `, ${primeiroNome}` : "";
+
+  // 03h00 (180 min) às 11h59 (719 min)
+  if (minutos >= 180 && minutos <= 719) {
+    return `Bom dia${nomeFmt}`;
+  }
+  // 12h00 (720 min) às 18h00 (1080 min)
+  if (minutos >= 720 && minutos <= 1080) {
+    return `Boa tarde${nomeFmt}`;
+  }
+  // 18h01 (1081 min) às 02h59 (179 min)
+  return `Boa noite${nomeFmt}`;
 }
 
 function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenChange: (v: boolean) => void; userName: string }) {
@@ -98,9 +109,12 @@ function SectionLabel({ children, className }: { children: React.ReactNode; clas
 }
 
 function DashboardPage() {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const hora = hoje.getHours();
+  const agora = useMemo(() => new Date(), []);
+  const hoje = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
   const { campanhas: rawCampanhas, ofertas: rawOfertas } = useCampanhasStore();
   const [quickViewId, setQuickViewId] = useState<string | null>(null);
   const quickView = useMemo(
@@ -246,6 +260,13 @@ function DashboardPage() {
     [campanhas, tlDays],
   );
 
+  const [tlStatusFilter, setTlStatusFilter] = useState<"todas" | "Ativa" | "Programada">("todas");
+
+  const tlCampanhasFiltradas = useMemo(() => {
+    if (tlStatusFilter === "todas") return tlCampanhas;
+    return tlCampanhas.filter((c) => c.status === tlStatusFilter);
+  }, [tlCampanhas, tlStatusFilter]);
+
   const cellW = 32;
   const todayIdx = tlDays.findIndex(
     (d) =>
@@ -295,7 +316,7 @@ function DashboardPage() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
               <h1 className="font-display text-xl font-bold text-white sm:text-2xl">
-                {getSaudacao(hora, primeiroNome)}
+                {getSaudacao(agora, primeiroNome)}
               </h1>
               <p className="mt-0.5 text-xs text-white/60">
                 {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
@@ -332,24 +353,67 @@ function DashboardPage() {
 
         {/* ── Timeline Gantt ── */}
         <div className="rounded-xl border bg-card shadow-sm">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <SectionLabel>Timeline — próximas semanas</SectionLabel>
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b px-4 py-2.5 gap-2.5">
+            <div className="flex items-center gap-3 flex-wrap">
+              <SectionLabel className="mb-0">Timeline — próximas semanas</SectionLabel>
+              <div className="inline-flex rounded-lg border border-border/60 bg-muted/40 p-0.5 text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setTlStatusFilter("todas")}
+                  className={cn(
+                    "rounded px-2.5 py-1 font-semibold transition-all",
+                    tlStatusFilter === "todas"
+                      ? "bg-card text-navy shadow-xs font-bold"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Todas ({tlCampanhas.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTlStatusFilter("Ativa")}
+                  className={cn(
+                    "rounded px-2.5 py-1 font-semibold transition-all",
+                    tlStatusFilter === "Ativa"
+                      ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Ativas ({tlCampanhas.filter((c) => c.status === "Ativa").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTlStatusFilter("Programada")}
+                  className={cn(
+                    "rounded px-2.5 py-1 font-semibold transition-all",
+                    tlStatusFilter === "Programada"
+                      ? "bg-navy text-white shadow-xs font-bold"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Programadas ({tlCampanhas.filter((c) => c.status === "Programada").length})
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 self-end sm:self-auto">
               <button
                 onClick={() => setTlOffset((p) => p - 7)}
                 className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                title="Semana anterior"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setTlOffset(0)}
-                className="grid h-7 min-w-[44px] place-items-center rounded-lg px-1.5 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                className="grid h-7 min-w-[44px] place-items-center rounded-lg px-2 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
                 Hoje
               </button>
               <button
                 onClick={() => setTlOffset((p) => p + 7)}
                 className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                title="Próxima semana"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -369,11 +433,11 @@ function DashboardPage() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-[380px]">
             <div style={{ minWidth: tlDays.length * cellW + 160 }}>
-              {/* Cabeçalho de datas */}
-              <div className="flex h-8 items-center border-b bg-secondary/40 px-2">
-                <div className="w-[160px] shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {/* Cabeçalho de datas sticky */}
+              <div className="sticky top-0 z-20 flex h-8 items-center border-b bg-secondary/95 backdrop-blur-xs px-2 shadow-xs">
+                <div className="sticky left-0 top-0 z-30 w-[160px] shrink-0 bg-secondary/95 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Campanha
                 </div>
                 <div className="flex">
@@ -413,14 +477,16 @@ function DashboardPage() {
                 {/* Indicador de hoje */}
                 {todayIdx >= 0 && (
                   <div
-                    className="absolute top-0 z-10 h-full w-0.5 bg-primary"
+                    className="absolute top-0 z-10 h-full w-0.5 bg-primary pointer-events-none"
                     style={{ left: 160 + todayIdx * cellW + cellW / 2 }}
                   />
                 )}
-                {tlCampanhas.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground">Nenhuma campanha neste período.</p>
+                {tlCampanhasFiltradas.length === 0 ? (
+                  <p className="py-8 text-center text-xs text-muted-foreground">
+                    Nenhuma campanha {tlStatusFilter !== "todas" ? `com status "${tlStatusFilter}"` : ""} neste período.
+                  </p>
                 ) : (
-                  tlCampanhas.map((c) => {
+                  tlCampanhasFiltradas.map((c) => {
                     const ini = parseISO(c.dataInicial);
                     const fim = parseISO(c.dataFinal);
                     const { left, width } = barLeft(ini, fim);
@@ -430,8 +496,8 @@ function DashboardPage() {
                         key={c.id}
                         className="flex h-9 items-center border-b border-border/40 px-2 transition-colors hover:bg-secondary/30"
                       >
-                        <div className="sticky left-0 w-[160px] shrink-0 bg-card pr-2">
-                          <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
+                        <div className="sticky left-0 z-10 w-[160px] shrink-0 bg-card pr-2">
+                          <p className="truncate text-xs font-medium text-navy" title={c.nome}>{c.nome}</p>
                         </div>
                         <div className="relative flex-1">
                           <div
@@ -485,7 +551,7 @@ function DashboardPage() {
               </div>
               <span className="text-xs font-semibold text-muted-foreground">{ativas.length}</span>
             </div>
-            <div className="divide-y divide-border/60">
+            <div className="divide-y divide-border/60 max-h-[340px] overflow-y-auto">
               {ativas.length === 0 ? (
                 <p className="py-4 px-4 text-xs text-muted-foreground">Nenhuma.</p>
               ) : (
@@ -526,7 +592,7 @@ function DashboardPage() {
               </div>
               <span className="text-xs font-semibold text-muted-foreground">{proximas.length}</span>
             </div>
-            <div className="divide-y divide-border/60">
+            <div className="divide-y divide-border/60 max-h-[340px] overflow-y-auto">
               {proximas.length === 0 ? (
                 <p className="py-4 px-4 text-xs text-muted-foreground">Nenhuma.</p>
               ) : (
@@ -892,7 +958,7 @@ function MiniCalendar({
           {selectedDayCampaigns.length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhuma campanha neste dia.</p>
           ) : (
-            <ul className="space-y-1.5">
+            <ul className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
               {selectedDayCampaigns.map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/30 px-2.5 py-1.5">
                   <div className="min-w-0 flex-1">
