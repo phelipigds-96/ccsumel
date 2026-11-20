@@ -230,78 +230,6 @@ function DashboardPage() {
       .sort((a, b) => a.data.localeCompare(b.data));
   }, [degustacoes, todayStr]);
 
-  // ── Timeline Gantt: 37 dias (−7 a +30 a partir de hoje) ───────────────
-  const [tlOffset, setTlOffset] = useState(0);
-
-  const tlDays = useMemo(() => {
-    const days: Date[] = [];
-    const start = new Date(hoje);
-    start.setDate(start.getDate() - 7 + tlOffset);
-    for (let i = 0; i < 37; i++) {
-      const d = new Date(start);
-      d.setDate(d.getDate() + i);
-      d.setHours(0, 0, 0, 0);
-      days.push(d);
-    }
-    return days;
-  }, [tlOffset]);
-
-  const tlCampanhas = useMemo(
-    () =>
-      campanhas.filter((c) => {
-        const ini = parseISO(c.dataInicial);
-        const fim = parseISO(c.dataFinal);
-        return tlDays.some(
-          (d) =>
-            d >= new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()) &&
-            d <= new Date(fim.getFullYear(), fim.getMonth(), fim.getDate()),
-        );
-      }),
-    [campanhas, tlDays],
-  );
-
-  const [tlStatusFilter, setTlStatusFilter] = useState<"todas" | "Ativa" | "Programada">("todas");
-
-  const tlCampanhasFiltradas = useMemo(() => {
-    if (tlStatusFilter === "todas") return tlCampanhas;
-    return tlCampanhas.filter((c) => c.status === tlStatusFilter);
-  }, [tlCampanhas, tlStatusFilter]);
-
-  const cellW = 32;
-  const todayIdx = tlDays.findIndex(
-    (d) =>
-      d.getFullYear() === hoje.getFullYear() &&
-      d.getMonth() === hoje.getMonth() &&
-      d.getDate() === hoje.getDate(),
-  );
-
-  const MESES_ABREV = ["jan","fev","mar","abr","mai","jun"," jul","ago","set","out","nov","dez"];
-
-  // Primeira célula de cada mês no range
-  const mesLabels = useMemo(() => {
-    const m = new Map<string, number>();
-    tlDays.forEach((d, i) => {
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      if (!m.has(key)) m.set(key, i);
-    });
-    return m;
-  }, [tlDays]);
-
-  const barLeft = (ini: Date, fim: Date) => {
-    const s = tlDays[0];
-    const startDay = Math.max(0, Math.floor((ini.getTime() - s.getTime()) / 86400000));
-    const endDay = Math.min(tlDays.length - 1, Math.floor((fim.getTime() - s.getTime()) / 86400000));
-    const left = startDay * cellW;
-    const width = Math.max(cellW, (endDay - startDay + 1) * cellW);
-    return { left, width };
-  };
-
-  // Dias que encerram em ≤3 dias
-  const endingSoon = (fim: string) => {
-    const diff = differenceInCalendarDays(parseISO(fim), hoje);
-    return diff >= 0 && diff <= 3;
-  };
-
   return (
     <>
       <WelcomeModal
@@ -351,189 +279,18 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Timeline Gantt ── */}
-        <div className="rounded-xl border bg-card shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b px-4 py-2.5 gap-2.5">
-            <div className="flex items-center gap-3 flex-wrap">
-              <SectionLabel className="mb-0">Timeline — próximas semanas</SectionLabel>
-              <div className="inline-flex rounded-lg border border-border/60 bg-muted/40 p-0.5 text-[10px]">
-                <button
-                  type="button"
-                  onClick={() => setTlStatusFilter("todas")}
-                  className={cn(
-                    "rounded px-2.5 py-1 font-semibold transition-all",
-                    tlStatusFilter === "todas"
-                      ? "bg-card text-navy shadow-xs font-bold"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Todas ({tlCampanhas.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTlStatusFilter("Ativa")}
-                  className={cn(
-                    "rounded px-2.5 py-1 font-semibold transition-all",
-                    tlStatusFilter === "Ativa"
-                      ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Ativas ({tlCampanhas.filter((c) => c.status === "Ativa").length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTlStatusFilter("Programada")}
-                  className={cn(
-                    "rounded px-2.5 py-1 font-semibold transition-all",
-                    tlStatusFilter === "Programada"
-                      ? "bg-navy text-white shadow-xs font-bold"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Programadas ({tlCampanhas.filter((c) => c.status === "Programada").length})
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 self-end sm:self-auto">
-              <button
-                onClick={() => setTlOffset((p) => p - 7)}
-                className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                title="Semana anterior"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => setTlOffset(0)}
-                className="grid h-7 min-w-[44px] place-items-center rounded-lg px-2 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              >
-                Hoje
-              </button>
-              <button
-                onClick={() => setTlOffset((p) => p + 7)}
-                className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                title="Próxima semana"
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Legenda */}
-          <div className="flex items-center gap-4 border-b border-border/50 px-4 py-1.5">
-            <span className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
-              <span className="h-2 w-4 rounded-sm bg-primary" /> Ativa
-            </span>
-            <span className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
-              <span className="h-2 w-4 rounded-sm bg-navy" /> Programada
-            </span>
-            <span className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
-              <span className="h-2 w-0.5 bg-primary" /> Hoje
-            </span>
-          </div>
-
-          <div className="overflow-auto max-h-[380px]">
-            <div style={{ minWidth: tlDays.length * cellW + 160 }}>
-              {/* Cabeçalho de datas sticky */}
-              <div className="sticky top-0 z-20 flex h-8 items-center border-b bg-secondary/95 backdrop-blur-xs px-2 shadow-xs">
-                <div className="sticky left-0 top-0 z-30 w-[160px] shrink-0 bg-secondary/95 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Campanha
-                </div>
-                <div className="flex">
-                  {tlDays.map((d, i) => {
-                    const isToday =
-                      d.getFullYear() === hoje.getFullYear() &&
-                      d.getMonth() === hoje.getMonth() &&
-                      d.getDate() === hoje.getDate();
-                    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                    const isMonthStart = Array.from(mesLabels.entries()).some(([, idx]) => idx === i);
-                    return (
-                      <div
-                        key={i}
-                        className={cn(
-                          "relative flex flex-col items-center justify-center border-l border-border/40",
-                          isToday ? "bg-primary/10" : "",
-                          isWeekend ? "bg-secondary/30" : "",
-                        )}
-                        style={{ width: cellW, height: "100%" }}
-                      >
-                        {isMonthStart && (
-                          <span className={cn("text-[9px] font-bold", isToday ? "text-primary" : "text-muted-foreground")}>
-                            {MESES_ABREV[d.getMonth()]}
-                          </span>
-                        )}
-                        <span className={cn("text-[9px] font-semibold", isToday ? "text-primary" : "text-muted-foreground/60")}>
-                          {format(d, "dd")}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Linhas de campanha */}
-              <div className="relative">
-                {/* Indicador de hoje */}
-                {todayIdx >= 0 && (
-                  <div
-                    className="absolute top-0 z-10 h-full w-0.5 bg-primary pointer-events-none"
-                    style={{ left: 160 + todayIdx * cellW + cellW / 2 }}
-                  />
-                )}
-                {tlCampanhasFiltradas.length === 0 ? (
-                  <p className="py-8 text-center text-xs text-muted-foreground">
-                    Nenhuma campanha {tlStatusFilter !== "todas" ? `com status "${tlStatusFilter}"` : ""} neste período.
-                  </p>
-                ) : (
-                  tlCampanhasFiltradas.map((c) => {
-                    const ini = parseISO(c.dataInicial);
-                    const fim = parseISO(c.dataFinal);
-                    const { left, width } = barLeft(ini, fim);
-                    const soon = endingSoon(c.dataFinal);
-                    return (
-                      <div
-                        key={c.id}
-                        className="flex h-9 items-center border-b border-border/40 px-2 transition-colors hover:bg-secondary/30"
-                      >
-                        <div className="sticky left-0 z-10 w-[160px] shrink-0 bg-card pr-2">
-                          <p className="truncate text-xs font-medium text-navy" title={c.nome}>{c.nome}</p>
-                        </div>
-                        <div className="relative flex-1">
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => abrirQuickView(c.id)}
-                            onKeyDown={(e) => e.key === "Enter" && abrirQuickView(c.id)}
-                            className={cn(
-                              "absolute top-1/2 -translate-y-1/2 cursor-pointer rounded px-2 py-0.5 text-[10px] font-semibold text-white transition-opacity hover:opacity-80",
-                              c.status === "Ativa" ? "bg-primary" : "bg-navy",
-                              soon && "ring-1 ring-amber-400",
-                            )}
-                            style={{ left, width: Math.max(width - 4, 20) }}
-                          >
-                            <span className="block truncate">{c.nome}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Calendário e Listas lado a lado ── */}
-        <div className="grid gap-6 lg:grid-cols-5">
+        {/* ── Calendário e Campanhas lado a lado ── */}
+        <div className="grid gap-6 lg:grid-cols-3">
 
           {/* Calendário compacto */}
-          <div className="rounded-xl border bg-card shadow-sm lg:col-span-2">
-            <div className="flex items-center gap-2 border-b px-4 py-3">
-              <CalendarDays className="h-4 w-4 text-navy" />
-              <SectionLabel className="mb-0">Calendário</SectionLabel>
+          <div className="rounded-xl border bg-card shadow-sm flex flex-col">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-navy" />
+                <SectionLabel className="mb-0">Calendário</SectionLabel>
+              </div>
             </div>
-            <div className="p-3">
+            <div className="p-3.5 flex-1 flex flex-col">
               <MiniCalendar
                 campaigns={campanhas}
                 onOpen={abrirQuickView}
@@ -543,34 +300,38 @@ function DashboardPage() {
           </div>
 
           {/* Campanhas ativas */}
-          <div className="rounded-xl border bg-card shadow-sm lg:col-span-1">
+          <div className="rounded-xl border bg-card shadow-sm flex flex-col">
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                <SectionLabel className="mb-0">Ativas</SectionLabel>
+                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <SectionLabel className="mb-0">Campanhas Ativas</SectionLabel>
               </div>
-              <span className="text-xs font-semibold text-muted-foreground">{ativas.length}</span>
+              <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5">
+                {ativas.length}
+              </Badge>
             </div>
-            <div className="divide-y divide-border/60 max-h-[340px] overflow-y-auto">
+            <div className="divide-y divide-border/60 max-h-[380px] overflow-y-auto flex-1">
               {ativas.length === 0 ? (
-                <p className="py-4 px-4 text-xs text-muted-foreground">Nenhuma.</p>
+                <div className="py-12 px-4 text-center text-xs text-muted-foreground">
+                  Nenhuma campanha ativa no momento.
+                </div>
               ) : (
                 ativas.map((c) => {
                   const restam = differenceInCalendarDays(parseISO(c.dataFinal), hoje);
                   const soon = restam >= 0 && restam <= 3;
                   return (
-                    <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-2.5 transition-colors hover:bg-secondary/40">
+                    <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-secondary/40">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
-                        <p className="truncate text-[10px] text-muted-foreground">
+                        <p className="truncate text-xs font-medium text-navy" title={c.nome}>{c.nome}</p>
+                        <p className="truncate text-[10px] text-muted-foreground mt-0.5">
                           {format(parseISO(c.dataInicial), "dd/MM")}–{format(parseISO(c.dataFinal), "dd/MM")}
                           {c.ofertas > 0 && ` · ${c.ofertas} prod.`}
                         </p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-1.5">
+                      <div className="flex shrink-0 items-center gap-2">
                         <span className={cn(
-                          "text-[10px] font-semibold",
-                          soon ? "text-amber-600" : restam <= 0 ? "text-primary" : "text-muted-foreground",
+                          "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                          soon ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300" : restam <= 0 ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground bg-muted/50",
                         )}>
                           {restam <= 0 ? "hoje" : `${restam}d`}
                         </span>
@@ -584,32 +345,36 @@ function DashboardPage() {
           </div>
 
           {/* Próximas campanhas */}
-          <div className="rounded-xl border bg-card shadow-sm lg:col-span-2">
+          <div className="rounded-xl border bg-card shadow-sm flex flex-col">
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-navy" />
+                <span className="h-2 w-2 rounded-full bg-navy" />
                 <SectionLabel className="mb-0">Programadas</SectionLabel>
               </div>
-              <span className="text-xs font-semibold text-muted-foreground">{proximas.length}</span>
+              <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5">
+                {proximas.length}
+              </Badge>
             </div>
-            <div className="divide-y divide-border/60 max-h-[340px] overflow-y-auto">
+            <div className="divide-y divide-border/60 max-h-[380px] overflow-y-auto flex-1">
               {proximas.length === 0 ? (
-                <p className="py-4 px-4 text-xs text-muted-foreground">Nenhuma.</p>
+                <div className="py-12 px-4 text-center text-xs text-muted-foreground">
+                  Nenhuma campanha programada para os próximos dias.
+                </div>
               ) : (
                 proximas.map((c) => {
                   const dias = differenceInCalendarDays(parseISO(c.dataInicial), hoje);
                   return (
-                    <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-2.5 transition-colors hover:bg-secondary/40">
+                    <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-secondary/40">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
-                        <p className="truncate text-[10px] text-muted-foreground">
+                        <p className="truncate text-xs font-medium text-navy" title={c.nome}>{c.nome}</p>
+                        <p className="truncate text-[10px] text-muted-foreground mt-0.5">
                           {format(parseISO(c.dataInicial), "dd/MM")}–{format(parseISO(c.dataFinal), "dd/MM")}
                           {c.ofertas > 0 && ` · ${c.ofertas} prod.`}
                         </p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-muted-foreground">
-                          {dias <= 0 ? "hoje" : `${dias}d`}
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                          {dias <= 0 ? "inicia hoje" : `em ${dias}d`}
                         </span>
                         <EyeBtn id={c.id} />
                       </div>
@@ -874,21 +639,38 @@ function MiniCalendar({
   return (
     <div>
       {/* Navegação do mês */}
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2.5 flex items-center justify-between">
         <button
+          type="button"
           onClick={() => { setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1)); setSelectedDay(null); }}
-          className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          title="Mês anterior"
         >
-          <ChevronLeft className="h-3 w-3" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="text-xs font-semibold capitalize text-navy">
-          {format(mes, "MMMM yyyy", { locale: ptBR })}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold capitalize text-navy">
+            {format(mes, "MMMM yyyy", { locale: ptBR })}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setMes(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+              setSelectedDay(hoje.getDate());
+            }}
+            className="text-[10px] font-semibold text-primary hover:underline px-1.5 py-0.5 rounded bg-primary/10 transition-colors"
+            title="Ir para o dia de hoje"
+          >
+            Hoje
+          </button>
+        </div>
         <button
+          type="button"
           onClick={() => { setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1)); setSelectedDay(null); }}
-          className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          title="Próximo mês"
         >
-          <ChevronRight className="h-3 w-3" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
@@ -940,37 +722,53 @@ function MiniCalendar({
       </div>
 
       {/* Legenda */}
-      <div className="mt-3 flex items-center gap-3 text-[9px] text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Ativas
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-navy" /> Programadas
-        </span>
+      <div className="mt-3 flex items-center justify-between text-[9px] text-muted-foreground border-t border-border/50 pt-2">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Ativas
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-navy" /> Programadas
+          </span>
+        </div>
+        {selectedDay !== null && (
+          <button
+            type="button"
+            onClick={() => setSelectedDay(null)}
+            className="text-primary hover:underline font-medium"
+          >
+            Limpar seleção
+          </button>
+        )}
       </div>
 
       {/* Campanhas do dia selecionado */}
       {selectedDay !== null && (
-        <div className="mt-3 border-t border-border pt-3">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {format(new Date(mes.getFullYear(), mes.getMonth(), selectedDay), "dd 'de' MMMM", { locale: ptBR })}
-          </p>
+        <div className="mt-2.5 border-t border-border/60 pt-2.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-navy">
+              {format(new Date(mes.getFullYear(), mes.getMonth(), selectedDay), "dd 'de' MMMM", { locale: ptBR })}
+            </p>
+            <span className="text-[10px] text-muted-foreground">
+              {selectedDayCampaigns.length} {selectedDayCampaigns.length === 1 ? "ação" : "ações"}
+            </span>
+          </div>
           {selectedDayCampaigns.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhuma campanha neste dia.</p>
+            <p className="text-xs text-muted-foreground py-2 text-center">Nenhuma campanha neste dia.</p>
           ) : (
-            <ul className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
+            <ul className="space-y-1.5 max-h-[170px] overflow-y-auto pr-1">
               {selectedDayCampaigns.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/30 px-2.5 py-1.5">
+                <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-1.5 hover:bg-muted/50 transition-colors">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
                     <p className="truncate text-[10px] text-muted-foreground">
                       {format(parseISO(c.dataInicial), "dd/MM")}–{format(parseISO(c.dataFinal), "dd/MM")}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <span className={cn(
-                      "text-[9px] font-semibold uppercase tracking-wide",
-                      c.status === "Ativa" ? "text-primary" : "text-navy",
+                      "text-[9px] font-semibold px-1 py-0.2 rounded uppercase tracking-wide",
+                      c.status === "Ativa" ? "text-primary bg-primary/10" : "text-navy bg-navy/10",
                     )}>
                       {c.status}
                     </span>
