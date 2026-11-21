@@ -16,13 +16,11 @@ import {
   Printer,
   FileDown,
   ListOrdered,
-  ImageIcon,
   Target,
   Sparkles,
   Building2,
   X,
   Copy,
-  MessageSquare,
   LayoutGrid,
   List,
   FileSpreadsheet,
@@ -77,7 +75,6 @@ import {
 } from "@/components/campanha-quick-view";
 import { CresceVendasDialog } from "@/components/crescevendas-export";
 import { DescricaoPrecoDialog } from "@/components/descricao-preco-export";
-import { GeradorCartazesDialog } from "@/components/gerador-cartazes-dialog";
 import { CampanhaChecklist } from "@/components/campanha-checklist";
 
 import {
@@ -96,7 +93,6 @@ import { CampanhaDialog } from "./campanha-dialog";
 import { BancoOportunidadesSelectDialog } from "./banco-oportunidades-dialog";
 import { BulkDeleteDialog, BulkFiliaisDialog } from "./bulk-actions-dialogs";
 import { GondolaGrid } from "./gondola-grid";
-import { WhatsappExportDialog } from "./whatsapp-export-dialog";
 import { DuplicarCampanhaDialog } from "./duplicar-campanha-dialog";
 import { ImportarOfertasDialog } from "./importar-ofertas-dialog";
 
@@ -144,8 +140,6 @@ export function CampanhaDetalhe({
   // Exportações
   const [cvOpen, setCvOpen] = useState(false);
   const [dpOpen, setDpOpen] = useState(false);
-  const [cartazOpen, setCartazOpen] = useState(false);
-  const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [importarOpen, setImportarOpen] = useState(false);
 
   // Modo de visualização: Tabela ou Grade de Gôndola
@@ -495,17 +489,11 @@ export function CampanhaDetalhe({
                 <DropdownMenuItem onClick={printPDF} className="text-xs">
                   <Printer className="mr-2 h-3.5 w-3.5" /> Imprimir PDF
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCartazOpen(true)} className="text-xs">
-                  <ImageIcon className="mr-2 h-3.5 w-3.5" /> Gerar Cartazes
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setCvOpen(true)} className="text-xs">
                   <FileDown className="mr-2 h-3.5 w-3.5" /> CresceVendas (.txt)
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setDpOpen(true)} className="text-xs">
                   <ListOrdered className="mr-2 h-3.5 w-3.5" /> Descrição + Preço
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setWhatsappOpen(true)} className="text-xs text-emerald-700 focus:text-emerald-800">
-                  <MessageSquare className="mr-2 h-3.5 w-3.5 text-emerald-600" /> Exportar p/ WhatsApp
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1178,13 +1166,6 @@ export function CampanhaDetalhe({
         onOpenChange={setDpOpen}
       />
 
-      <GeradorCartazesDialog
-        campanha={campanha}
-        ofertas={filtered}
-        open={cartazOpen}
-        onOpenChange={setCartazOpen}
-      />
-
       <BancoOportunidadesSelectDialog
         open={oportunidadesOpen}
         onOpenChange={setOportunidadesOpen}
@@ -1248,14 +1229,6 @@ export function CampanhaDetalhe({
         count={selectedIds.size}
         filiaisPermitidas={campanha.filiais ?? []}
         onApply={handleBulkFiliaisApply}
-      />
-
-      {/* Exportação para WhatsApp */}
-      <WhatsappExportDialog
-        campanha={campanha}
-        ofertas={filtered}
-        open={whatsappOpen}
-        onOpenChange={setWhatsappOpen}
       />
 
       {/* Duplicação de Campanha */}

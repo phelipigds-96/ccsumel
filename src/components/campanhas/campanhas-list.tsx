@@ -20,7 +20,6 @@ import {
   Archive,
   RotateCcw,
   Copy,
-  MessageSquare,
   FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -83,7 +82,6 @@ import {
 } from "./types";
 import { CampanhaDialog } from "./campanha-dialog";
 import { DuplicarCampanhaDialog } from "./duplicar-campanha-dialog";
-import { WhatsappExportDialog } from "./whatsapp-export-dialog";
 import { ImportarOfertasDialog } from "./importar-ofertas-dialog";
 import { campanhasStore } from "@/lib/campanhas-store";
 
@@ -136,7 +134,6 @@ export function CampanhasList({
   );
   const [cvCampanha, setCvCampanha] = useState<Campanha | null>(null);
   const [dpCampanha, setDpCampanha] = useState<Campanha | null>(null);
-  const [waCampanha, setWaCampanha] = useState<Campanha | null>(null);
   const [dupCampanha, setDupCampanha] = useState<Campanha | null>(null);
   const [importarCampanha, setImportarCampanha] = useState<Campanha | null>(null);
 
@@ -373,10 +370,6 @@ export function CampanhasList({
                       Importar Ofertas (Colar)
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={() => setWaCampanha(c)} className="text-emerald-700 focus:text-emerald-800">
-                    <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" />
-                    Exportar p/ WhatsApp
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setCvCampanha(c)}>
                     <FileDown className="mr-2 h-4 w-4" />
                     CresceVendas (.txt)
@@ -731,10 +724,6 @@ export function CampanhasList({
                                   Importar Ofertas (Colar)
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem onClick={() => setWaCampanha(c)} className="text-emerald-700 focus:text-emerald-800">
-                                <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" />
-                                Exportar p/ WhatsApp
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setCvCampanha(c)}>
                                 <FileDown className="mr-2 h-4 w-4" />
                                 CresceVendas (.txt)
@@ -838,17 +827,6 @@ export function CampanhasList({
           open={!!dpCampanha}
           onOpenChange={(v) => {
             if (!v) setDpCampanha(null);
-          }}
-        />
-      )}
-
-      {waCampanha && (
-        <WhatsappExportDialog
-          campanha={waCampanha}
-          ofertas={ofertas.filter((o) => o.campanhaId === waCampanha.id)}
-          open={!!waCampanha}
-          onOpenChange={(v) => {
-            if (!v) setWaCampanha(null);
           }}
         />
       )}
