@@ -19,6 +19,8 @@ import {
   List,
   Archive,
   RotateCcw,
+  Copy,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -76,8 +78,12 @@ import {
   statusVariant,
   formatFiliais,
   emptyCampanha,
+  FILIAIS,
 } from "./types";
 import { CampanhaDialog } from "./campanha-dialog";
+import { DuplicarCampanhaDialog } from "./duplicar-campanha-dialog";
+import { WhatsappExportDialog } from "./whatsapp-export-dialog";
+import { campanhasStore } from "@/lib/campanhas-store";
 
 interface ListProps {
   campanhas: Campanha[];
@@ -99,6 +105,7 @@ export function CampanhasList({
 
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("todos");
+  const [fFilial, setFFilial] = useState("todas");
 
   // Visualização e ordenação
   const [viewMode, setViewModeLocal] = useState<"grid" | "list">(() => {
@@ -127,6 +134,49 @@ export function CampanhasList({
   );
   const [cvCampanha, setCvCampanha] = useState<Campanha | null>(null);
   const [dpCampanha, setDpCampanha] = useState<Campanha | null>(null);
+  const [waCampanha, setWaCampanha] = useState<Campanha | null>(null);
+  const [dupCampanha, setDupCampanha] = useState<Campanha | null>(null);
+
+  const handleDuplicate = (
+    origem: Campanha,
+    novoNome: string,
+    novaDataIni: string,
+    novaDataFim: string,
+    clonarOfertas: boolean,
+    clonarMateriais: boolean
+  ) => {
+    const newCampId = crypto.randomUUID();
+    const novaCamp: Campanha = {
+      ...origem,
+      id: newCampId,
+      nome: novoNome,
+      dataInicial: novaDataIni,
+      dataFinal: novaDataFim,
+      status: "Rascunho",
+      materiais: clonarMateriais ? [...origem.materiais] : [],
+      checklist: (origem.checklist || []).map((c) => ({
+        ...c,
+        id: crypto.randomUUID(),
+        status: "Pendente",
+      })),
+    };
+
+    onSave(novaCamp);
+
+    if (clonarOfertas) {
+      const ofertasOrigem = ofertas.filter((o) => o.campanhaId === origem.id);
+      const novasOfertas: Oferta[] = ofertasOrigem.map((o) => ({
+        ...o,
+        id: crypto.randomUUID(),
+        campanhaId: newCampId,
+        dataInicial: novaDataIni,
+        dataFinal: novaDataFim,
+      }));
+      campanhasStore.setOfertas((prev) => [...novasOfertas, ...prev]);
+    }
+
+    toast.success(`Campanha "${novoNome}" duplicada com sucesso!`);
+  };
 
   const countByCampanha = useMemo(() => {
     const m = new Map<string, number>();
@@ -171,9 +221,12 @@ export function CampanhasList({
         return false;
       }
       if (fStatus !== "todos" && statusCampanha(c) !== fStatus) return false;
+      if (fFilial !== "todas") {
+        if (c.filiais && c.filiais.length > 0 && !c.filiais.includes(fFilial)) return false;
+      }
       return true;
     });
-  }, [sortedVisiveis, search, fStatus]);
+  }, [sortedVisiveis, search, fStatus, fFilial]);
 
   const futuras = useMemo(
     () => filtered.filter((c) => categoriaCampanha(c) === "futura"),
@@ -316,11 +369,24 @@ export function CampanhasList({
                     <ListOrdered className="mr-2 h-4 w-4" />
                     Descrição + Preço
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setWaCampanha(c)} className="text-emerald-700 focus:text-emerald-800">
+                    <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" />
+                    Exportar p/ WhatsApp
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
               {!readOnly && (
                 <>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    title="Duplicar campanha"
+                    onClick={() => setDupCampanha(c)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -357,7 +423,8 @@ export function CampanhasList({
     );
   };
 
-  const isFiltering = search.trim().length > 0 || fStatus !== "todos";
+  const isFiltering =
+    search.trim().length > 0 || fStatus !== "todos" || fFilial !== "todas";
 
   return (
     <div>
@@ -402,9 +469,23 @@ export function CampanhasList({
             className="pl-9"
           />
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <Select value={fFilial} onValueChange={setFFilial}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue placeholder="Filial" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as filiais</SelectItem>
+              {FILIAIS.map((f) => (
+                <SelectItem key={f} value={f}>
+                  {f}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select value={fStatus} onValueChange={setFStatus}>
-            <SelectTrigger className="w-full md:w-[200px]">
+            <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -417,7 +498,7 @@ export function CampanhasList({
             </SelectContent>
           </Select>
 
-          <div className="flex items-center rounded-lg border bg-background p-1 shadow-sm">
+          <div className="flex items-center rounded-lg border bg-background p-1 shadow-sm shrink-0">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
@@ -462,6 +543,7 @@ export function CampanhasList({
                 onClick={() => {
                   setSearch("");
                   setFStatus("todos");
+                  setFFilial("todas");
                 }}
                 className="mt-4 gap-1.5 text-xs"
               >
@@ -636,11 +718,24 @@ export function CampanhasList({
                                 <ListOrdered className="mr-2 h-4 w-4" />
                                 Descrição + Preço
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setWaCampanha(c)} className="text-emerald-700 focus:text-emerald-800">
+                                <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" />
+                                Exportar p/ WhatsApp
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
 
                           {!readOnly && (
                             <>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                title="Duplicar campanha"
+                                onClick={() => setDupCampanha(c)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
                               <Button
                                 size="icon"
                                 variant="ghost"
@@ -725,6 +820,31 @@ export function CampanhasList({
           }}
         />
       )}
+
+      {waCampanha && (
+        <WhatsappExportDialog
+          campanha={waCampanha}
+          ofertas={ofertas.filter((o) => o.campanhaId === waCampanha.id)}
+          open={!!waCampanha}
+          onOpenChange={(v) => {
+            if (!v) setWaCampanha(null);
+          }}
+        />
+      )}
+
+      <DuplicarCampanhaDialog
+        open={!!dupCampanha}
+        onOpenChange={(v) => {
+          if (!v) setDupCampanha(null);
+        }}
+        campanha={dupCampanha}
+        ofertasCount={
+          dupCampanha
+            ? ofertas.filter((o) => o.campanhaId === dupCampanha.id).length
+            : 0
+        }
+        onDuplicate={handleDuplicate}
+      />
 
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>

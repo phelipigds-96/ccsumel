@@ -14,6 +14,10 @@ import {
   Clock,
   Calendar,
   User,
+  AlertTriangle,
+  CheckCircle2,
+  Bell,
+  AlertCircle,
 } from "lucide-react";
 import { useCampanhasStore, campanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView, fmtDate } from "@/components/campanha-quick-view";
@@ -49,7 +53,15 @@ interface CampanhaDash {
   dataFinal: string;
   ofertas: number;
   status: "Ativa" | "Programada" | "Encerrada";
+  filiais: string[];
 }
+
+const FILIAIS_DASHBOARD = [
+  "Matriz",
+  "Filial Esteio",
+  "Filial Sapucaia",
+  "Filial São Leopoldo",
+] as const;
 
 const STATUS_COLOR: Record<CampanhaDash["status"], string> = {
   Ativa: "bg-primary",
@@ -122,6 +134,7 @@ function DashboardPage() {
     [quickViewId, rawCampanhas],
   );
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [selectedFilial, setSelectedFilial] = useState<string>("TODAS");
   const { user } = useAuth();
   const primeiroNome = (user?.name ?? "").split(" ")[0];
 
@@ -148,24 +161,32 @@ function DashboardPage() {
         dataFinal: c.dataFinal,
         ofertas: rawOfertas.filter((o) => o.campanhaId === c.id).length,
         status,
+        filiais: c.filiais || [],
       };
     });
   }, [rawCampanhas, rawOfertas]);
 
+  const campanhasFiltradas = useMemo(() => {
+    if (selectedFilial === "TODAS") return campanhas;
+    return campanhas.filter(
+      (c) => c.filiais.length === 0 || c.filiais.includes(selectedFilial)
+    );
+  }, [campanhas, selectedFilial]);
+
   const ativas = useMemo(
     () =>
-      campanhas
+      campanhasFiltradas
         .filter((c) => c.status === "Ativa")
         .sort((a, b) => a.dataFinal.localeCompare(b.dataFinal)),
-    [campanhas],
+    [campanhasFiltradas],
   );
 
   const proximas = useMemo(
     () =>
-      campanhas
+      campanhasFiltradas
         .filter((c) => c.status === "Programada")
         .sort((a, b) => a.dataInicial.localeCompare(b.dataInicial)),
-    [campanhas],
+    [campanhasFiltradas],
   );
 
   const produtosEmOferta = ativas.reduce((sum, c) => sum + c.ofertas, 0);
@@ -215,20 +236,98 @@ function DashboardPage() {
     return `${y}-${m}-${day}`;
   }, []);
 
+  const degustacoesDaFilial = useMemo(() => {
+    if (selectedFilial === "TODAS") return degustacoes;
+    return degustacoes.filter((d) => d.loja === selectedFilial);
+  }, [degustacoes, selectedFilial]);
+
   const degustacoesHoje = useMemo(() => {
-    return degustacoes.filter(
+    return degustacoesDaFilial.filter(
       (d) =>
         (d.status === "Ativa" || d.data === todayStr) &&
         d.status !== "Cancelada" &&
         d.status !== "Concluída",
     );
-  }, [degustacoes, todayStr]);
+  }, [degustacoesDaFilial, todayStr]);
 
   const degustacoesFuturas = useMemo(() => {
-    return degustacoes
+    return degustacoesDaFilial
       .filter((d) => d.status === "Programada" && d.data > todayStr)
       .sort((a, b) => a.data.localeCompare(b.data));
-  }, [degustacoes, todayStr]);
+  }, [degustacoesDaFilial, todayStr]);
+
+  // ── Radar do Dia (Alertas Críticos nas próximas 24h) ──
+  const radarAlertas = useMemo(() => {
+    const alertas: {
+      id: string;
+      tipo: "encerramento" | "inicio" | "degustacao";
+      titulo: string;
+      descricao: string;
+      urgencia: "alta" | "media" | "info";
+      campanhaId?: string;
+    }[] = [];
+
+    // 1. Campanhas que encerram hoje ou amanhã
+    ativas.forEach((c) => {
+      const restam = differenceInCalendarDays(parseISO(c.dataFinal), hoje);
+      if (restam === 0) {
+        alertas.push({
+          id: `enc-hoje-${c.id}`,
+          tipo: "encerramento",
+          urgencia: "alta",
+          titulo: `Encerra HOJE: ${c.nome}`,
+          descricao: `Último dia de vigência (${c.ofertas} produtos). Troque os cartazes antes da virada do caixa.`,
+          campanhaId: c.id,
+        });
+      } else if (restam === 1) {
+        alertas.push({
+          id: `enc-amanha-${c.id}`,
+          tipo: "encerramento",
+          urgencia: "media",
+          titulo: `Encerra amanhã: ${c.nome}`,
+          descricao: `Vigência termina amanhã. Prepare os cartazes da próxima ação.`,
+          campanhaId: c.id,
+        });
+      }
+    });
+
+    // 2. Campanhas programadas que iniciam hoje ou amanhã
+    proximas.forEach((c) => {
+      const iniciaEm = differenceInCalendarDays(parseISO(c.dataInicial), hoje);
+      if (iniciaEm === 0) {
+        alertas.push({
+          id: `ini-hoje-${c.id}`,
+          tipo: "inicio",
+          urgencia: "alta",
+          titulo: `Inicia HOJE: ${c.nome}`,
+          descricao: `${c.ofertas} produtos em promoção a partir de hoje. Confira os preços no PDV.`,
+          campanhaId: c.id,
+        });
+      } else if (iniciaEm === 1) {
+        alertas.push({
+          id: `ini-amanha-${c.id}`,
+          tipo: "inicio",
+          urgencia: "info",
+          titulo: `Inicia amanhã: ${c.nome}`,
+          descricao: `Prepare os cartazes de gôndola e o material promocional.`,
+          campanhaId: c.id,
+        });
+      }
+    });
+
+    // 3. Degustações hoje
+    degustacoesHoje.forEach((d) => {
+      alertas.push({
+        id: `deg-hoje-${d.id}`,
+        tipo: "degustacao",
+        urgencia: "media",
+        titulo: `Degustação hoje (${d.loja}): ${d.nome}`,
+        descricao: `${d.fornecedor_nome} • ${d.horario_inicio ? d.horario_inicio.slice(0, 5) : "--:--"}${d.horario_fim ? ` às ${d.horario_fim.slice(0, 5)}` : ""} • Responsável: ${d.responsavel_nome}`,
+      });
+    });
+
+    return alertas;
+  }, [ativas, proximas, degustacoesHoje, hoje]);
 
   return (
     <>
@@ -256,6 +355,111 @@ function DashboardPage() {
               </Link>
             </Button>
           </div>
+        </div>
+
+        {/* ── Filtro de Filial / Unidade ── */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-semibold text-navy">
+            <Store className="h-4 w-4 text-primary" />
+            <span>Unidade:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {FILIAIS_DASHBOARD.map((f) => {
+              const active = selectedFilial === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setSelectedFilial(f.id)}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                    active
+                      ? "bg-navy text-white shadow-sm"
+                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-navy"
+                  )}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Radar do Dia (Alertas Críticos nas próximas 24h) ── */}
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                {radarAlertas.length > 0 && (
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                )}
+                <span className={cn(
+                  "relative inline-flex h-2.5 w-2.5 rounded-full",
+                  radarAlertas.length > 0 ? "bg-amber-500" : "bg-emerald-500"
+                )} />
+              </span>
+              <h2 className="text-sm font-bold text-navy flex items-center gap-1.5">
+                <Bell className="h-3.5 w-3.5 text-primary" /> Radar Operacional do Dia
+              </h2>
+            </div>
+            <span className="text-[11px] text-muted-foreground font-medium">
+              {radarAlertas.length} {radarAlertas.length === 1 ? "alerta" : "alertas"} para as próximas 24h
+            </span>
+          </div>
+
+          {radarAlertas.length === 0 ? (
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-800 border border-emerald-200">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+              <span>
+                <strong>Operação em dia:</strong> Nenhuma virada de campanha imediata ou ação de gôndola pendente{" "}
+                {selectedFilial === "TODAS" ? "nas lojas" : `na unidade ${selectedFilial}`}.
+              </span>
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {radarAlertas.map((alerta) => (
+                <div
+                  key={alerta.id}
+                  className={cn(
+                    "flex flex-col justify-between rounded-lg border p-3 text-xs transition-colors",
+                    alerta.urgencia === "alta"
+                      ? "border-amber-300 bg-amber-50/60 text-amber-950"
+                      : alerta.urgencia === "media"
+                      ? "border-blue-200 bg-blue-50/50 text-blue-950"
+                      : "border-slate-200 bg-slate-50 text-slate-800"
+                  )}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={cn(
+                        "rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                        alerta.urgencia === "alta"
+                          ? "bg-amber-200/80 text-amber-900"
+                          : alerta.urgencia === "media"
+                          ? "bg-blue-200/80 text-blue-900"
+                          : "bg-slate-200 text-slate-800"
+                      )}>
+                        {alerta.tipo === "encerramento" ? "Virada de Cartaz" : alerta.tipo === "inicio" ? "Novo no PDV" : "Degustação"}
+                      </span>
+                    </div>
+                    <p className="font-semibold text-navy leading-snug">{alerta.titulo}</p>
+                    <p className="text-[11px] text-muted-foreground leading-normal">{alerta.descricao}</p>
+                  </div>
+                  {alerta.campanhaId && (
+                    <div className="mt-2.5 pt-2 border-t border-black/5 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => abrirQuickView(alerta.campanhaId!)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                      >
+                        <Eye className="h-3 w-3" /> Ver produtos
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── KPI barra compacta ── */}
@@ -292,7 +496,7 @@ function DashboardPage() {
             </div>
             <div className="p-3.5 flex-1 flex flex-col">
               <MiniCalendar
-                campaigns={campanhas}
+                campaigns={campanhasFiltradas}
                 onOpen={abrirQuickView}
                 EyeBtn={EyeBtn}
               />

@@ -21,6 +21,10 @@ import {
   Sparkles,
   Building2,
   X,
+  Copy,
+  MessageSquare,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -90,6 +94,9 @@ import { OfertaDialog } from "./oferta-dialog";
 import { CampanhaDialog } from "./campanha-dialog";
 import { BancoOportunidadesSelectDialog } from "./banco-oportunidades-dialog";
 import { BulkDeleteDialog, BulkFiliaisDialog } from "./bulk-actions-dialogs";
+import { GondolaGrid } from "./gondola-grid";
+import { WhatsappExportDialog } from "./whatsapp-export-dialog";
+import { DuplicarCampanhaDialog } from "./duplicar-campanha-dialog";
 
 interface DetalheProps {
   campanha: Campanha;
@@ -136,6 +143,54 @@ export function CampanhaDetalhe({
   const [cvOpen, setCvOpen] = useState(false);
   const [dpOpen, setDpOpen] = useState(false);
   const [cartazOpen, setCartazOpen] = useState(false);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+
+  // Modo de visualização: Tabela ou Grade de Gôndola
+  const [viewMode, setViewMode] = useState<"table" | "gondola">("table");
+
+  // Duplicar campanha
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+
+  const handleDuplicate = (
+    origem: Campanha,
+    novoNome: string,
+    novaDataIni: string,
+    novaDataFim: string,
+    clonarOfertas: boolean,
+    clonarMateriais: boolean
+  ) => {
+    const newCampId = crypto.randomUUID();
+    const novaCamp: Campanha = {
+      ...origem,
+      id: newCampId,
+      nome: novoNome,
+      dataInicial: novaDataIni,
+      dataFinal: novaDataFim,
+      status: "Rascunho",
+      materiais: clonarMateriais ? [...origem.materiais] : [],
+      checklist: (origem.checklist || []).map((c) => ({
+        ...c,
+        id: crypto.randomUUID(),
+        status: "Pendente",
+      })),
+    };
+
+    campanhasStore.setCampanhas((prev) => [novaCamp, ...prev]);
+
+    if (clonarOfertas) {
+      const ofertasOrigem = ofertas.filter((o) => o.campanhaId === origem.id);
+      const novasOfertas: Oferta[] = ofertasOrigem.map((o) => ({
+        ...o,
+        id: crypto.randomUUID(),
+        campanhaId: newCampId,
+        dataInicial: novaDataIni,
+        dataFinal: novaDataFim,
+      }));
+      campanhasStore.setOfertas((prev) => [...novasOfertas, ...prev]);
+    }
+
+    toast.success(`Campanha "${novoNome}" duplicada com sucesso!`);
+  };
 
   // Seleção em lote (Bulk Actions)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -446,11 +501,23 @@ export function CampanhaDetalhe({
                 <DropdownMenuItem onClick={() => setDpOpen(true)} className="text-xs">
                   <ListOrdered className="mr-2 h-3.5 w-3.5" /> Descrição + Preço
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setWhatsappOpen(true)} className="text-xs text-emerald-700 focus:text-emerald-800">
+                  <MessageSquare className="mr-2 h-3.5 w-3.5 text-emerald-600" /> Exportar p/ WhatsApp
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             {!readOnly && (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDuplicateOpen(true)}
+                  className="h-8 text-xs font-medium border-border/80 hover:bg-muted/50"
+                  title="Duplicar esta campanha e ofertas"
+                >
+                  <Copy className="mr-1.5 h-3.5 w-3.5 text-navy" /> Duplicar
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -673,6 +740,30 @@ export function CampanhaDetalhe({
             })}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Alternador de Modo de Visualização */}
+        <div className="flex items-center rounded-lg border border-border/60 bg-background p-0.5 shadow-xs shrink-0 ml-auto">
+          <Button
+            type="button"
+            variant={viewMode === "table" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 px-2.5 text-xs gap-1.5 rounded-md"
+            onClick={() => setViewMode("table")}
+            title="Visualização em Tabela detalhada"
+          >
+            <List className="h-3.5 w-3.5" /> Tabela
+          </Button>
+          <Button
+            type="button"
+            variant={viewMode === "gondola" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 px-2.5 text-xs gap-1.5 rounded-md text-navy"
+            onClick={() => setViewMode("gondola")}
+            title="Visualização em Grade de Gôndola (Cards promocionais)"
+          >
+            <LayoutGrid className="h-3.5 w-3.5 text-primary" /> Grade Visual
+          </Button>
+        </div>
       </div>
 
       {/* BARRA DE AÇÕES EM LOTE (BULK ACTIONS BAR) */}
@@ -741,269 +832,281 @@ export function CampanhaDetalhe({
         </div>
       )}
 
-      {/* Tabela de Produtos */}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">
-        <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2.5 bg-muted/20">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xs font-semibold tracking-tight text-navy uppercase tracking-wider">
-              Produtos em oferta
-            </h2>
-            {selectedIds.size > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-4">
-                {selectedIds.size} selecionada(s)
-              </Badge>
-            )}
-          </div>
-          <span className="rounded-full bg-accent px-2 py-0.2 text-[10px] font-semibold text-muted-foreground">
-            {filtered.length} de {ofertas.length}
-          </span>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/60 bg-muted/30 hover:bg-muted/30 [&>th]:h-8 [&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
-                {!readOnly && (
-                  <TableHead className="w-9 px-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={allFilteredSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = someFilteredSelected;
-                      }}
-                      onChange={toggleSelectAll}
-                      className="h-4 w-4 rounded accent-primary cursor-pointer align-middle"
-                      title={allFilteredSelected ? "Desmarcar todas" : "Selecionar todas visíveis"}
-                    />
-                  </TableHead>
-                )}
-                {isVisible("codigo") && <TableHead>Código</TableHead>}
-                {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
-                {isVisible("descricao") && <TableHead>Descrição</TableHead>}
-                {isVisible("precoNormal") && <TableHead className="text-right">Normal</TableHead>}
-                {isVisible("precoPromocional") && (
-                  <TableHead className="text-right">Promo</TableHead>
-                )}
-                {isVisible("desconto") && <TableHead className="text-center">% Desc.</TableHead>}
-                {isVisible("mecanica") && <TableHead className="text-center">Condição</TableHead>}
-                {isVisible("clubeSumel") && <TableHead className="text-center">Clube</TableHead>}
-                {isVisible("sellout") && <TableHead className="text-right">Sell Out</TableHead>}
-                {isVisible("dataInicial") && <TableHead>Início</TableHead>}
-                {isVisible("dataFinal") && <TableHead>Fim</TableHead>}
-                {isVisible("filiais") && <TableHead>Filial</TableHead>}
-                {isVisible("corredor") && <TableHead>Corredor</TableHead>}
-                {isVisible("estoque") && <TableHead className="text-right">Estoque</TableHead>}
-                {isVisible("margem") && <TableHead className="text-right">Margem</TableHead>}
-                {isVisible("status") && <TableHead>Status</TableHead>}
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={visibleCount} className="py-14 text-center">
-                    <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent">
-                      <Tag className="h-5 w-5 text-primary" />
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-foreground">
-                      Nenhuma oferta encontrada
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Cadastre produtos nesta campanha ou ajuste os filtros.
-                    </p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((o) => {
-                  const isSelected = selectedIds.has(o.id);
-                  const desconto =
-                    o.precoNormal > 0 &&
-                    o.precoPromocional > 0 &&
-                    o.precoPromocional < o.precoNormal
-                      ? Math.round((1 - o.precoPromocional / o.precoNormal) * 100)
-                      : 0;
-
-                  return (
-                    <TableRow
-                      key={o.id}
-                      className={`group border-border/60 transition-colors ${
-                        isSelected
-                          ? "bg-primary/10 hover:bg-primary/15"
-                          : "hover:bg-accent/60"
-                      }`}
-                    >
-                      {!readOnly && (
-                        <TableCell className="w-9 px-3 text-center">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelectRow(o.id)}
-                            className="h-4 w-4 rounded accent-primary cursor-pointer align-middle"
-                          />
-                        </TableCell>
-                      )}
-                      {isVisible("codigo") && (
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {o.codigo}
-                        </TableCell>
-                      )}
-                      {isVisible("gtin") && (
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {o.gtin}
-                        </TableCell>
-                      )}
-                      {isVisible("descricao") && (
-                        <TableCell className="max-w-[260px] truncate font-medium text-navy">
-                          {o.descricao}
-                        </TableCell>
-                      )}
-                      {isVisible("precoNormal") && (
-                        <TableCell className="text-right text-muted-foreground line-through tabular-nums text-xs">
-                          {brl(o.precoNormal)}
-                        </TableCell>
-                      )}
-                      {isVisible("precoPromocional") && (
-                        <TableCell
-                          className="text-right font-bold tabular-nums text-primary text-xs"
-                          title={
-                            o.tipoPromocao === "a_partir_de"
-                              ? `A partir de ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada`
-                              : o.tipoPromocao === "a_cada"
-                              ? `A cada ${o.quantidadeMinima} un (${o.quantidadeMinima} por ${brl(o.quantidadeMinima * o.precoPromocional)})`
-                              : undefined
-                          }
-                        >
-                          {brl(o.precoPromocional)}
-                        </TableCell>
-                      )}
-                      {isVisible("desconto") && (
-                        <TableCell className="text-center">
-                          {desconto > 0 ? (
-                            <span className="inline-flex items-center justify-center rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold tabular-nums">
-                              -{desconto}%
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground/50">—</span>
-                          )}
-                        </TableCell>
-                      )}
-                      {isVisible("mecanica") && (
-                        <TableCell className="text-center">
-                          {o.tipoPromocao === "a_partir_de" ? (
-                            <span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap">
-                              A partir de {o.quantidadeMinima} un
-                            </span>
-                          ) : o.tipoPromocao === "a_cada" ? (
-                            <span
-                              className="inline-flex items-center rounded-full bg-purple-500/10 text-purple-700 border border-purple-500/20 px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
-                              title={`${o.quantidadeMinima} un por ${brl(o.quantidadeMinima * o.precoPromocional)}`}
-                            >
-                              A cada {o.quantidadeMinima} un
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap">
-                              Preço direto
-                            </span>
-                          )}
-                        </TableCell>
-                      )}
-                      {isVisible("clubeSumel") && (
-                        <TableCell className="text-center">
-                          {o.clubeSumel ? (
-                            <Badge className="bg-primary/10 text-primary border-primary/20">
-                              <Tag className="h-3 w-3 mr-1" /> Sim
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">Não</span>
-                          )}
-                        </TableCell>
-                      )}
-                      {isVisible("sellout") && (
-                        <TableCell className="text-right">
-                          {o.selloutTemVerba ? (
-                            <div className="flex flex-col items-end leading-tight">
-                              <span className="font-semibold tabular-nums text-navy">
-                                {brl(o.selloutValor)}
-                              </span>
-                              {o.selloutFornecedor && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  {o.selloutFornecedor}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
-                          )}
-                        </TableCell>
-                      )}
-                      {isVisible("dataInicial") && (
-                        <TableCell className="text-xs text-muted-foreground">
-                          {fmtDate(o.dataInicial)}
-                        </TableCell>
-                      )}
-                      {isVisible("dataFinal") && (
-                        <TableCell className="text-xs text-muted-foreground">
-                          {fmtDate(o.dataFinal)}
-                        </TableCell>
-                      )}
-                      {isVisible("filiais") && (
-                        <TableCell className="text-xs text-muted-foreground">
-                          {o.filiais?.length ? formatFiliais(o.filiais) : "—"}
-                        </TableCell>
-                      )}
-                      {isVisible("corredor") && (
-                        <TableCell className="text-xs text-muted-foreground">
-                          {o.corredor || "—"}
-                        </TableCell>
-                      )}
-                      {isVisible("estoque") && (
-                        <TableCell className="text-right tabular-nums">{o.estoque}</TableCell>
-                      )}
-                      {isVisible("margem") && (
-                        <TableCell className="text-right tabular-nums">
-                          {o.margem.toFixed(1)}%
-                        </TableCell>
-                      )}
-                      {isVisible("status") && (
-                        <TableCell>
-                          <Badge variant="outline" className={statusVariant[o.status]}>
-                            {o.status}
-                          </Badge>
-                        </TableCell>
-                      )}
-                      <TableCell className="text-right whitespace-nowrap">
-                        {readOnly ? (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        ) : (
-                          <div className="inline-flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 rounded-full hover:bg-navy/10"
-                              onClick={() => openEdit(o)}
-                              title="Editar oferta"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 rounded-full hover:bg-destructive/10"
-                              onClick={() => setDeleteId(o.id)}
-                              title="Excluir oferta"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+      {/* Visualização de Produtos: Grade de Gôndola OU Tabela */}
+      {viewMode === "gondola" ? (
+        <GondolaGrid
+          ofertas={filtered}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelectRow}
+          onEdit={openEdit}
+          onDelete={(id) => setDeleteId(id)}
+          readOnly={readOnly}
+        />
+      ) : (
+        /* Tabela de Produtos */
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">
+          <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2.5 bg-muted/20">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs font-semibold tracking-tight text-navy uppercase tracking-wider">
+                Produtos em oferta
+              </h2>
+              {selectedIds.size > 0 && (
+                <Badge variant="secondary" className="text-[10px] h-4">
+                  {selectedIds.size} selecionada(s)
+                </Badge>
               )}
-            </TableBody>
-          </Table>
+            </div>
+            <span className="rounded-full bg-accent px-2 py-0.2 text-[10px] font-semibold text-muted-foreground">
+              {filtered.length} de {ofertas.length}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/60 bg-muted/30 hover:bg-muted/30 [&>th]:h-8 [&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
+                  {!readOnly && (
+                    <TableHead className="w-9 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allFilteredSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someFilteredSelected;
+                        }}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 rounded accent-primary cursor-pointer align-middle"
+                        title={allFilteredSelected ? "Desmarcar todas" : "Selecionar todas visíveis"}
+                      />
+                    </TableHead>
+                  )}
+                  {isVisible("codigo") && <TableHead>Código</TableHead>}
+                  {isVisible("gtin") && <TableHead>Cód. barras</TableHead>}
+                  {isVisible("descricao") && <TableHead>Descrição</TableHead>}
+                  {isVisible("precoNormal") && <TableHead className="text-right">Normal</TableHead>}
+                  {isVisible("precoPromocional") && (
+                    <TableHead className="text-right">Promo</TableHead>
+                  )}
+                  {isVisible("desconto") && <TableHead className="text-center">% Desc.</TableHead>}
+                  {isVisible("mecanica") && <TableHead className="text-center">Condição</TableHead>}
+                  {isVisible("clubeSumel") && <TableHead className="text-center">Clube</TableHead>}
+                  {isVisible("sellout") && <TableHead className="text-right">Sell Out</TableHead>}
+                  {isVisible("dataInicial") && <TableHead>Início</TableHead>}
+                  {isVisible("dataFinal") && <TableHead>Fim</TableHead>}
+                  {isVisible("filiais") && <TableHead>Filial</TableHead>}
+                  {isVisible("corredor") && <TableHead>Corredor</TableHead>}
+                  {isVisible("estoque") && <TableHead className="text-right">Estoque</TableHead>}
+                  {isVisible("margem") && <TableHead className="text-right">Margem</TableHead>}
+                  {isVisible("status") && <TableHead>Status</TableHead>}
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={visibleCount} className="py-14 text-center">
+                      <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent">
+                        <Tag className="h-5 w-5 text-primary" />
+                      </div>
+                      <p className="mt-3 text-sm font-medium text-foreground">
+                        Nenhuma oferta encontrada
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Cadastre produtos nesta campanha ou ajuste os filtros.
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filtered.map((o) => {
+                    const isSelected = selectedIds.has(o.id);
+                    const desconto =
+                      o.precoNormal > 0 &&
+                      o.precoPromocional > 0 &&
+                      o.precoPromocional < o.precoNormal
+                        ? Math.round((1 - o.precoPromocional / o.precoNormal) * 100)
+                        : 0;
+
+                    return (
+                      <TableRow
+                        key={o.id}
+                        className={`group border-border/60 transition-colors ${
+                          isSelected
+                            ? "bg-primary/10 hover:bg-primary/15"
+                            : "hover:bg-accent/60"
+                        }`}
+                      >
+                        {!readOnly && (
+                          <TableCell className="w-9 px-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSelectRow(o.id)}
+                              className="h-4 w-4 rounded accent-primary cursor-pointer align-middle"
+                            />
+                          </TableCell>
+                        )}
+                        {isVisible("codigo") && (
+                          <TableCell className="font-mono text-xs text-muted-foreground">
+                            {o.codigo}
+                          </TableCell>
+                        )}
+                        {isVisible("gtin") && (
+                          <TableCell className="font-mono text-xs text-muted-foreground">
+                            {o.gtin}
+                          </TableCell>
+                        )}
+                        {isVisible("descricao") && (
+                          <TableCell className="max-w-[260px] truncate font-medium text-navy">
+                            {o.descricao}
+                          </TableCell>
+                        )}
+                        {isVisible("precoNormal") && (
+                          <TableCell className="text-right text-muted-foreground line-through tabular-nums text-xs">
+                            {brl(o.precoNormal)}
+                          </TableCell>
+                        )}
+                        {isVisible("precoPromocional") && (
+                          <TableCell
+                            className="text-right font-bold tabular-nums text-primary text-xs"
+                            title={
+                              o.tipoPromocao === "a_partir_de"
+                                ? `A partir de ${o.quantidadeMinima} un: ${brl(o.precoPromocional)} cada`
+                                : o.tipoPromocao === "a_cada"
+                                ? `A cada ${o.quantidadeMinima} un (${o.quantidadeMinima} por ${brl(o.quantidadeMinima * o.precoPromocional)})`
+                                : undefined
+                            }
+                          >
+                            {brl(o.precoPromocional)}
+                          </TableCell>
+                        )}
+                        {isVisible("desconto") && (
+                          <TableCell className="text-center">
+                            {desconto > 0 ? (
+                              <span className="inline-flex items-center justify-center rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold tabular-nums">
+                                -{desconto}%
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/50">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible("mecanica") && (
+                          <TableCell className="text-center">
+                            {o.tipoPromocao === "a_partir_de" ? (
+                              <span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap">
+                                A partir de {o.quantidadeMinima} un
+                              </span>
+                            ) : o.tipoPromocao === "a_cada" ? (
+                              <span
+                                className="inline-flex items-center rounded-full bg-purple-500/10 text-purple-700 border border-purple-500/20 px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                                title={`${o.quantidadeMinima} un por ${brl(o.quantidadeMinima * o.precoPromocional)}`}
+                              >
+                                A cada {o.quantidadeMinima} un
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap">
+                                Preço direto
+                              </span>
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible("clubeSumel") && (
+                          <TableCell className="text-center">
+                            {o.clubeSumel ? (
+                              <Badge className="bg-primary/10 text-primary border-primary/20">
+                                <Tag className="h-3 w-3 mr-1" /> Sim
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">Não</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible("sellout") && (
+                          <TableCell className="text-right">
+                            {o.selloutTemVerba ? (
+                              <div className="flex flex-col items-end leading-tight">
+                                <span className="font-semibold tabular-nums text-navy">
+                                  {brl(o.selloutValor)}
+                                </span>
+                                {o.selloutFornecedor && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {o.selloutFornecedor}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible("dataInicial") && (
+                          <TableCell className="text-xs text-muted-foreground">
+                            {fmtDate(o.dataInicial)}
+                          </TableCell>
+                        )}
+                        {isVisible("dataFinal") && (
+                          <TableCell className="text-xs text-muted-foreground">
+                            {fmtDate(o.dataFinal)}
+                          </TableCell>
+                        )}
+                        {isVisible("filiais") && (
+                          <TableCell className="text-xs text-muted-foreground">
+                            {o.filiais?.length ? formatFiliais(o.filiais) : "—"}
+                          </TableCell>
+                        )}
+                        {isVisible("corredor") && (
+                          <TableCell className="text-xs text-muted-foreground">
+                            {o.corredor || "—"}
+                          </TableCell>
+                        )}
+                        {isVisible("estoque") && (
+                          <TableCell className="text-right tabular-nums">{o.estoque}</TableCell>
+                        )}
+                        {isVisible("margem") && (
+                          <TableCell className="text-right tabular-nums">
+                            {o.margem.toFixed(1)}%
+                          </TableCell>
+                        )}
+                        {isVisible("status") && (
+                          <TableCell>
+                            <Badge variant="outline" className={statusVariant[o.status]}>
+                              {o.status}
+                            </Badge>
+                          </TableCell>
+                        )}
+                        <TableCell className="text-right whitespace-nowrap">
+                          {readOnly ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            <div className="inline-flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 rounded-full hover:bg-navy/10"
+                                onClick={() => openEdit(o)}
+                                title="Editar oferta"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 rounded-full hover:bg-destructive/10"
+                                onClick={() => setDeleteId(o.id)}
+                                title="Excluir oferta"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-      </div>
+      )}
 
       <OfertaDialog
         open={dialogOpen}
@@ -1113,6 +1216,23 @@ export function CampanhaDetalhe({
         count={selectedIds.size}
         filiaisPermitidas={campanha.filiais ?? []}
         onApply={handleBulkFiliaisApply}
+      />
+
+      {/* Exportação para WhatsApp */}
+      <WhatsappExportDialog
+        campanha={campanha}
+        ofertas={filtered}
+        open={whatsappOpen}
+        onOpenChange={setWhatsappOpen}
+      />
+
+      {/* Duplicação de Campanha */}
+      <DuplicarCampanhaDialog
+        open={duplicateOpen}
+        onOpenChange={setDuplicateOpen}
+        campanha={campanha}
+        ofertasCount={ofertas.length}
+        onDuplicate={handleDuplicate}
       />
     </div>
   );

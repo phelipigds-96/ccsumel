@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from "react";
-import { DollarSign, Tag } from "lucide-react";
+import { DollarSign, Tag, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ import {
   type TipoPromocaoOferta,
   type Status,
   STATUS,
+  categoriaCampanha,
 } from "./types";
 
 const brl = (n: number) =>
@@ -112,6 +113,55 @@ export function OfertaDialog({
       .filter((x): x is { o: Oferta; c: Campanha } => !!x.c)
       .sort((a, b) => (b.c.dataInicial || "").localeCompare(a.c.dataInicial || ""));
   }, [oferta?.id, oferta?.codigo, oferta?.gtin, todasOfertas, todasCampanhas]);
+
+  const conflitoPDV = useMemo(() => {
+    if (!oferta) return null;
+    const cod = (oferta.codigo || "").trim().toLowerCase();
+    const gtin = (oferta.gtin || "").trim();
+    if (!cod && !gtin) return null;
+
+    const dataIni = oferta.dataInicial;
+    const dataFim = oferta.dataFinal;
+    const mapa = new Map(todasCampanhas.map((c) => [c.id, c]));
+
+    for (const o of todasOfertas) {
+      if (o.id === oferta.id || o.campanhaId === oferta.campanhaId) continue;
+      const c = mapa.get(o.campanhaId);
+      if (!c) continue;
+      if (categoriaCampanha(c) === "encerrada") continue;
+
+      const matchCod = cod && (o.codigo || "").trim().toLowerCase() === cod;
+      const matchGtin = gtin && (o.gtin || "").trim() === gtin;
+
+      if (matchCod || matchGtin) {
+        const cIni = o.dataInicial || c.dataInicial;
+        const cFim = o.dataFinal || c.dataFinal;
+
+        const overlap =
+          (!dataFim || !cIni || dataFim >= cIni) &&
+          (!dataIni || !cFim || dataIni <= cFim);
+
+        if (overlap) {
+          return {
+            campanhaNome: c.nome,
+            dataInicial: cIni,
+            dataFinal: cFim,
+            precoPromocional: o.precoPromocional,
+          };
+        }
+      }
+    }
+    return null;
+  }, [
+    oferta?.id,
+    oferta?.campanhaId,
+    oferta?.codigo,
+    oferta?.gtin,
+    oferta?.dataInicial,
+    oferta?.dataFinal,
+    todasCampanhas,
+    todasOfertas,
+  ]);
 
   if (!oferta) return null;
 
@@ -197,6 +247,26 @@ export function OfertaDialog({
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {conflitoPDV && (
+            <div className="rounded-lg border border-amber-400 bg-amber-50 p-3.5 mb-2 text-xs text-amber-950 flex items-start gap-2.5 shadow-xs">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-amber-900 block mb-0.5">
+                  Alerta de Conflito Comercial no PDV:
+                </span>
+                <p className="text-amber-900/90 leading-relaxed">
+                  Este produto também está cadastrado na campanha{" "}
+                  <strong>&quot;{conflitoPDV.campanhaNome}&quot;</strong> (vigência:{" "}
+                  {fmtDate(conflitoPDV.dataInicial)} a {fmtDate(conflitoPDV.dataFinal)}) por{" "}
+                  <strong>{brl(conflitoPDV.precoPromocional)}</strong>.
+                </p>
+                <p className="mt-1 text-[11px] text-amber-800">
+                  Verifique as datas ou filiais para evitar divergência de valor no caixa.
+                </p>
               </div>
             </div>
           )}
