@@ -13,6 +13,7 @@ interface GondolaGridProps {
   onEdit: (o: Oferta) => void;
   onDelete: (id: string) => void;
   readOnly: boolean;
+  onImport?: () => void;
 }
 
 export function GondolaGrid({
@@ -22,13 +23,26 @@ export function GondolaGrid({
   onEdit,
   onDelete,
   readOnly,
+  onImport,
 }: GondolaGridProps) {
   if (ofertas.length === 0) {
     return (
       <div className="py-14 text-center rounded-xl border border-dashed bg-card">
         <Tag className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
         <p className="text-sm font-medium text-navy">Nenhuma oferta encontrada</p>
-        <p className="text-xs text-muted-foreground">Ajuste os filtros de busca.</p>
+        <p className="text-xs text-muted-foreground">Cadastre produtos nesta campanha ou ajuste os filtros.</p>
+        {!readOnly && onImport && (
+          <div className="mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onImport}
+              className="text-xs font-medium"
+            >
+              Colar / Importar Ofertas
+            </Button>
+          </div>
+        )}
       </div>
     );
   }

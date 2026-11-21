@@ -56,13 +56,6 @@ interface CampanhaDash {
   filiais: string[];
 }
 
-const FILIAIS_DASHBOARD = [
-  "Matriz",
-  "Filial Esteio",
-  "Filial Sapucaia",
-  "Filial São Leopoldo",
-] as const;
-
 const STATUS_COLOR: Record<CampanhaDash["status"], string> = {
   Ativa: "bg-primary",
   Programada: "bg-navy",
@@ -134,7 +127,6 @@ function DashboardPage() {
     [quickViewId, rawCampanhas],
   );
   const [welcomeOpen, setWelcomeOpen] = useState(false);
-  const [selectedFilial, setSelectedFilial] = useState<string>("TODAS");
   const { user } = useAuth();
   const primeiroNome = (user?.name ?? "").split(" ")[0];
 
@@ -166,27 +158,20 @@ function DashboardPage() {
     });
   }, [rawCampanhas, rawOfertas]);
 
-  const campanhasFiltradas = useMemo(() => {
-    if (selectedFilial === "TODAS") return campanhas;
-    return campanhas.filter(
-      (c) => c.filiais.length === 0 || c.filiais.includes(selectedFilial)
-    );
-  }, [campanhas, selectedFilial]);
-
   const ativas = useMemo(
     () =>
-      campanhasFiltradas
+      campanhas
         .filter((c) => c.status === "Ativa")
         .sort((a, b) => a.dataFinal.localeCompare(b.dataFinal)),
-    [campanhasFiltradas],
+    [campanhas],
   );
 
   const proximas = useMemo(
     () =>
-      campanhasFiltradas
+      campanhas
         .filter((c) => c.status === "Programada")
         .sort((a, b) => a.dataInicial.localeCompare(b.dataInicial)),
-    [campanhasFiltradas],
+    [campanhas],
   );
 
   const produtosEmOferta = ativas.reduce((sum, c) => sum + c.ofertas, 0);
@@ -236,25 +221,20 @@ function DashboardPage() {
     return `${y}-${m}-${day}`;
   }, []);
 
-  const degustacoesDaFilial = useMemo(() => {
-    if (selectedFilial === "TODAS") return degustacoes;
-    return degustacoes.filter((d) => d.loja === selectedFilial);
-  }, [degustacoes, selectedFilial]);
-
   const degustacoesHoje = useMemo(() => {
-    return degustacoesDaFilial.filter(
+    return degustacoes.filter(
       (d) =>
         (d.status === "Ativa" || d.data === todayStr) &&
         d.status !== "Cancelada" &&
         d.status !== "Concluída",
     );
-  }, [degustacoesDaFilial, todayStr]);
+  }, [degustacoes, todayStr]);
 
   const degustacoesFuturas = useMemo(() => {
-    return degustacoesDaFilial
+    return degustacoes
       .filter((d) => d.status === "Programada" && d.data > todayStr)
       .sort((a, b) => a.data.localeCompare(b.data));
-  }, [degustacoesDaFilial, todayStr]);
+  }, [degustacoes, todayStr]);
 
   // ── Radar do Dia (Alertas Críticos nas próximas 24h) ──
   const radarAlertas = useMemo(() => {
@@ -357,34 +337,6 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Filtro de Filial / Unidade ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-          <div className="flex items-center gap-2 text-xs font-semibold text-navy">
-            <Store className="h-4 w-4 text-primary" />
-            <span>Unidade:</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {FILIAIS_DASHBOARD.map((f) => {
-              const active = selectedFilial === f.id;
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => setSelectedFilial(f.id)}
-                  className={cn(
-                    "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
-                    active
-                      ? "bg-navy text-white shadow-sm"
-                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-navy"
-                  )}
-                >
-                  {f.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* ── Radar do Dia (Alertas Críticos nas próximas 24h) ── */}
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
@@ -411,8 +363,7 @@ function DashboardPage() {
             <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-800 border border-emerald-200">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
               <span>
-                <strong>Operação em dia:</strong> Nenhuma virada de campanha imediata ou ação de gôndola pendente{" "}
-                {selectedFilial === "TODAS" ? "nas lojas" : `na unidade ${selectedFilial}`}.
+                <strong>Operação em dia:</strong> Nenhuma virada de campanha imediata ou ação de gôndola pendente nas lojas.
               </span>
             </div>
           ) : (
@@ -496,7 +447,7 @@ function DashboardPage() {
             </div>
             <div className="p-3.5 flex-1 flex flex-col">
               <MiniCalendar
-                campaigns={campanhasFiltradas}
+                campaigns={campanhas}
                 onOpen={abrirQuickView}
                 EyeBtn={EyeBtn}
               />

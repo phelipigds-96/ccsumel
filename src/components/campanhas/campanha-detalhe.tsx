@@ -25,6 +25,7 @@ import {
   MessageSquare,
   LayoutGrid,
   List,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -97,6 +98,7 @@ import { BulkDeleteDialog, BulkFiliaisDialog } from "./bulk-actions-dialogs";
 import { GondolaGrid } from "./gondola-grid";
 import { WhatsappExportDialog } from "./whatsapp-export-dialog";
 import { DuplicarCampanhaDialog } from "./duplicar-campanha-dialog";
+import { ImportarOfertasDialog } from "./importar-ofertas-dialog";
 
 interface DetalheProps {
   campanha: Campanha;
@@ -144,6 +146,7 @@ export function CampanhaDetalhe({
   const [dpOpen, setDpOpen] = useState(false);
   const [cartazOpen, setCartazOpen] = useState(false);
   const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [importarOpen, setImportarOpen] = useState(false);
 
   // Modo de visualização: Tabela ou Grade de Gôndola
   const [viewMode, setViewMode] = useState<"table" | "gondola">("table");
@@ -536,6 +539,15 @@ export function CampanhaDetalhe({
                   <Target className="mr-1.5 h-3.5 w-3.5" /> Oportunidades
                 </Button>
                 <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImportarOpen(true)}
+                  className="h-8 text-xs font-medium border-border/80 hover:bg-muted/50"
+                  title="Importar ofertas colando texto (código;descrição;preço normal;preço promo)"
+                >
+                  <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-navy" /> Colar / Importar
+                </Button>
+                <Button
                   size="sm"
                   onClick={openNew}
                   className="h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
@@ -841,6 +853,7 @@ export function CampanhaDetalhe({
           onEdit={openEdit}
           onDelete={(id) => setDeleteId(id)}
           readOnly={readOnly}
+          onImport={() => setImportarOpen(true)}
         />
       ) : (
         /* Tabela de Produtos */
@@ -912,6 +925,25 @@ export function CampanhaDetalhe({
                       <p className="mt-1 text-xs text-muted-foreground">
                         Cadastre produtos nesta campanha ou ajuste os filtros.
                       </p>
+                      {!readOnly && (
+                        <div className="mt-4 flex items-center justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setImportarOpen(true)}
+                            className="text-xs font-medium"
+                          >
+                            <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-navy" /> Colar / Importar Ofertas
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={openNew}
+                            className="text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+                          >
+                            <Plus className="mr-1.5 h-3.5 w-3.5" /> Nova Oferta
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -1233,6 +1265,13 @@ export function CampanhaDetalhe({
         campanha={campanha}
         ofertasCount={ofertas.length}
         onDuplicate={handleDuplicate}
+      />
+
+      {/* Importação de Ofertas em Lote */}
+      <ImportarOfertasDialog
+        campanha={campanha}
+        open={importarOpen}
+        onOpenChange={setImportarOpen}
       />
     </div>
   );

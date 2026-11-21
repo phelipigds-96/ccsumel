@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Copy,
   MessageSquare,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -83,6 +84,7 @@ import {
 import { CampanhaDialog } from "./campanha-dialog";
 import { DuplicarCampanhaDialog } from "./duplicar-campanha-dialog";
 import { WhatsappExportDialog } from "./whatsapp-export-dialog";
+import { ImportarOfertasDialog } from "./importar-ofertas-dialog";
 import { campanhasStore } from "@/lib/campanhas-store";
 
 interface ListProps {
@@ -136,6 +138,7 @@ export function CampanhasList({
   const [dpCampanha, setDpCampanha] = useState<Campanha | null>(null);
   const [waCampanha, setWaCampanha] = useState<Campanha | null>(null);
   const [dupCampanha, setDupCampanha] = useState<Campanha | null>(null);
+  const [importarCampanha, setImportarCampanha] = useState<Campanha | null>(null);
 
   const handleDuplicate = (
     origem: Campanha,
@@ -359,8 +362,21 @@ export function CampanhasList({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuLabel>Exportar</DropdownMenuLabel>
+                  <DropdownMenuLabel>Ações e Exportação</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {!readOnly && (
+                    <DropdownMenuItem
+                      onClick={() => setImportarCampanha(c)}
+                      className="text-primary font-medium focus:text-primary cursor-pointer"
+                    >
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Importar Ofertas (Colar)
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => setWaCampanha(c)} className="text-emerald-700 focus:text-emerald-800">
+                    <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" />
+                    Exportar p/ WhatsApp
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setCvCampanha(c)}>
                     <FileDown className="mr-2 h-4 w-4" />
                     CresceVendas (.txt)
@@ -368,10 +384,6 @@ export function CampanhasList({
                   <DropdownMenuItem onClick={() => setDpCampanha(c)}>
                     <ListOrdered className="mr-2 h-4 w-4" />
                     Descrição + Preço
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setWaCampanha(c)} className="text-emerald-700 focus:text-emerald-800">
-                    <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" />
-                    Exportar p/ WhatsApp
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -708,8 +720,21 @@ export function CampanhasList({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
-                              <DropdownMenuLabel>Exportar</DropdownMenuLabel>
+                              <DropdownMenuLabel>Ações e Exportação</DropdownMenuLabel>
                               <DropdownMenuSeparator />
+                              {!readOnly && (
+                                <DropdownMenuItem
+                                  onClick={() => setImportarCampanha(c)}
+                                  className="text-primary font-medium focus:text-primary cursor-pointer"
+                                >
+                                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                  Importar Ofertas (Colar)
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => setWaCampanha(c)} className="text-emerald-700 focus:text-emerald-800">
+                                <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" />
+                                Exportar p/ WhatsApp
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setCvCampanha(c)}>
                                 <FileDown className="mr-2 h-4 w-4" />
                                 CresceVendas (.txt)
@@ -717,10 +742,6 @@ export function CampanhasList({
                               <DropdownMenuItem onClick={() => setDpCampanha(c)}>
                                 <ListOrdered className="mr-2 h-4 w-4" />
                                 Descrição + Preço
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setWaCampanha(c)} className="text-emerald-700 focus:text-emerald-800">
-                                <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" />
-                                Exportar p/ WhatsApp
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -845,6 +866,14 @@ export function CampanhasList({
         }
         onDuplicate={handleDuplicate}
       />
+
+      {importarCampanha && (
+        <ImportarOfertasDialog
+          campanha={importarCampanha}
+          open={!!importarCampanha}
+          onOpenChange={(v) => !v && setImportarCampanha(null)}
+        />
+      )}
 
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
