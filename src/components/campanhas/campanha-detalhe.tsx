@@ -531,7 +531,7 @@ export function CampanhaDetalhe({
                   size="sm"
                   onClick={() => setImportarOpen(true)}
                   className="h-8 text-xs font-medium border-border/80 hover:bg-muted/50"
-                  title="Importar ofertas colando texto (código;descrição;preço normal;preço promo)"
+                  title="Importar ofertas colando texto (código interno;preço normal;preço promo)"
                 >
                   <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-navy" /> Colar / Importar
                 </Button>

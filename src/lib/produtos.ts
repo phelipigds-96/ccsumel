@@ -77,6 +77,59 @@ export async function findByCodigoOrGtin(term: string): Promise<Produto | null> 
   return (data as Produto | null) ?? null;
 }
 
+/**
+ * Busca múltiplos produtos em lote pelo código interno (ou GTIN, se >= 8 dígitos).
+ * Retorna um Map chaveado pelo termo encontrado (código interno ou GTIN).
+ */
+export async function findProdutosByCodigos(terms: string[]): Promise<Map<string, Produto>> {
+  const map = new Map<string, Produto>();
+  const unique = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)));
+  if (unique.length === 0) return map;
+
+  for (let i = 0; i < unique.length; i += 500) {
+    const slice = unique.slice(i, i + 500);
+    const expanded = Array.from(
+      new Set([
+        ...slice,
+        ...slice
+          .filter((t) => /^0+\d+$/.test(t))
+          .map((t) => t.replace(/^0+/, "")),
+      ]),
+    );
+    const { data, error } = await supabase
+      .from("produtos")
+      .select("*")
+      .in("codigo", expanded);
+    if (error) throw error;
+    const rows = (data ?? []) as Produto[];
+    for (const row of rows) {
+      if (row.codigo) map.set(row.codigo.trim(), row);
+    }
+    for (const orig of slice) {
+      if (!map.has(orig) && /^0+\d+$/.test(orig)) {
+        const stripped = orig.replace(/^0+/, "");
+        const hit = map.get(stripped);
+        if (hit) map.set(orig, hit);
+      }
+    }
+  }
+
+  const missingGtins = unique.filter((t) => !map.has(t) && /^\d{8,}$/.test(t));
+  for (let i = 0; i < missingGtins.length; i += 500) {
+    const slice = missingGtins.slice(i, i + 500);
+    const { data, error } = await supabase
+      .from("produtos")
+      .select("*")
+      .in("gtin", slice);
+    if (error) throw error;
+    for (const row of (data ?? []) as Produto[]) {
+      if (row.gtin) map.set(row.gtin.trim(), row);
+    }
+  }
+
+  return map;
+}
+
 export async function deleteProduto(id: string) {
   const { error } = await supabase.from("produtos").delete().eq("id", id);
   if (error) throw error;

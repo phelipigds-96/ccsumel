@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Upload,
   FileSpreadsheet,
@@ -6,13 +6,12 @@ import {
   AlertTriangle,
   Sparkles,
   Trash2,
-  Tag,
-  ArrowRight,
+  Loader2,
+  Barcode,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +36,11 @@ import {
   statusCampanha,
 } from "./types";
 import { campanhasStore } from "@/lib/campanhas-store";
+import {
+  findProdutosByCodigos,
+  listProdutos,
+  type Produto,
+} from "@/lib/produtos";
 
 interface ImportarOfertasDialogProps {
   campanha: Campanha;
@@ -45,21 +49,33 @@ interface ImportarOfertasDialogProps {
   onSuccess?: (total: number) => void;
 }
 
+interface RawLine {
+  lineNum: number;
+  raw: string;
+  parts: string[];
+}
+
 interface ParsedItem {
   lineNum: number;
   raw: string;
   codigo: string;
+  gtin: string;
   descricao: string;
+  fornecedor: string;
+  custo: number;
   precoNormal: number;
   precoPromocional: number;
   categoria: string;
   descontoPct: number;
-  valido: boolean;
+  status: "valido" | "erro" | "buscando";
   erro?: string;
 }
 
 const brl = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const fmtNumBr = (n: number) =>
+  n.toFixed(2).replace(".", ",");
 
 function parsePrice(val: string): number {
   if (!val) return 0;
@@ -166,23 +182,28 @@ function splitRow(line: string): string[] {
 }
 
 function isHeader(parts: string[]): boolean {
-  const p0 = (parts[0] || "").toLowerCase();
-  const p1 = (parts[1] || "").toLowerCase();
+  const p0 = (parts[0] || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const joined = parts
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (/^\d+$/.test(p0)) return false;
   return (
     p0.includes("cod") ||
-    p0.includes("cód") ||
     p0.includes("item") ||
-    p1.includes("desc") ||
-    p1.includes("prod") ||
-    p1.includes("nome")
+    joined.includes("preco") ||
+    joined.includes("promo") ||
+    joined.includes("desc")
   );
 }
 
-const EXEMPLO_TEXTO = `7891000100103;Leite Condensado Moça 395g;8,99;6,99
-7891000200204;Café Pilão Tradicional 500g;22,50;18,90
-001234;Arroz Tio João Tipo 1 5kg;29,90;24,90
-7894900010015;Refrigerante Coca-Cola 2L;9,99;7,99
-7891035000508;Sabão em Pó Omo Lavagem Perfeita 1.6kg;26,90;21,90`;
+const EXEMPLO_FALLBACK = `102030;18,90;14,99
+102031;5,40;4,29
+102032;29,90;24,90`;
 
 export function ImportarOfertasDialog({
   campanha,
@@ -192,118 +213,241 @@ export function ImportarOfertasDialog({
 }: ImportarOfertasDialogProps) {
   const [texto, setTexto] = useState("");
   const [clubeSumel, setClubeSumel] = useState(campanha.clubeSumel ?? false);
+  const [produtosMap, setProdutosMap] = useState<Map<string, Produto>>(new Map());
+  const [attemptedCodes, setAttemptedCodes] = useState<Set<string>>(new Set());
+  const [loadingLookup, setLoadingLookup] = useState(false);
+  const [loadingExemplo, setLoadingExemplo] = useState(false);
+  const attemptedRef = useRef<Set<string>>(new Set());
 
-  const parsed = useMemo(() => {
+  // Reinicia cache de tentativa ao abrir o modal para garantir dados atualizados do catálogo
+  useEffect(() => {
+    if (open) {
+      setClubeSumel(campanha.clubeSumel ?? false);
+      attemptedRef.current = new Set();
+      setAttemptedCodes(new Set());
+      setProdutosMap(new Map());
+    }
+  }, [open, campanha.clubeSumel]);
+
+  const rawLines = useMemo<RawLine[]>(() => {
     if (!texto.trim()) return [];
-
     const lines = texto.split(/\r?\n/);
-    const results: ParsedItem[] = [];
-
+    const out: RawLine[] = [];
     lines.forEach((line, idx) => {
       const trimmed = line.trim();
       if (!trimmed) return;
-
       const parts = splitRow(trimmed);
+      if (out.length === 0 && isHeader(parts)) return;
+      out.push({ lineNum: idx + 1, raw: trimmed, parts });
+    });
+    return out;
+  }, [texto]);
 
-      // Pula linha de cabeçalho
-      if (idx === 0 && isHeader(parts)) {
-        return;
+  const codigosParaBuscar = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of rawLines) {
+      if (row.parts.length >= 3 && row.parts[0]) {
+        set.add(row.parts[0].trim());
       }
+    }
+    return Array.from(set);
+  }, [rawLines]);
 
-      const lineNum = idx + 1;
+  useEffect(() => {
+    if (!open) return;
+    const pendentes = codigosParaBuscar.filter((c) => !attemptedRef.current.has(c));
+    if (pendentes.length === 0) return;
 
-      if (parts.length < 4) {
-        results.push({
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setLoadingLookup(true);
+      try {
+        const encontrados = await findProdutosByCodigos(pendentes);
+        if (cancelled) return;
+
+        for (const c of pendentes) {
+          attemptedRef.current.add(c);
+        }
+        setAttemptedCodes(new Set(attemptedRef.current));
+
+        if (encontrados.size > 0) {
+          setProdutosMap((prev) => {
+            const next = new Map(prev);
+            encontrados.forEach((val, key) => next.set(key, val));
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao consultar catálogo de produtos:", err);
+        if (!cancelled) {
+          toast.error("Não foi possível consultar o Catálogo de Produtos.");
+        }
+      } finally {
+        if (!cancelled) setLoadingLookup(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [codigosParaBuscar, open]);
+
+  const parsed = useMemo<ParsedItem[]>(() => {
+    return rawLines.map(({ lineNum, raw, parts }) => {
+      if (parts.length < 3) {
+        return {
           lineNum,
-          raw: trimmed,
+          raw,
           codigo: parts[0] || "",
-          descricao: parts[1] || "",
+          gtin: "",
+          descricao: "",
+          fornecedor: FORNECEDORES[0],
+          custo: 0,
           precoNormal: 0,
           precoPromocional: 0,
           categoria: "Mercearia",
           descontoPct: 0,
-          valido: false,
-          erro: `Esperado 4 campos (código;descrição;preço normal;preço promo), encontrados ${parts.length}.`,
-        });
-        return;
+          status: "erro",
+          erro: `Esperado 3 campos (código interno;preço normal;preço promo), encontrados ${parts.length}.`,
+        };
       }
 
-      const codigo = parts[0];
-      const descricao = parts[1];
-      const precoNormal = parsePrice(parts[2]);
-      const precoPromocional = parsePrice(parts[3]);
-
-      if (!codigo) {
-        results.push({
+      const codigoTerm = parts[0].trim();
+      if (!codigoTerm) {
+        return {
           lineNum,
-          raw: trimmed,
+          raw,
           codigo: "",
-          descricao,
-          precoNormal,
-          precoPromocional,
-          categoria: "Mercearia",
-          descontoPct: 0,
-          valido: false,
-          erro: "Código do produto não informado.",
-        });
-        return;
-      }
-
-      if (!descricao) {
-        results.push({
-          lineNum,
-          raw: trimmed,
-          codigo,
+          gtin: "",
           descricao: "",
-          precoNormal,
-          precoPromocional,
+          fornecedor: FORNECEDORES[0],
+          custo: 0,
+          precoNormal: 0,
+          precoPromocional: 0,
           categoria: "Mercearia",
           descontoPct: 0,
-          valido: false,
-          erro: "Descrição do produto não informada.",
-        });
-        return;
+          status: "erro",
+          erro: "Código interno não informado.",
+        };
       }
 
-      if (precoPromocional <= 0) {
-        results.push({
+      const isLegacy4Cols = parts.length >= 4;
+      const precoNormalInput = parsePrice(isLegacy4Cols ? parts[2] : parts[1]);
+      const precoPromoInput = parsePrice(isLegacy4Cols ? parts[3] : parts[2]);
+      const manualDesc = isLegacy4Cols ? parts[1].trim() : "";
+
+      const prod = produtosMap.get(codigoTerm);
+      const jaConsultado = attemptedCodes.has(codigoTerm);
+
+      if (!prod && !jaConsultado) {
+        return {
           lineNum,
-          raw: trimmed,
-          codigo,
-          descricao,
-          precoNormal,
-          precoPromocional,
+          raw,
+          codigo: codigoTerm,
+          gtin: "",
+          descricao: manualDesc || "Consultando catálogo...",
+          fornecedor: FORNECEDORES[0],
+          custo: 0,
+          precoNormal: precoNormalInput,
+          precoPromocional: precoPromoInput,
           categoria: "Mercearia",
           descontoPct: 0,
-          valido: false,
+          status: "buscando",
+        };
+      }
+
+      if (!prod && !manualDesc) {
+        return {
+          lineNum,
+          raw,
+          codigo: codigoTerm,
+          gtin: "",
+          descricao: "",
+          fornecedor: FORNECEDORES[0],
+          custo: 0,
+          precoNormal: precoNormalInput,
+          precoPromocional: precoPromoInput,
+          categoria: "Mercearia",
+          descontoPct: 0,
+          status: "erro",
+          erro: `Código interno "${codigoTerm}" não encontrado no Catálogo de Produtos.`,
+        };
+      }
+
+      const codigoFinal = prod?.codigo?.trim() || codigoTerm;
+      const gtinFinal = prod?.gtin?.trim() || "";
+      const descricaoFinal = prod?.descricao?.trim() || manualDesc;
+      const fornecedorFinal = prod?.fornecedor?.trim() || FORNECEDORES[0];
+      const custoFinal = Number(prod?.custo) || 0;
+      const precoNormalFinal =
+        precoNormalInput > 0 ? precoNormalInput : Number(prod?.preco_venda) || 0;
+
+      if (precoPromoInput <= 0) {
+        return {
+          lineNum,
+          raw,
+          codigo: codigoFinal,
+          gtin: gtinFinal,
+          descricao: descricaoFinal,
+          fornecedor: fornecedorFinal,
+          custo: custoFinal,
+          precoNormal: precoNormalFinal,
+          precoPromocional: precoPromoInput,
+          categoria: detectCategoria(descricaoFinal),
+          descontoPct: 0,
+          status: "erro",
           erro: "Preço promocional deve ser maior que zero.",
-        });
-        return;
+        };
       }
 
       const descontoPct =
-        precoNormal > 0 && precoPromocional < precoNormal
-          ? Math.round((1 - precoPromocional / precoNormal) * 100)
+        precoNormalFinal > 0 && precoPromoInput < precoNormalFinal
+          ? Math.round((1 - precoPromoInput / precoNormalFinal) * 100)
           : 0;
 
-      results.push({
+      return {
         lineNum,
-        raw: trimmed,
-        codigo,
-        descricao,
-        precoNormal,
-        precoPromocional,
-        categoria: detectCategoria(descricao),
+        raw,
+        codigo: codigoFinal,
+        gtin: gtinFinal,
+        descricao: descricaoFinal,
+        fornecedor: fornecedorFinal,
+        custo: custoFinal,
+        precoNormal: precoNormalFinal,
+        precoPromocional: precoPromoInput,
+        categoria: detectCategoria(descricaoFinal),
         descontoPct,
-        valido: true,
-      });
+        status: "valido",
+      };
     });
+  }, [rawLines, produtosMap, attemptedCodes]);
 
-    return results;
-  }, [texto]);
+  const validos = useMemo(() => parsed.filter((p) => p.status === "valido"), [parsed]);
+  const invalidos = useMemo(() => parsed.filter((p) => p.status === "erro"), [parsed]);
+  const buscandoCount = useMemo(() => parsed.filter((p) => p.status === "buscando").length, [parsed]);
 
-  const validos = useMemo(() => parsed.filter((p) => p.valido), [parsed]);
-  const invalidos = useMemo(() => parsed.filter((p) => !p.valido), [parsed]);
+  const handlePreencherExemplo = async () => {
+    setLoadingExemplo(true);
+    try {
+      const { rows } = await listProdutos("", 1, 10);
+      const comCodigo = rows.filter((p) => !!p.codigo?.trim()).slice(0, 4);
+      if (comCodigo.length > 0) {
+        const linhas = comCodigo.map((p) => {
+          const base = Number(p.preco_venda) > 0 ? Number(p.preco_venda) : 14.9;
+          const promo = Math.max(0.99, Number((base * 0.85).toFixed(2)));
+          return `${p.codigo};${fmtNumBr(base)};${fmtNumBr(promo)}`;
+        });
+        setTexto(linhas.join("\n"));
+      } else {
+        setTexto(EXEMPLO_FALLBACK);
+      }
+    } catch {
+      setTexto(EXEMPLO_FALLBACK);
+    } finally {
+      setLoadingExemplo(false);
+    }
+  };
 
   const handleImport = () => {
     if (validos.length === 0) return;
@@ -312,17 +456,17 @@ export function ImportarOfertasDialog({
       id: crypto.randomUUID(),
       campanhaId: campanha.id,
       codigo: item.codigo,
-      gtin: item.codigo.length >= 8 ? item.codigo : "",
+      gtin: item.gtin,
       gtinsCresceVendas: "",
       descricao: item.descricao,
-      fornecedor: FORNECEDORES[0],
+      fornecedor: item.fornecedor || FORNECEDORES[0],
       categoria: item.categoria || CATEGORIAS[0],
       precoNormal: item.precoNormal,
-      custo: 0,
+      custo: item.custo,
       precoPromocional: item.precoPromocional,
       tipoPromocao: "simples",
       quantidadeMinima: 1,
-      clubeSumel: clubeSumel,
+      clubeSumel,
       dataInicial: campanha.dataInicial,
       dataFinal: campanha.dataFinal,
       filiais: [...(campanha.filiais ?? [])],
@@ -352,7 +496,7 @@ export function ImportarOfertasDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2 text-navy text-lg">
             <FileSpreadsheet className="h-5 w-5 text-primary" /> Importar Ofertas em Lote
@@ -360,9 +504,9 @@ export function ImportarOfertasDialog({
           <DialogDescription>
             Cole suas ofertas no formato{" "}
             <code className="bg-muted px-1.5 py-0.5 rounded text-navy font-semibold text-xs">
-              código;descrição;preço normal;preço promo
+              código interno;preço normal;preço promo
             </code>
-            . Também suporta colar direto de colunas do Excel ou Google Sheets.
+            . A descrição e o código de barras são preenchidos automaticamente pelo Catálogo de Produtos.
           </DialogDescription>
         </DialogHeader>
 
@@ -372,7 +516,7 @@ export function ImportarOfertasDialog({
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-navy">Área de Colagem:</span>
               <span className="text-[11px] text-muted-foreground">
-                (uma oferta por linha)
+                (uma oferta por linha · também aceita colar 3 colunas do Excel)
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -380,10 +524,16 @@ export function ImportarOfertasDialog({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setTexto(EXEMPLO_TEXTO)}
+                onClick={handlePreencherExemplo}
+                disabled={loadingExemplo}
                 className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10"
               >
-                <Sparkles className="h-3.5 w-3.5 mr-1" /> Preencher Exemplo
+                {loadingExemplo ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 mr-1" />
+                )}
+                Preencher Exemplo
               </Button>
               {texto && (
                 <Button
@@ -403,7 +553,7 @@ export function ImportarOfertasDialog({
           <textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder={`Cole aqui as ofertas...\nExemplo:\n7891000100103;Leite Condensado Moça 395g;8,99;6,99\n7891000200204;Café Pilão Tradicional 500g;22,50;18,90`}
+            placeholder={`Cole aqui as ofertas...\nFormato: código interno;preço normal;preço promo\nExemplo:\n12345;8,99;6,99\n67890;22,50;18,90`}
             rows={6}
             className="w-full rounded-xl border border-input bg-card p-3 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
@@ -429,11 +579,20 @@ export function ImportarOfertasDialog({
           {/* Pré-visualização dos dados parseados */}
           {parsed.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold text-navy">
                     Pré-visualização do Reconhecimento:
                   </span>
+                  {(loadingLookup || buscandoCount > 0) && (
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-50 text-blue-700 border-blue-200 text-[11px] gap-1"
+                    >
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Consultando catálogo...
+                    </Badge>
+                  )}
                   <Badge
                     variant="outline"
                     className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[11px] gap-1"
@@ -454,22 +613,41 @@ export function ImportarOfertasDialog({
               </div>
 
               {/* Tabela de pré-visualização */}
-              <div className="rounded-xl border bg-card overflow-hidden max-h-56 overflow-y-auto">
+              <div className="rounded-xl border bg-card overflow-hidden max-h-60 overflow-y-auto">
                 <Table>
                   <TableHeader className="bg-muted/40 sticky top-0">
                     <TableRow>
-                      <TableHead className="w-[50px] text-xs">Linha</TableHead>
-                      <TableHead className="w-[120px] text-xs">Código</TableHead>
-                      <TableHead className="text-xs">Descrição</TableHead>
-                      <TableHead className="w-[100px] text-xs">Categoria</TableHead>
-                      <TableHead className="text-right w-[100px] text-xs">Preço De</TableHead>
-                      <TableHead className="text-right w-[100px] text-xs">Preço Por</TableHead>
-                      <TableHead className="text-center w-[80px] text-xs">Desconto</TableHead>
+                      <TableHead className="w-[48px] text-xs">Linha</TableHead>
+                      <TableHead className="w-[95px] text-xs">Cód. Interno</TableHead>
+                      <TableHead className="w-[130px] text-xs">Cód. Barras</TableHead>
+                      <TableHead className="text-xs">Descrição (Catálogo)</TableHead>
+                      <TableHead className="text-right w-[90px] text-xs">Preço De</TableHead>
+                      <TableHead className="text-right w-[90px] text-xs">Preço Por</TableHead>
+                      <TableHead className="text-center w-[75px] text-xs">Desc.</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {parsed.map((item) => {
-                      if (!item.valido) {
+                      if (item.status === "buscando") {
+                        return (
+                          <TableRow key={`wait-${item.lineNum}`} className="opacity-70">
+                            <TableCell className="font-mono text-xs text-muted-foreground">
+                              {item.lineNum}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs text-navy">
+                              {item.codigo}
+                            </TableCell>
+                            <TableCell colSpan={5} className="text-xs text-muted-foreground">
+                              <span className="inline-flex items-center gap-1.5">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                Buscando descrição e código de barras no catálogo...
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      if (item.status === "erro") {
                         return (
                           <TableRow
                             key={`err-${item.lineNum}`}
@@ -494,11 +672,21 @@ export function ImportarOfertasDialog({
                           <TableCell className="font-mono text-xs text-navy font-medium">
                             {item.codigo}
                           </TableCell>
-                          <TableCell className="text-xs font-medium text-navy max-w-[240px] truncate" title={item.descricao}>
-                            {item.descricao}
+                          <TableCell className="font-mono text-[11px] text-muted-foreground">
+                            {item.gtin ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Barcode className="h-3 w-3 text-muted-foreground/70" />
+                                {item.gtin}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-amber-600">Sem barras</span>
+                            )}
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {item.categoria}
+                          <TableCell
+                            className="text-xs font-medium text-navy max-w-[240px] truncate"
+                            title={item.descricao}
+                          >
+                            {item.descricao}
                           </TableCell>
                           <TableCell className="text-right text-xs tabular-nums text-muted-foreground line-through">
                             {item.precoNormal > 0 ? brl(item.precoNormal) : "-"}
@@ -546,7 +734,7 @@ export function ImportarOfertasDialog({
               type="button"
               size="sm"
               onClick={handleImport}
-              disabled={validos.length === 0}
+              disabled={loadingLookup || buscandoCount > 0 || validos.length === 0}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
             >
               <Upload className="h-3.5 w-3.5 mr-1.5" />
