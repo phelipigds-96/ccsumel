@@ -275,16 +275,16 @@ export function CampanhasList({
       <div
         key={c.id}
         className={
-          "group relative flex flex-col overflow-hidden rounded-2xl border bg-card transition " +
+          "group relative flex flex-col overflow-hidden rounded-lg fluent-card-interactive fluent-card-item " +
           (opts.destaque
-            ? "border-navy/30 shadow-[0_1px_2px_rgba(11,31,58,0.06)] hover:border-navy/60 hover:shadow-lg"
-            : "hover:border-primary/30 hover:shadow-lg")
+            ? "border-navy/25 hover:border-navy/45"
+            : "hover:border-primary/35")
         }
       >
         <span
           className={
-            "absolute inset-x-0 top-0 h-0.5 " +
-            (opts.destaque ? "bg-navy" : "bg-primary/70")
+            "absolute inset-x-0 top-0 h-[2px] " +
+            (opts.destaque ? "bg-navy" : "bg-primary/65")
           }
         />
         <div className="flex flex-1 flex-col p-5">
@@ -463,20 +463,20 @@ export function CampanhasList({
         }
       />
 
-      {/* Barra de Filtros e Busca */}
-      <div className="rounded-xl border bg-card p-4 mb-4 flex flex-col md:flex-row items-center gap-3">
+      {/* Barra de Filtros e Busca (Command Bar Fluent) */}
+      <div className="rounded-lg fluent-toolbar p-2.5 mb-4 flex flex-col md:flex-row items-center gap-2">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar campanha por nome ou descrição..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-9 rounded-md fluent-input"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <Select value={fFilial} onValueChange={setFFilial}>
-            <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px] h-9 rounded-md text-xs">
               <SelectValue placeholder="Filial" />
             </SelectTrigger>
             <SelectContent>
@@ -490,7 +490,7 @@ export function CampanhasList({
           </Select>
 
           <Select value={fStatus} onValueChange={setFStatus}>
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-[150px] h-9 rounded-md text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -503,23 +503,31 @@ export function CampanhasList({
             </SelectContent>
           </Select>
 
-          <div className="flex items-center rounded-lg border bg-background p-1 shadow-sm shrink-0">
+          <div className="flex items-center rounded-md border bg-muted/40 p-0.5 shrink-0">
             <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className="h-8 px-3 rounded-md text-xs"
+              className={
+                viewMode === "grid"
+                  ? "h-8 px-2.5 rounded-sm text-xs bg-card text-navy shadow-xs hover:bg-card font-semibold"
+                  : "h-8 px-2.5 rounded-sm text-xs text-muted-foreground"
+              }
               onClick={() => setViewMode("grid")}
             >
-              <LayoutGrid className="mr-2 h-3.5 w-3.5" />
+              <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
               Blocos
             </Button>
             <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className="h-8 px-3 rounded-md text-xs"
+              className={
+                viewMode === "list"
+                  ? "h-8 px-2.5 rounded-sm text-xs bg-card text-navy shadow-xs hover:bg-card font-semibold"
+                  : "h-8 px-2.5 rounded-sm text-xs text-muted-foreground"
+              }
               onClick={() => setViewMode("list")}
             >
-              <List className="mr-2 h-3.5 w-3.5" />
+              <List className="mr-1.5 h-3.5 w-3.5" />
               Lista
             </Button>
           </div>
@@ -618,11 +626,11 @@ export function CampanhasList({
         </div>
       ) : (
         /* Visualização em Lista / Tabela */
-        <div className="overflow-hidden rounded-xl border bg-card">
+        <div className="overflow-hidden rounded-lg fluent-card">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-border/70 bg-[#F6F8FA] hover:bg-[#F6F8FA] [&>th]:h-9 [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/75">
                   <TableHead className="w-[110px]">Status</TableHead>
                   <TableHead>Campanha</TableHead>
                   <TableHead className="w-[110px]">Início</TableHead>
@@ -640,7 +648,7 @@ export function CampanhasList({
                   return (
                     <TableRow
                       key={c.id}
-                      className="group border-border/60 transition-colors hover:bg-accent/60"
+                      className="group border-border/60 transition-colors duration-100 hover:bg-muted/45 fluent-row-item"
                     >
                       <TableCell>
                         <Badge

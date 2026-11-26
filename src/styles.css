@@ -95,6 +95,10 @@
   --gradient-sidebar-active: linear-gradient(100deg, oklch(0.535 0.211 27.5 / 0.95) 0%, oklch(0.45 0.17 22 / 0.85) 100%);
   --shadow-sidebar-active: 0 8px 20px -10px oklch(0.535 0.211 27.5 / 0.9);
   --gradient-header: linear-gradient(90deg, oklch(1 0 0 / 0.9) 0%, oklch(0.99 0.004 258 / 0.85) 100%);
+
+  /* Fluent Light elevation (estática, zero blur) */
+  --shadow-fluent-card: 0 1px 2px oklch(0.234 0.048 258 / 0.05), 0 0 1px oklch(0.234 0.048 258 / 0.08);
+  --shadow-fluent-bar: 0 2px 4px oklch(0.234 0.048 258 / 0.04), 0 0 1px oklch(0.234 0.048 258 / 0.06);
 }
 
 @layer base {
@@ -416,6 +420,55 @@
 [data-sidebar="menu-button"]:not([data-active="true"]):hover {
   background-color: oklch(1 0 0 / 0.07);
   transform: translateX(2px);
+}
+
+/* ── Fluent Light Utilities (Zero GPU Bloat) ───────── */
+.fluent-card {
+  background-color: var(--color-card);
+  border: 1px solid oklch(0.91 0.008 255);
+  box-shadow: var(--shadow-fluent-card);
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.fluent-card-interactive {
+  background-color: var(--color-card);
+  border: 1px solid oklch(0.91 0.008 255);
+  box-shadow: var(--shadow-fluent-card);
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.fluent-card-interactive:hover {
+  border-color: oklch(0.234 0.048 258 / 0.28);
+  background-color: oklch(0.994 0.002 258);
+}
+
+.fluent-toolbar {
+  background-color: var(--color-card);
+  border: 1px solid oklch(0.91 0.008 255);
+  box-shadow: var(--shadow-fluent-bar);
+}
+
+.fluent-input:focus,
+.fluent-input:focus-visible {
+  border-bottom-color: var(--color-primary);
+  box-shadow: inset 0 -1px 0 0 var(--color-primary);
+}
+
+.fluent-row-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 44px;
+}
+
+.fluent-card-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 230px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fluent-card,
+  .fluent-card-interactive {
+    transition: none;
+  }
 }
 
 /* ── Dark mode ─────────────────────────────────────── */

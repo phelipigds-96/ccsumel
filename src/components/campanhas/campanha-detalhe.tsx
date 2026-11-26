@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -120,11 +120,22 @@ export function CampanhaDetalhe({
   const { user } = useAuth();
   const readOnly = !user?.isAdmin || !!user?.readOnly;
 
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [fCategoria, setFCategoria] = useState("todas");
   const [fStatus, setFStatus] = useState("todos");
   const [fClube, setFClube] = useState("todos");
   const [fSellout, setFSellout] = useState("todos");
+  const [visibleLimit, setVisibleLimit] = useState(60);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput), 180);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setVisibleLimit(60);
+  }, [campanha.id, search, fCategoria, fStatus, fClube, fSellout]);
 
   // Diálogos de oferta
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -276,6 +287,11 @@ export function CampanhaDetalhe({
       return true;
     });
   }, [ofertas, search, fCategoria, fStatus, fClube, fSellout]);
+
+  const visibleOfertas = useMemo(
+    () => filtered.slice(0, visibleLimit),
+    [filtered, visibleLimit]
+  );
 
   const selloutStats = useMemo(() => {
     const comVerba = ofertas.filter((o) => o.selloutTemVerba);
@@ -436,8 +452,8 @@ export function CampanhaDetalhe({
         <span className="text-navy font-semibold truncate max-w-[320px]">{campanha.nome}</span>
       </div>
 
-      {/* Header Compacto e Moderno */}
-      <div className="rounded-xl border border-border/60 bg-card p-3.5 sm:p-4 mb-3 shadow-xs">
+      {/* Header Compacto estilo Fluent Command Bar */}
+      <div className="rounded-lg fluent-card p-3.5 sm:p-4 mb-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -479,7 +495,7 @@ export function CampanhaDetalhe({
           <div className="flex flex-wrap items-center gap-1.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/40">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 text-xs font-medium">
+                <Button variant="outline" size="sm" className="h-8 rounded-md text-xs font-medium">
                   <Share2 className="mr-1.5 h-3.5 w-3.5" /> Exportar
                 </Button>
               </DropdownMenuTrigger>
@@ -500,11 +516,12 @@ export function CampanhaDetalhe({
 
             {!readOnly && (
               <>
+                <div className="hidden sm:block h-5 w-px bg-border/80 mx-0.5" />
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setDuplicateOpen(true)}
-                  className="h-8 text-xs font-medium border-border/80 hover:bg-muted/50"
+                  className="h-8 rounded-md text-xs font-medium border-border/80 hover:bg-muted/50"
                   title="Duplicar esta campanha e ofertas"
                 >
                   <Copy className="mr-1.5 h-3.5 w-3.5 text-navy" /> Duplicar
@@ -513,7 +530,7 @@ export function CampanhaDetalhe({
                   variant="outline"
                   size="sm"
                   onClick={openEditCampanha}
-                  className="h-8 text-xs font-medium border-border/80 hover:bg-muted/50"
+                  className="h-8 rounded-md text-xs font-medium border-border/80 hover:bg-muted/50"
                   title="Editar campanha e anexar arquivos"
                 >
                   <Pencil className="mr-1.5 h-3.5 w-3.5" /> Editar
@@ -522,7 +539,7 @@ export function CampanhaDetalhe({
                   variant="outline"
                   size="sm"
                   onClick={() => setOportunidadesOpen(true)}
-                  className="h-8 text-xs font-medium border-primary/20 text-primary hover:bg-primary/5"
+                  className="h-8 rounded-md text-xs font-medium border-primary/20 text-primary hover:bg-primary/5"
                 >
                   <Target className="mr-1.5 h-3.5 w-3.5" /> Oportunidades
                 </Button>
@@ -530,15 +547,16 @@ export function CampanhaDetalhe({
                   variant="outline"
                   size="sm"
                   onClick={() => setImportarOpen(true)}
-                  className="h-8 text-xs font-medium border-border/80 hover:bg-muted/50"
+                  className="h-8 rounded-md text-xs font-medium border-border/80 hover:bg-muted/50"
                   title="Importar ofertas colando texto (código interno;preço normal;preço promo)"
                 >
                   <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-navy" /> Colar / Importar
                 </Button>
+                <div className="hidden sm:block h-5 w-px bg-border/80 mx-0.5" />
                 <Button
                   size="sm"
                   onClick={openNew}
-                  className="h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
+                  className="h-8 rounded-md text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" /> Nova Oferta
                 </Button>
@@ -553,12 +571,12 @@ export function CampanhaDetalhe({
         {/* KPIs */}
         <div className="lg:col-span-7 xl:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           {/* Card 1: Sellout */}
-          <div className="rounded-xl border border-border/60 bg-card p-3 shadow-xs flex flex-col justify-between">
+          <div className="rounded-lg fluent-card p-3 flex flex-col justify-between">
             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <DollarSign className="h-3.5 w-3.5 text-primary" /> Verba Sell Out
             </div>
             <div className="mt-1.5">
-              <div className="text-lg sm:text-xl font-bold tracking-tight text-navy">
+              <div className="text-lg sm:text-xl font-bold tracking-tight tabular-nums text-navy">
                 {brl(selloutStats.total)}
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
@@ -568,7 +586,7 @@ export function CampanhaDetalhe({
           </div>
 
           {/* Card 2: Ofertas */}
-          <div className="rounded-xl border border-border/60 bg-card p-3 shadow-xs flex flex-col justify-between">
+          <div className="rounded-lg fluent-card p-3 flex flex-col justify-between">
             <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Tag className="h-3.5 w-3.5 text-navy" /> Ofertas
@@ -580,7 +598,7 @@ export function CampanhaDetalhe({
               )}
             </div>
             <div className="mt-1.5">
-              <div className="text-lg sm:text-xl font-bold tracking-tight text-navy">
+              <div className="text-lg sm:text-xl font-bold tracking-tight tabular-nums text-navy">
                 {ofertas.length}{" "}
                 <span className="text-xs font-normal text-muted-foreground">produtos</span>
               </div>
@@ -593,8 +611,8 @@ export function CampanhaDetalhe({
           {/* Card 3: Anexos */}
           <div
             onClick={!readOnly ? openEditCampanha : undefined}
-            className={`rounded-xl border border-border/60 bg-card p-3 shadow-xs flex flex-col justify-between transition-colors ${
-              !readOnly ? "cursor-pointer hover:border-primary/40 group" : ""
+            className={`rounded-lg p-3 flex flex-col justify-between ${
+              !readOnly ? "fluent-card-interactive cursor-pointer hover:border-primary/40 group" : "fluent-card"
             }`}
             title={!readOnly ? "Clique para gerenciar ou anexar arquivos" : undefined}
           >
@@ -652,19 +670,19 @@ export function CampanhaDetalhe({
         </div>
       ) : null}
 
-      {/* Filtros e Busca */}
-      <div className="mb-3 rounded-xl border border-border/60 bg-card p-2 shadow-xs flex flex-wrap items-center gap-2">
+      {/* Filtros e Busca (Command Bar Fluent) */}
+      <div className="mb-3 rounded-lg fluent-toolbar p-2 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Buscar por código, descrição ou fornecedor..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-8 text-xs rounded-lg border-border/60 bg-background w-full"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-8 h-8 text-xs rounded-md border-border/70 bg-background w-full fluent-input"
           />
         </div>
         <Select value={fCategoria} onValueChange={setFCategoria}>
-          <SelectTrigger className="h-8 rounded-lg border-border/60 bg-background text-xs w-full sm:w-[150px]">
+          <SelectTrigger className="h-8 rounded-md border-border/70 bg-background text-xs w-full sm:w-[150px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -677,7 +695,7 @@ export function CampanhaDetalhe({
           </SelectContent>
         </Select>
         <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger className="h-8 rounded-lg border-border/60 bg-background text-xs w-full sm:w-[140px]">
+          <SelectTrigger className="h-8 rounded-md border-border/70 bg-background text-xs w-full sm:w-[140px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -690,7 +708,7 @@ export function CampanhaDetalhe({
           </SelectContent>
         </Select>
         <Select value={fClube} onValueChange={setFClube}>
-          <SelectTrigger className="h-8 rounded-lg border-border/60 bg-background text-xs w-full sm:w-[130px]">
+          <SelectTrigger className="h-8 rounded-md border-border/70 bg-background text-xs w-full sm:w-[130px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -700,7 +718,7 @@ export function CampanhaDetalhe({
           </SelectContent>
         </Select>
         <Select value={fSellout} onValueChange={setFSellout}>
-          <SelectTrigger className="h-8 rounded-lg border-border/60 bg-background text-xs w-full sm:w-[140px]">
+          <SelectTrigger className="h-8 rounded-md border-border/70 bg-background text-xs w-full sm:w-[140px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -714,7 +732,7 @@ export function CampanhaDetalhe({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 rounded-lg border-border/60 text-xs w-full sm:w-auto px-2.5"
+              className="h-8 rounded-md border-border/70 text-xs w-full sm:w-auto px-2.5"
             >
               <Columns3 className="h-3.5 w-3.5 mr-1.5" /> Colunas
             </Button>
@@ -741,13 +759,17 @@ export function CampanhaDetalhe({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Alternador de Modo de Visualização */}
-        <div className="flex items-center rounded-lg border border-border/60 bg-background p-0.5 shadow-xs shrink-0 ml-auto">
+        {/* Alternador de Modo de Visualização (Segmented Fluent) */}
+        <div className="flex items-center rounded-md border border-border/70 bg-muted/40 p-0.5 shrink-0 ml-auto">
           <Button
             type="button"
-            variant={viewMode === "table" ? "secondary" : "ghost"}
+            variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-xs gap-1.5 rounded-md"
+            className={
+              viewMode === "table"
+                ? "h-7 px-2.5 text-xs gap-1.5 rounded-sm bg-card text-navy shadow-xs hover:bg-card font-semibold"
+                : "h-7 px-2.5 text-xs gap-1.5 rounded-sm text-muted-foreground"
+            }
             onClick={() => setViewMode("table")}
             title="Visualização em Tabela detalhada"
           >
@@ -755,9 +777,13 @@ export function CampanhaDetalhe({
           </Button>
           <Button
             type="button"
-            variant={viewMode === "gondola" ? "secondary" : "ghost"}
+            variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-xs gap-1.5 rounded-md text-navy"
+            className={
+              viewMode === "gondola"
+                ? "h-7 px-2.5 text-xs gap-1.5 rounded-sm bg-card text-navy shadow-xs hover:bg-card font-semibold"
+                : "h-7 px-2.5 text-xs gap-1.5 rounded-sm text-muted-foreground"
+            }
             onClick={() => setViewMode("gondola")}
             title="Visualização em Grade de Gôndola (Cards promocionais)"
           >
@@ -766,11 +792,11 @@ export function CampanhaDetalhe({
         </div>
       </div>
 
-      {/* BARRA DE AÇÕES EM LOTE (BULK ACTIONS BAR) */}
+      {/* BARRA DE AÇÕES EM LOTE (Fluent InfoBar leve) */}
       {selectedIds.size > 0 && !readOnly && (
-        <div className="mb-3 rounded-xl border border-primary/30 bg-primary/5 p-2.5 shadow-sm flex flex-wrap items-center justify-between gap-2.5 transition-all animate-in fade-in slide-in-from-top-1">
+        <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-2.5 flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold tabular-nums">
               {selectedIds.size}
             </span>
             <span className="text-xs font-semibold text-navy">
@@ -793,14 +819,14 @@ export function CampanhaDetalhe({
               variant="outline"
               size="sm"
               onClick={() => setBulkFiliaisDialogOpen(true)}
-              className="h-7 text-xs bg-card hover:bg-muted"
+              className="h-7 rounded-md text-xs bg-card hover:bg-muted"
             >
               <Building2 className="mr-1.5 h-3.5 w-3.5 text-primary" /> Filiais em lote
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs bg-card hover:bg-muted">
+                <Button variant="outline" size="sm" className="h-7 rounded-md text-xs bg-card hover:bg-muted">
                   <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-500" /> Clube Sumel
                 </Button>
               </DropdownMenuTrigger>
@@ -824,7 +850,7 @@ export function CampanhaDetalhe({
               variant="destructive"
               size="sm"
               onClick={() => setBulkDeleteDialogOpen(true)}
-              className="h-7 text-xs"
+              className="h-7 rounded-md text-xs"
             >
               <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Excluir selecionadas
             </Button>
@@ -835,7 +861,7 @@ export function CampanhaDetalhe({
       {/* Visualização de Produtos: Grade de Gôndola OU Tabela */}
       {viewMode === "gondola" ? (
         <GondolaGrid
-          ofertas={filtered}
+          ofertas={visibleOfertas}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelectRow}
           onEdit={openEdit}
@@ -844,11 +870,11 @@ export function CampanhaDetalhe({
           onImport={() => setImportarOpen(true)}
         />
       ) : (
-        /* Tabela de Produtos */
-        <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">
-          <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2.5 bg-muted/20">
+        /* Tabela de Produtos (Fluent DataGrid) */
+        <div className="overflow-hidden rounded-lg fluent-card">
+          <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2 bg-[#F6F8FA]">
             <div className="flex items-center gap-2">
-              <h2 className="text-xs font-semibold tracking-tight text-navy uppercase tracking-wider">
+              <h2 className="text-xs font-semibold text-navy uppercase tracking-wider">
                 Produtos em oferta
               </h2>
               {selectedIds.size > 0 && (
@@ -857,14 +883,14 @@ export function CampanhaDetalhe({
                 </Badge>
               )}
             </div>
-            <span className="rounded-full bg-accent px-2 py-0.2 text-[10px] font-semibold text-muted-foreground">
+            <span className="rounded-md border border-border/70 bg-card px-2 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
               {filtered.length} de {ofertas.length}
             </span>
           </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-border/60 bg-muted/30 hover:bg-muted/30 [&>th]:h-8 [&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/70">
+                <TableRow className="border-border/70 bg-[#F6F8FA] hover:bg-[#F6F8FA] [&>th]:h-8 [&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-navy/75">
                   {!readOnly && (
                     <TableHead className="w-9 px-3 text-center">
                       <input
@@ -919,14 +945,14 @@ export function CampanhaDetalhe({
                             variant="outline"
                             size="sm"
                             onClick={() => setImportarOpen(true)}
-                            className="text-xs font-medium"
+                            className="text-xs font-medium rounded-md"
                           >
                             <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-navy" /> Colar / Importar Ofertas
                           </Button>
                           <Button
                             size="sm"
                             onClick={openNew}
-                            className="text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+                            className="text-xs font-medium rounded-md bg-primary hover:bg-primary/90 text-primary-foreground"
                           >
                             <Plus className="mr-1.5 h-3.5 w-3.5" /> Nova Oferta
                           </Button>
@@ -935,7 +961,7 @@ export function CampanhaDetalhe({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((o) => {
+                  visibleOfertas.map((o) => {
                     const isSelected = selectedIds.has(o.id);
                     const desconto =
                       o.precoNormal > 0 &&
@@ -947,10 +973,10 @@ export function CampanhaDetalhe({
                     return (
                       <TableRow
                         key={o.id}
-                        className={`group border-border/60 transition-colors ${
+                        className={`fluent-row-item group border-border/60 transition-colors duration-100 ${
                           isSelected
-                            ? "bg-primary/10 hover:bg-primary/15"
-                            : "hover:bg-accent/60"
+                            ? "bg-primary/[0.06] hover:bg-primary/[0.09] shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                            : "hover:bg-muted/45"
                         }`}
                       >
                         {!readOnly && (
@@ -1128,124 +1154,175 @@ export function CampanhaDetalhe({
         </div>
       )}
 
-      <OfertaDialog
-        open={dialogOpen}
-        onOpenChange={(v) => {
-          setDialogOpen(v);
-          if (!v) setEditing(null);
-        }}
-        oferta={editing}
-        setOferta={setEditing}
-        onSave={save}
-        filiaisPermitidas={campanha.filiais ?? []}
-      />
+      {/* Paginação incremental para manter DOM leve em campanhas grandes */}
+      {filtered.length > visibleOfertas.length && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg fluent-toolbar px-3.5 py-2 text-xs">
+          <span className="text-muted-foreground">
+            Exibindo <strong className="text-navy tabular-nums">{visibleOfertas.length}</strong> de{" "}
+            <strong className="text-navy tabular-nums">{filtered.length}</strong> ofertas
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 rounded-md text-xs"
+              onClick={() => setVisibleLimit((prev) => prev + 60)}
+            >
+              Carregar mais (+60)
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 rounded-md text-xs text-primary hover:text-primary"
+              onClick={() => setVisibleLimit(filtered.length)}
+            >
+              Mostrar todas ({filtered.length})
+            </Button>
+          </div>
+        </div>
+      )}
 
-      <CampanhaDialog
-        open={campanhaDialogOpen}
-        onOpenChange={(v) => {
-          setCampanhaDialogOpen(v);
-          if (!v) setEditingCampanha(null);
-        }}
-        campanha={editingCampanha}
-        setCampanha={setEditingCampanha}
-        onSave={handleSaveCampanha}
-        onSaveWithMateriais={handleSaveWithMateriais}
-      />
+      {/* Modais montados sob demanda para economizar memória e renderizações */}
+      {dialogOpen && (
+        <OfertaDialog
+          open={dialogOpen}
+          onOpenChange={(v) => {
+            setDialogOpen(v);
+            if (!v) setEditing(null);
+          }}
+          oferta={editing}
+          setOferta={setEditing}
+          onSave={save}
+          filiaisPermitidas={campanha.filiais ?? []}
+        />
+      )}
 
-      <CresceVendasDialog
-        campanha={campanha}
-        ofertas={filtered}
-        open={cvOpen}
-        onOpenChange={setCvOpen}
-      />
+      {campanhaDialogOpen && (
+        <CampanhaDialog
+          open={campanhaDialogOpen}
+          onOpenChange={(v) => {
+            setCampanhaDialogOpen(v);
+            if (!v) setEditingCampanha(null);
+          }}
+          campanha={editingCampanha}
+          setCampanha={setEditingCampanha}
+          onSave={handleSaveCampanha}
+          onSaveWithMateriais={handleSaveWithMateriais}
+        />
+      )}
 
-      <DescricaoPrecoDialog
-        campanha={campanha}
-        ofertas={filtered}
-        open={dpOpen}
-        onOpenChange={setDpOpen}
-      />
+      {cvOpen && (
+        <CresceVendasDialog
+          campanha={campanha}
+          ofertas={filtered}
+          open={cvOpen}
+          onOpenChange={setCvOpen}
+        />
+      )}
 
-      <BancoOportunidadesSelectDialog
-        open={oportunidadesOpen}
-        onOpenChange={setOportunidadesOpen}
-        onSelect={(o) => {
-          const novaOferta: Oferta = {
-            ...emptyOferta(campanha),
-            codigo: o.codigo_interno || "",
-            gtin: o.gtin || "",
-            descricao: o.descricao,
-            custo: o.custo,
-            precoNormal: o.preco_venda,
-            precoPromocional: o.preco_venda,
-          };
-          setEditing(novaOferta);
-          setIsNew(true);
-          setDialogOpen(true);
-          setOportunidadesOpen(false);
-        }}
-      />
+      {dpOpen && (
+        <DescricaoPrecoDialog
+          campanha={campanha}
+          ofertas={filtered}
+          open={dpOpen}
+          onOpenChange={setDpOpen}
+        />
+      )}
+
+      {oportunidadesOpen && (
+        <BancoOportunidadesSelectDialog
+          open={oportunidadesOpen}
+          onOpenChange={setOportunidadesOpen}
+          onSelect={(o) => {
+            const novaOferta: Oferta = {
+              ...emptyOferta(campanha),
+              codigo: o.codigo_interno || "",
+              gtin: o.gtin || "",
+              descricao: o.descricao,
+              custo: o.custo,
+              precoNormal: o.preco_venda,
+              precoPromocional: o.preco_venda,
+            };
+            setEditing(novaOferta);
+            setIsNew(true);
+            setDialogOpen(true);
+            setOportunidadesOpen(false);
+          }}
+        />
+      )}
 
       {/* Confirmação de exclusão unitária */}
-      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir oferta?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não poderá ser desfeita. Se esta oferta tiver sido importada do Banco de
-              Oportunidades, ela voltará a ficar disponível.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteId) {
-                  onDeleteOferta(deleteId);
-                  toast.success("Oferta excluída.");
-                  setDeleteId(null);
-                }
-              }}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {!!deleteId && (
+        <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir oferta?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não poderá ser desfeita. Se esta oferta tiver sido importada do Banco de
+                Oportunidades, ela voltará a ficar disponível.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deleteId) {
+                    onDeleteOferta(deleteId);
+                    toast.success("Oferta excluída.");
+                    setDeleteId(null);
+                  }
+                }}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       {/* Confirmação de exclusão em lote */}
-      <BulkDeleteDialog
-        open={bulkDeleteDialogOpen}
-        onOpenChange={setBulkDeleteDialogOpen}
-        count={selectedIds.size}
-        onConfirm={handleBulkDeleteConfirm}
-      />
+      {bulkDeleteDialogOpen && (
+        <BulkDeleteDialog
+          open={bulkDeleteDialogOpen}
+          onOpenChange={setBulkDeleteDialogOpen}
+          count={selectedIds.size}
+          onConfirm={handleBulkDeleteConfirm}
+        />
+      )}
 
       {/* Aplicação de Filiais em lote */}
-      <BulkFiliaisDialog
-        open={bulkFiliaisDialogOpen}
-        onOpenChange={setBulkFiliaisDialogOpen}
-        count={selectedIds.size}
-        filiaisPermitidas={campanha.filiais ?? []}
-        onApply={handleBulkFiliaisApply}
-      />
+      {bulkFiliaisDialogOpen && (
+        <BulkFiliaisDialog
+          open={bulkFiliaisDialogOpen}
+          onOpenChange={setBulkFiliaisDialogOpen}
+          count={selectedIds.size}
+          filiaisPermitidas={campanha.filiais ?? []}
+          onApply={handleBulkFiliaisApply}
+        />
+      )}
 
       {/* Duplicação de Campanha */}
-      <DuplicarCampanhaDialog
-        open={duplicateOpen}
-        onOpenChange={setDuplicateOpen}
-        campanha={campanha}
-        ofertasCount={ofertas.length}
-        onDuplicate={handleDuplicate}
-      />
+      {duplicateOpen && (
+        <DuplicarCampanhaDialog
+          open={duplicateOpen}
+          onOpenChange={setDuplicateOpen}
+          campanha={campanha}
+          ofertasCount={ofertas.length}
+          onDuplicate={handleDuplicate}
+        />
+      )}
 
       {/* Importação de Ofertas em Lote */}
-      <ImportarOfertasDialog
-        campanha={campanha}
-        open={importarOpen}
-        onOpenChange={setImportarOpen}
-      />
+      {importarOpen && (
+        <ImportarOfertasDialog
+          campanha={campanha}
+          open={importarOpen}
+          onOpenChange={setImportarOpen}
+        />
+      )}
     </div>
   );
 }
