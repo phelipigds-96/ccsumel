@@ -14,10 +14,8 @@ import {
   Clock,
   Calendar,
   User,
-  AlertTriangle,
   CheckCircle2,
   Bell,
-  AlertCircle,
 } from "lucide-react";
 import { useCampanhasStore, campanhasStore, categoriaCampanha, type Campanha } from "@/lib/campanhas-store";
 import { CampanhaQuickView, fmtDate } from "@/components/campanha-quick-view";
@@ -56,12 +54,6 @@ interface CampanhaDash {
   filiais: string[];
 }
 
-const STATUS_COLOR: Record<CampanhaDash["status"], string> = {
-  Ativa: "bg-primary",
-  Programada: "bg-navy",
-  Encerrada: "bg-border",
-};
-
 function getSaudacao(agora: Date, nome: string) {
   const minutos = agora.getHours() * 60 + agora.getMinutes();
   const primeiroNome = (nome || "").trim();
@@ -85,8 +77,8 @@ function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenC
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm gap-0 overflow-hidden p-0 text-left">
         <div className="bg-navy px-6 pb-8 pt-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
-            <Sparkles className="h-7 w-7 text-primary" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/10">
+            <Sparkles className="h-6 w-6 text-primary" />
           </div>
           <h2 className="font-display text-2xl font-bold text-white">
             Bem-vindo de volta,<br />{primeiroNome}! 👋
@@ -96,7 +88,7 @@ function WelcomeModal({ open, onOpenChange, userName }: { open: boolean; onOpenC
           <p className="mb-6 text-center text-sm leading-relaxed text-muted-foreground">
             É sempre bom ver você por aqui.
           </p>
-          <Button onClick={() => onOpenChange(false)} className="w-full rounded-xl font-semibold">
+          <Button onClick={() => onOpenChange(false)} className="w-full rounded-md font-semibold">
             Bora lá!
           </Button>
         </div>
@@ -311,15 +303,17 @@ function DashboardPage() {
 
   return (
     <>
-      <WelcomeModal
-        open={welcomeOpen}
-        onOpenChange={setWelcomeOpen}
-        userName={user?.name ?? ""}
-      />
-      <div className="space-y-8">
+      {welcomeOpen && (
+        <WelcomeModal
+          open={welcomeOpen}
+          onOpenChange={setWelcomeOpen}
+          userName={user?.name ?? ""}
+        />
+      )}
+      <div className="space-y-5">
 
         {/* ── Cabeçalho sóbrio ── */}
-        <div className="relative overflow-hidden rounded-xl border-b-2 border-primary bg-navy px-5 py-4">
+        <div className="relative overflow-hidden rounded-lg border-b-2 border-primary bg-navy px-5 py-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
               <h1 className="font-display text-xl font-bold text-white sm:text-2xl">
@@ -329,7 +323,7 @@ function DashboardPage() {
                 {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </p>
             </div>
-            <Button asChild className="w-full sm:w-auto shrink-0 rounded-lg font-semibold">
+            <Button asChild className="w-full sm:w-auto shrink-0 rounded-md font-semibold">
               <Link to="/campanhas">
                 <Plus className="mr-1.5 h-3.5 w-3.5" /> Nova campanha
               </Link>
@@ -338,46 +332,45 @@ function DashboardPage() {
         </div>
 
         {/* ── Radar do Dia (Alertas Críticos nas próximas 24h) ── */}
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="rounded-lg fluent-card p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                {radarAlertas.length > 0 && (
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+              <span
+                className={cn(
+                  "inline-block h-2.5 w-2.5 rounded-full",
+                  radarAlertas.length > 0
+                    ? "bg-amber-500 ring-4 ring-amber-500/15"
+                    : "bg-emerald-500 ring-4 ring-emerald-500/15"
                 )}
-                <span className={cn(
-                  "relative inline-flex h-2.5 w-2.5 rounded-full",
-                  radarAlertas.length > 0 ? "bg-amber-500" : "bg-emerald-500"
-                )} />
-              </span>
+              />
               <h2 className="text-sm font-bold text-navy flex items-center gap-1.5">
                 <Bell className="h-3.5 w-3.5 text-primary" /> Radar Operacional do Dia
               </h2>
             </div>
-            <span className="text-[11px] text-muted-foreground font-medium">
+            <span className="text-[11px] text-muted-foreground font-medium tabular-nums">
               {radarAlertas.length} {radarAlertas.length === 1 ? "alerta" : "alertas"} para as próximas 24h
             </span>
           </div>
 
           {radarAlertas.length === 0 ? (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-800 border border-emerald-200">
+            <div className="flex items-center gap-2 rounded-md bg-emerald-50/80 px-3.5 py-2.5 text-xs text-emerald-800 border border-emerald-200 shadow-[inset_3px_0_0_0_#10b981]">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
               <span>
                 <strong>Operação em dia:</strong> Nenhuma virada de campanha imediata ou ação de gôndola pendente nas lojas.
               </span>
             </div>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {radarAlertas.map((alerta) => (
                 <div
                   key={alerta.id}
                   className={cn(
-                    "flex flex-col justify-between rounded-lg border p-3 text-xs transition-colors",
+                    "flex flex-col justify-between rounded-md border p-3 text-xs transition-colors duration-100",
                     alerta.urgencia === "alta"
-                      ? "border-amber-300 bg-amber-50/60 text-amber-950"
+                      ? "border-amber-300/80 bg-amber-50/50 text-amber-950 shadow-[inset_3px_0_0_0_#f59e0b]"
                       : alerta.urgencia === "media"
-                      ? "border-blue-200 bg-blue-50/50 text-blue-950"
-                      : "border-slate-200 bg-slate-50 text-slate-800"
+                      ? "border-blue-200 bg-blue-50/40 text-blue-950 shadow-[inset_3px_0_0_0_#3b82f6]"
+                      : "border-slate-200 bg-[#F6F8FA] text-slate-800 shadow-[inset_3px_0_0_0_#64748b]"
                   )}
                 >
                   <div className="space-y-1">
@@ -414,20 +407,20 @@ function DashboardPage() {
         </div>
 
         {/* ── KPI barra compacta ── */}
-        <div className="rounded-xl border bg-card px-6 py-4 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <div className="rounded-lg fluent-card px-5 py-3.5">
+          <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
             Visão geral
           </p>
           <div className="flex items-stretch divide-x divide-border">
-            <div className="flex flex-1 flex-col items-center px-6 py-1">
+            <div className="flex flex-1 flex-col items-center px-4 py-1">
               <span className="font-display text-3xl font-bold tabular-nums text-navy">{ativas.length}</span>
               <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Ativas</span>
             </div>
-            <div className="flex flex-1 flex-col items-center px-6 py-1">
+            <div className="flex flex-1 flex-col items-center px-4 py-1">
               <span className="font-display text-3xl font-bold tabular-nums text-navy">{proximas.length}</span>
               <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Programadas</span>
             </div>
-            <div className="flex flex-1 flex-col items-center px-6 py-1">
+            <div className="flex flex-1 flex-col items-center px-4 py-1">
               <span className="font-display text-3xl font-bold tabular-nums text-primary">{produtosEmOferta}</span>
               <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Produtos em oferta</span>
             </div>
@@ -435,11 +428,11 @@ function DashboardPage() {
         </div>
 
         {/* ── Calendário e Campanhas lado a lado ── */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-3">
 
           {/* Calendário compacto */}
-          <div className="rounded-xl border bg-card shadow-sm flex flex-col">
-            <div className="flex items-center justify-between border-b px-4 py-3">
+          <div className="rounded-lg fluent-card flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border/60 bg-[#F6F8FA] px-4 py-2.5">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-navy" />
                 <SectionLabel className="mb-0">Calendário</SectionLabel>
@@ -455,13 +448,13 @@ function DashboardPage() {
           </div>
 
           {/* Campanhas ativas */}
-          <div className="rounded-xl border bg-card shadow-sm flex flex-col">
-            <div className="flex items-center justify-between border-b px-4 py-3">
+          <div className="rounded-lg fluent-card flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border/60 bg-[#F6F8FA] px-4 py-2.5">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-primary ring-4 ring-primary/15" />
                 <SectionLabel className="mb-0">Campanhas Ativas</SectionLabel>
               </div>
-              <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5">
+              <Badge variant="secondary" className="text-xs font-semibold tabular-nums px-2 py-0.5">
                 {ativas.length}
               </Badge>
             </div>
@@ -475,7 +468,7 @@ function DashboardPage() {
                   const restam = differenceInCalendarDays(parseISO(c.dataFinal), hoje);
                   const soon = restam >= 0 && restam <= 3;
                   return (
-                    <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-secondary/40">
+                    <div key={c.id} className="fluent-row-item flex items-center justify-between gap-2 px-4 py-2.5 transition-colors duration-100 hover:bg-muted/45">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-medium text-navy" title={c.nome}>{c.nome}</p>
                         <p className="truncate text-[10px] text-muted-foreground mt-0.5">
@@ -485,7 +478,7 @@ function DashboardPage() {
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <span className={cn(
-                          "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                          "text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded",
                           soon ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300" : restam <= 0 ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground bg-muted/50",
                         )}>
                           {restam <= 0 ? "hoje" : `${restam}d`}
@@ -500,13 +493,13 @@ function DashboardPage() {
           </div>
 
           {/* Próximas campanhas */}
-          <div className="rounded-xl border bg-card shadow-sm flex flex-col">
-            <div className="flex items-center justify-between border-b px-4 py-3">
+          <div className="rounded-lg fluent-card flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border/60 bg-[#F6F8FA] px-4 py-2.5">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-navy" />
                 <SectionLabel className="mb-0">Programadas</SectionLabel>
               </div>
-              <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5">
+              <Badge variant="secondary" className="text-xs font-semibold tabular-nums px-2 py-0.5">
                 {proximas.length}
               </Badge>
             </div>
@@ -519,7 +512,7 @@ function DashboardPage() {
                 proximas.map((c) => {
                   const dias = differenceInCalendarDays(parseISO(c.dataInicial), hoje);
                   return (
-                    <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-secondary/40">
+                    <div key={c.id} className="fluent-row-item flex items-center justify-between gap-2 px-4 py-2.5 transition-colors duration-100 hover:bg-muted/45">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-medium text-navy" title={c.nome}>{c.nome}</p>
                         <p className="truncate text-[10px] text-muted-foreground mt-0.5">
@@ -528,7 +521,7 @@ function DashboardPage() {
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
-                        <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold tabular-nums text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
                           {dias <= 0 ? "inicia hoje" : `em ${dias}d`}
                         </span>
                         <EyeBtn id={c.id} />
@@ -542,10 +535,10 @@ function DashboardPage() {
         </div>
 
         {/* ── Bloco Degustações (Chão de Loja) ── */}
-        <div className="rounded-xl border bg-card shadow-sm">
-          <div className="flex items-center justify-between border-b px-5 py-3.5 flex-wrap gap-2">
+        <div className="rounded-lg fluent-card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border/60 bg-[#F6F8FA] px-4 py-3 flex-wrap gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
                 <Utensils className="h-4 w-4" />
               </div>
               <div>
@@ -556,20 +549,20 @@ function DashboardPage() {
               </div>
             </div>
 
-            <Button asChild variant="ghost" size="sm" className="h-8 text-xs text-navy font-semibold hover:text-primary">
+            <Button asChild variant="ghost" size="sm" className="h-8 rounded-md text-xs text-navy font-semibold hover:text-primary">
               <Link to="/degustacoes">
                 Ver todas as degustações <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
           </div>
 
-          <div className="p-5">
+          <div className="p-4">
             {loadingDegustacoes ? (
               <div className="py-8 text-center text-xs text-muted-foreground">
                 Carregando degustações...
               </div>
             ) : degustacoesHoje.length === 0 && degustacoesFuturas.length === 0 ? (
-              <div className="rounded-lg border border-dashed py-8 text-center text-xs text-muted-foreground bg-muted/5">
+              <div className="rounded-md border border-dashed py-8 text-center text-xs text-muted-foreground bg-muted/10">
                 Nenhuma degustação ativa ou programada no momento.
               </div>
             ) : (
@@ -577,17 +570,14 @@ function DashboardPage() {
                 {/* Coluna 1: Hoje / Em Andamento */}
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                      </span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/15" />
                       Hoje / Em Andamento ({degustacoesHoje.length})
                     </span>
                   </div>
 
                   {degustacoesHoje.length === 0 ? (
-                    <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/5">
+                    <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/10">
                       Nenhuma degustação acontecendo hoje.
                     </div>
                   ) : (
@@ -599,11 +589,11 @@ function DashboardPage() {
                           tabIndex={0}
                           onClick={() => setQuickViewDegustacao(d)}
                           onKeyDown={(e) => e.key === "Enter" && setQuickViewDegustacao(d)}
-                          className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-emerald-200/70 bg-emerald-50/25 p-3.5 transition-all hover:border-emerald-400 hover:shadow-xs cursor-pointer dark:bg-emerald-950/15 dark:border-emerald-900"
+                          className="fluent-row-item group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-md border border-emerald-200/80 bg-emerald-50/20 shadow-[inset_3px_0_0_0_#10b981] p-3.5 transition-colors duration-100 hover:border-emerald-400 hover:bg-emerald-50/40 cursor-pointer dark:bg-emerald-950/15 dark:border-emerald-900"
                         >
                           <div className="min-w-0 flex-1 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-xs text-navy group-hover:text-primary transition-colors">
+                              <span className="font-semibold text-xs text-navy group-hover:text-primary transition-colors duration-100">
                                 {d.nome}
                               </span>
                               <DegustacaoStatusBadge status={d.status} />
@@ -621,7 +611,7 @@ function DashboardPage() {
                               <span className="flex items-center gap-1">
                                 <Truck className="h-3 w-3 text-muted-foreground" /> {d.fornecedor_nome}
                               </span>
-                              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
+                              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
                                 <Clock className="h-3 w-3" />
                                 {d.horario_inicio ? d.horario_inicio.slice(0, 5) : "--:--"}
                                 {d.horario_fim ? ` às ${d.horario_fim.slice(0, 5)}` : ""}
@@ -637,7 +627,7 @@ function DashboardPage() {
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="h-7 text-xs gap-1 border-emerald-300 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300 pointer-events-none"
+                              className="h-7 rounded-md text-xs gap-1 border-emerald-300 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300 pointer-events-none"
                             >
                               <Eye className="h-3.5 w-3.5" />
                               Ver Detalhes
@@ -659,7 +649,7 @@ function DashboardPage() {
                   </div>
 
                   {degustacoesFuturas.length === 0 ? (
-                    <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/5">
+                    <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/10">
                       Nenhuma degustação futura agendada.
                     </div>
                   ) : (
@@ -671,14 +661,14 @@ function DashboardPage() {
                           tabIndex={0}
                           onClick={() => setQuickViewDegustacao(d)}
                           onKeyDown={(e) => e.key === "Enter" && setQuickViewDegustacao(d)}
-                          className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border bg-card p-3.5 transition-all hover:border-primary/40 hover:shadow-xs cursor-pointer"
+                          className="fluent-row-item fluent-card-interactive group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-md p-3.5 hover:border-primary/40 cursor-pointer"
                         >
                           <div className="min-w-0 flex-1 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-xs text-navy group-hover:text-primary transition-colors">
+                              <span className="font-semibold text-xs text-navy group-hover:text-primary transition-colors duration-100">
                                 {d.nome}
                               </span>
-                              <Badge variant="outline" className="text-[10px] bg-sky-50 text-sky-700 border-sky-200">
+                              <Badge variant="outline" className="text-[10px] bg-sky-50 text-sky-700 border-sky-200 tabular-nums">
                                 {fmtDate(d.data)}
                               </Badge>
                             </div>
@@ -691,7 +681,7 @@ function DashboardPage() {
                                 <Truck className="h-3 w-3 text-muted-foreground" /> {d.fornecedor_nome}
                               </span>
                               {d.horario_inicio && (
-                                <span className="flex items-center gap-1">
+                                <span className="flex items-center gap-1 tabular-nums">
                                   <Clock className="h-3 w-3 text-muted-foreground" />
                                   {d.horario_inicio.slice(0, 5)}
                                   {d.horario_fim ? ` às ${d.horario_fim.slice(0, 5)}` : ""}
@@ -708,7 +698,7 @@ function DashboardPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-7 text-xs gap-1 text-muted-foreground group-hover:text-primary pointer-events-none"
+                              className="h-7 rounded-md text-xs gap-1 text-muted-foreground group-hover:text-primary pointer-events-none"
                             >
                               <Eye className="h-3.5 w-3.5" />
                               Ver
@@ -724,22 +714,26 @@ function DashboardPage() {
           </div>
         </div>
 
-        <CampanhaQuickView
-          campanha={quickView}
-          ofertas={quickView ? rawOfertas.filter((o) => o.campanhaId === quickView.id) : []}
-          onOpenChange={(v) => { if (!v) setQuickViewId(null); }}
-        />
+        {!!quickView && (
+          <CampanhaQuickView
+            campanha={quickView}
+            ofertas={rawOfertas.filter((o) => o.campanhaId === quickView.id)}
+            onOpenChange={(v) => { if (!v) setQuickViewId(null); }}
+          />
+        )}
 
-        <DegustacaoQuickView
-          degustacao={quickViewDegustacao}
-          open={!!quickViewDegustacao}
-          onOpenChange={(v) => {
-            if (!v) setQuickViewDegustacao(null);
-          }}
-        />
+        {!!quickViewDegustacao && (
+          <DegustacaoQuickView
+            degustacao={quickViewDegustacao}
+            open={!!quickViewDegustacao}
+            onOpenChange={(v) => {
+              if (!v) setQuickViewDegustacao(null);
+            }}
+          />
+        )}
 
         <div className="flex justify-end">
-          <Button asChild variant="ghost" size="sm" className="text-navy">
+          <Button asChild variant="ghost" size="sm" className="rounded-md text-navy">
             <Link to="/campanhas">
               Ver todas as campanhas <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
@@ -753,43 +747,53 @@ function DashboardPage() {
 /* ── Calendário mini inline ─────────────────────────────────────────────── */
 function MiniCalendar({
   campaigns,
-  onOpen,
   EyeBtn,
 }: {
   campaigns: CampanhaDash[];
-  onOpen: (id: string) => void;
+  onOpen?: (id: string) => void;
   EyeBtn: React.ComponentType<{ id: string }>;
 }) {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
+  const hoje = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
   const [mes, setMes] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const firstDay = new Date(mes.getFullYear(), mes.getMonth(), 1).getDay();
   const daysInMes = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate();
-  const cells: (number | null)[] = [
-    ...Array(firstDay).fill(null),
-    ...Array.from({ length: daysInMes }, (_, i) => i + 1),
-  ];
+  const cells: (number | null)[] = useMemo(
+    () => [
+      ...Array(firstDay).fill(null),
+      ...Array.from({ length: daysInMes }, (_, i) => i + 1),
+    ],
+    [firstDay, daysInMes]
+  );
 
   const isToday = (d: number) =>
     mes.getMonth() === hoje.getMonth() &&
     mes.getFullYear() === hoje.getFullYear() &&
     d === hoje.getDate();
 
-  const campaignsOnDay = (d: number) => {
-    const date = new Date(mes.getFullYear(), mes.getMonth(), d);
-    return campaigns.filter((c) => {
-      const ini = parseISO(c.dataInicial);
-      const fim = parseISO(c.dataFinal);
-      return (
-        date >= new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()) &&
-        date <= new Date(fim.getFullYear(), fim.getMonth(), fim.getDate())
-      );
-    });
-  };
+  // Pré-indexa campanhas do mês por dia em string YYYY-MM-DD (evita parseISO em loop de render)
+  const campaignsByDay = useMemo(() => {
+    const map = new Map<number, CampanhaDash[]>();
+    const year = mes.getFullYear();
+    const monthStr = String(mes.getMonth() + 1).padStart(2, "0");
+    for (let d = 1; d <= daysInMes; d++) {
+      const dayStr = `${year}-${monthStr}-${String(d).padStart(2, "0")}`;
+      const list = campaigns.filter((c) => {
+        const ini = (c.dataInicial || "").slice(0, 10);
+        const fim = (c.dataFinal || "").slice(0, 10);
+        return Boolean(ini && fim && dayStr >= ini && dayStr <= fim);
+      });
+      if (list.length > 0) map.set(d, list);
+    }
+    return map;
+  }, [campaigns, mes, daysInMes]);
 
-  const selectedDayCampaigns = selectedDay !== null ? campaignsOnDay(selectedDay) : [];
+  const selectedDayCampaigns = selectedDay !== null ? (campaignsByDay.get(selectedDay) ?? []) : [];
 
   return (
     <div>
@@ -798,7 +802,7 @@ function MiniCalendar({
         <button
           type="button"
           onClick={() => { setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1)); setSelectedDay(null); }}
-          className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition-colors duration-100 hover:bg-secondary hover:text-foreground"
           title="Mês anterior"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -813,7 +817,7 @@ function MiniCalendar({
               setMes(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
               setSelectedDay(hoje.getDate());
             }}
-            className="text-[10px] font-semibold text-primary hover:underline px-1.5 py-0.5 rounded bg-primary/10 transition-colors"
+            className="text-[10px] font-semibold text-primary hover:underline px-1.5 py-0.5 rounded bg-primary/10 transition-colors duration-100"
             title="Ir para o dia de hoje"
           >
             Hoje
@@ -822,7 +826,7 @@ function MiniCalendar({
         <button
           type="button"
           onClick={() => { setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1)); setSelectedDay(null); }}
-          className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition-colors duration-100 hover:bg-secondary hover:text-foreground"
           title="Próximo mês"
         >
           <ChevronRight className="h-4 w-4" />
@@ -843,7 +847,7 @@ function MiniCalendar({
         {cells.map((d, i) => {
           if (!d) return <div key={`empty-${i}`} />;
           const onD = isToday(d);
-          const dayCampaigns = campaignsOnDay(d);
+          const dayCampaigns = campaignsByDay.get(d) ?? [];
           const hasAtiva = dayCampaigns.some((c) => c.status === "Ativa");
           const hasProg = dayCampaigns.some((c) => c.status === "Programada");
           const isSelected = selectedDay === d;
@@ -859,9 +863,9 @@ function MiniCalendar({
               onClick={() => setSelectedDay(isSelected ? null : d)}
               onKeyDown={(e) => e.key === "Enter" && setSelectedDay(isSelected ? null : d)}
               className={cn(
-                "relative flex h-8 flex-col items-center justify-center rounded text-[10px] transition-colors",
+                "relative flex h-8 flex-col items-center justify-center rounded-md text-[10px] tabular-nums transition-colors duration-100 cursor-pointer",
                 onD ? "bg-primary font-semibold text-white" : "text-navy hover:bg-secondary",
-                isSelected && !onD ? "ring-1 ring-primary bg-primary/5" : "",
+                isSelected && !onD ? "ring-1 ring-primary bg-primary/[0.06]" : "",
               )}
             >
               <span>{d}</span>
@@ -904,7 +908,7 @@ function MiniCalendar({
             <p className="text-[10px] font-semibold uppercase tracking-wide text-navy">
               {format(new Date(mes.getFullYear(), mes.getMonth(), selectedDay), "dd 'de' MMMM", { locale: ptBR })}
             </p>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-muted-foreground tabular-nums">
               {selectedDayCampaigns.length} {selectedDayCampaigns.length === 1 ? "ação" : "ações"}
             </span>
           </div>
@@ -913,7 +917,7 @@ function MiniCalendar({
           ) : (
             <ul className="space-y-1.5 max-h-[170px] overflow-y-auto pr-1">
               {selectedDayCampaigns.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-1.5 hover:bg-muted/50 transition-colors">
+                <li key={c.id} className="flex items-center justify-between gap-2 rounded-md border border-border/70 bg-[#F6F8FA] px-2.5 py-1.5 hover:bg-muted/60 transition-colors duration-100">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-navy">{c.nome}</p>
                     <p className="truncate text-[10px] text-muted-foreground">
