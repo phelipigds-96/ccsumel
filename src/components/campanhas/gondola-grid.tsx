@@ -27,7 +27,7 @@ export function GondolaGrid({
 }: GondolaGridProps) {
   if (ofertas.length === 0) {
     return (
-      <div className="py-14 text-center rounded-xl border border-dashed bg-card">
+      <div className="py-14 text-center rounded-lg border border-dashed bg-card">
         <Tag className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
         <p className="text-sm font-medium text-navy">Nenhuma oferta encontrada</p>
         <p className="text-xs text-muted-foreground">Cadastre produtos nesta campanha ou ajuste os filtros.</p>
@@ -37,7 +37,7 @@ export function GondolaGrid({
               variant="outline"
               size="sm"
               onClick={onImport}
-              className="text-xs font-medium"
+              className="text-xs font-medium rounded-md"
             >
               Colar / Importar Ofertas
             </Button>
@@ -48,7 +48,7 @@ export function GondolaGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
       {ofertas.map((o) => {
         const isSelected = selectedIds.has(o.id);
         const desconto =
@@ -62,10 +62,10 @@ export function GondolaGrid({
         return (
           <div
             key={o.id}
-            className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-card p-4 transition-all hover:shadow-md ${
+            className={`group relative flex flex-col justify-between overflow-hidden rounded-lg p-4 fluent-card-item ${
               isSelected
-                ? "border-primary ring-1 ring-primary/40 bg-primary/5"
-                : "border-border/70 hover:border-primary/40"
+                ? "border border-primary bg-primary/[0.04] shadow-[inset_3px_0_0_0_var(--color-primary)] transition-colors duration-100"
+                : "fluent-card-interactive hover:border-primary/40"
             }`}
           >
             {/* Topo do card: Checkbox e badges */}
@@ -106,8 +106,8 @@ export function GondolaGrid({
               {o.descricao}
             </h4>
 
-            {/* Bloco de Preço Promocional Destacado */}
-            <div className="rounded-lg bg-muted/30 border border-border/50 p-2.5 mb-2.5 text-center">
+            {/* Bloco de Preço Promocional Destacado (Superfície tonal Fluent) */}
+            <div className="rounded-md bg-[#F6F8FA] border border-border/70 p-2.5 mb-2.5 text-center">
               {o.precoNormal > 0 && (
                 <div className="text-[11px] text-muted-foreground line-through tabular-nums leading-none mb-1">
                   De {brl(o.precoNormal)}
@@ -151,11 +151,11 @@ export function GondolaGrid({
               </div>
 
               {!readOnly && (
-                <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-75 group-hover:opacity-100 transition-opacity duration-100">
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 rounded-full hover:bg-muted"
+                    className="h-7 w-7 rounded-md hover:bg-muted"
                     onClick={() => onEdit(o)}
                     title="Editar oferta"
                   >
@@ -164,7 +164,7 @@ export function GondolaGrid({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 rounded-full hover:bg-destructive/10"
+                    className="h-7 w-7 rounded-md hover:bg-destructive/10"
                     onClick={() => onDelete(o.id)}
                     title="Excluir oferta"
                   >

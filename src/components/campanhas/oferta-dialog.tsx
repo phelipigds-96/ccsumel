@@ -301,7 +301,7 @@ export function OfertaDialog({
             </Field>
 
             {/* Seletor de Formato da Promoção */}
-            <div className="md:col-span-2 rounded-xl border border-border/80 bg-muted/20 p-4">
+            <div className="md:col-span-2 rounded-lg border border-border/80 bg-[#F6F8FA] p-4">
               <div className="mb-3">
                 <Label className="text-xs font-semibold text-navy uppercase tracking-wider">
                   Formato da Promoção
@@ -315,10 +315,10 @@ export function OfertaDialog({
                 <button
                   type="button"
                   onClick={() => handleTipoChange("simples")}
-                  className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  className={`flex flex-col text-left p-3 rounded-md border transition-colors duration-100 ${
                     tipoPromocao === "simples"
-                      ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/30"
-                      : "border-border bg-card hover:border-border/80 hover:bg-muted/30"
+                      ? "border-primary bg-primary/[0.06] shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                      : "border-border bg-card hover:border-navy/30 hover:bg-muted/30"
                   }`}
                 >
                   <div className="flex items-center gap-2 font-medium text-sm text-navy">
@@ -333,10 +333,10 @@ export function OfertaDialog({
                 <button
                   type="button"
                   onClick={() => handleTipoChange("a_partir_de")}
-                  className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  className={`flex flex-col text-left p-3 rounded-md border transition-colors duration-100 ${
                     tipoPromocao === "a_partir_de"
-                      ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/30"
-                      : "border-border bg-card hover:border-border/80 hover:bg-muted/30"
+                      ? "border-primary bg-primary/[0.06] shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                      : "border-border bg-card hover:border-navy/30 hover:bg-muted/30"
                   }`}
                 >
                   <div className="flex items-center gap-2 font-medium text-sm text-navy">
@@ -351,10 +351,10 @@ export function OfertaDialog({
                 <button
                   type="button"
                   onClick={() => handleTipoChange("a_cada")}
-                  className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  className={`flex flex-col text-left p-3 rounded-md border transition-colors duration-100 ${
                     tipoPromocao === "a_cada"
-                      ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/30"
-                      : "border-border bg-card hover:border-border/80 hover:bg-muted/30"
+                      ? "border-primary bg-primary/[0.06] shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                      : "border-border bg-card hover:border-navy/30 hover:bg-muted/30"
                   }`}
                 >
                   <div className="flex items-center gap-2 font-medium text-sm text-navy">
@@ -373,17 +373,17 @@ export function OfertaDialog({
               <div className="flex items-center justify-between gap-3 flex-wrap pb-3 border-b">
                 <div>
                   <div className="text-xs text-muted-foreground">Preço atual unitário</div>
-                  <div className="text-xl font-semibold text-navy">{brl(oferta.precoNormal)}</div>
+                  <div className="text-xl font-semibold text-navy tabular-nums">{brl(oferta.precoNormal)}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-xs text-muted-foreground">Desconto unitário</div>
-                  <div className={`text-2xl font-bold ${descontoTone}`}>
+                  <div className={`text-2xl font-bold tabular-nums ${descontoTone}`}>
                     {descontoPct.toFixed(1)}%
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-muted-foreground">Economia por un</div>
-                  <div className="text-lg font-semibold text-navy">{brl(economia)}</div>
+                  <div className="text-lg font-semibold text-navy tabular-nums">{brl(economia)}</div>
                 </div>
               </div>
 
@@ -404,8 +404,10 @@ export function OfertaDialog({
                             type="button"
                             onClick={() => setPromoByPct(pct)}
                             disabled={oferta.precoNormal <= 0}
-                            className={`rounded-lg border p-3 text-left transition hover:border-primary hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                              ativo ? "border-primary bg-primary/5" : "bg-card"
+                            className={`rounded-md border p-3 text-left transition-colors duration-100 hover:border-primary/60 disabled:opacity-50 disabled:cursor-not-allowed ${
+                              ativo
+                                ? "border-primary bg-primary/[0.06] shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                                : "bg-card"
                             }`}
                           >
                             <div className="text-xs font-semibold text-primary">−{pct}%</div>

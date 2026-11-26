@@ -555,11 +555,11 @@ export function ImportarOfertasDialog({
             onChange={(e) => setTexto(e.target.value)}
             placeholder={`Cole aqui as ofertas...\nFormato: código interno;preço normal;preço promo\nExemplo:\n12345;8,99;6,99\n67890;22,50;18,90`}
             rows={6}
-            className="w-full rounded-xl border border-input bg-card p-3 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full rounded-lg border border-input bg-card p-3 font-mono text-xs leading-relaxed focus-visible:outline-none fluent-input"
           />
 
           {/* Opções adicionais de importação */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3.5 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-[#F6F8FA] px-3.5 py-2.5">
             <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -613,10 +613,10 @@ export function ImportarOfertasDialog({
               </div>
 
               {/* Tabela de pré-visualização */}
-              <div className="rounded-xl border bg-card overflow-hidden max-h-60 overflow-y-auto">
+              <div className="rounded-lg fluent-card overflow-hidden max-h-60 overflow-y-auto">
                 <Table>
-                  <TableHeader className="bg-muted/40 sticky top-0">
-                    <TableRow>
+                  <TableHeader className="bg-[#F6F8FA] sticky top-0">
+                    <TableRow className="hover:bg-[#F6F8FA]">
                       <TableHead className="w-[48px] text-xs">Linha</TableHead>
                       <TableHead className="w-[95px] text-xs">Cód. Interno</TableHead>
                       <TableHead className="w-[130px] text-xs">Cód. Barras</TableHead>
@@ -665,7 +665,7 @@ export function ImportarOfertasDialog({
                       }
 
                       return (
-                        <TableRow key={`ok-${item.lineNum}`} className="hover:bg-muted/30">
+                        <TableRow key={`ok-${item.lineNum}`} className="hover:bg-muted/45 transition-colors duration-100 fluent-row-item">
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {item.lineNum}
                           </TableCell>
